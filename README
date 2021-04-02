@@ -1,0 +1,4 @@
+
+libujson - A Json library for C++ developers.
+
+Includes a Json parser and classes for handling Json objects.

@@ -1,0 +1,926 @@
+/*
+ * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ *
+ * This file is part of ujson.
+ *
+ * ujson is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <utility>
+#include <sstream>
+#include <algorithm>
+#include <ujson/jvalue.hpp>
+#include <ujson/utils.hpp>
+#include <cstring>
+
+
+namespace ujson {
+
+
+    static jvalue invalid_value;
+
+
+    //--------------------------------------------------------------------------
+    // Functor to compare a string with the key in a json_pair object
+    // when searching for an entry in a json object.
+    class json_pair_key_cmp_t {
+    public:
+        json_pair_key_cmp_t (const std::string& k) : key(k) {}
+        bool operator() (json_pair& entry) {
+            return entry.first == key;
+        }
+    private:
+        const std::string& key;
+    };
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (jvalue_type vtype)
+        : jtype {j_invalid}
+    {
+        type (vtype);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const jvalue& jval)
+        : jtype {j_invalid}
+    {
+        copy (jval);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (jvalue&& jval)
+        : jtype {j_invalid}
+    {
+        move (std::forward<jvalue&&>(jval));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const json_object& o)
+        : jtype {j_object}
+    {
+        v.jobj = new json_object (o);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (json_object&& o)
+        : jtype {j_object}
+    {
+        v.jobj = new json_object (std::forward<json_object&&>(o));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const json_array& a)
+        : jtype {j_array}
+    {
+        v.jarray = new json_array (a);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (json_array&& a)
+        : jtype {j_array}
+    {
+        v.jarray = new json_array (std::forward<json_array&&>(a));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const std::string& s)
+        : jtype {j_string}
+    {
+        v.jstr = new std::string (s);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (std::string&& s)
+        : jtype {j_string}
+    {
+        v.jstr = new std::string (std::forward<std::string&&>(s));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const char* s)
+        : jtype {j_string}
+    {
+        v.jstr = new std::string ((s==nullptr?"":s));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const double n)
+        : jtype {j_number}
+    {
+        v.jnum = n;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const int n)
+        : jtype {j_number}
+    {
+        v.jnum = static_cast<double> (n);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const bool true_false)
+        : jtype {j_bool}
+    {
+        v.jbool = true_false;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const std::nullptr_t nil)
+        : jtype {j_null}
+    {
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::~jvalue ()
+    {
+        reset ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (const jvalue& value)
+    {
+        if (this != &value)
+            copy (value);
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (jvalue&& jval)
+    {
+        if (this != &jval)
+            move (std::forward<jvalue&&>(jval));
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (const json_object& o)
+    {
+        obj (o);
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (json_object&& o)
+    {
+        obj (std::forward<json_object&&>(o));
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (const json_array& a)
+    {
+        array (a);
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator= (json_array&& a)
+    {
+        array (std::forward<json_array&&>(a));
+        return *this;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::operator< (const jvalue& rval) const
+    {
+        if (this == &rval)
+            return true;
+        if (jtype != rval.type())
+            return false;
+
+        switch (jtype) {
+        case j_invalid:
+            return false;
+        case j_object:
+            return v.jobj->equivalent(*rval.v.jobj) ?
+                false :
+                *v.jobj < *rval.v.jobj;
+        case j_array:
+            return *v.jarray < *rval.v.jarray;
+        case j_string:
+            return *v.jstr < *rval.v.jstr;
+        case j_number:
+            return v.jnum < rval.v.jnum;
+        case j_bool:
+            return false;
+        case j_null:
+            return false;
+        }
+        return false;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::operator== (const jvalue& rval) const
+    {
+        if (this == &rval)
+            return true;
+
+        if (jtype != rval.type())
+            return false;
+
+        switch (jtype) {
+        case j_invalid:
+            return false;
+        case j_object:
+            return v.jobj->equivalent (*rval.v.jobj);
+        case j_array:
+            return *v.jarray == *rval.v.jarray;
+        case j_string:
+            return *v.jstr == *rval.v.jstr;
+        case j_number:
+            return v.jnum == rval.v.jnum;
+        case j_bool:
+            return v.jbool == rval.v.jbool;
+        case j_null:
+            return true;
+        }
+        return false;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    json_object& jvalue::obj ()
+    {
+        if (jtype == j_object) {
+            return *v.jobj;
+        }else{
+            static json_object invalid_obj;
+            invalid_obj.clear ();
+            return invalid_obj;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::obj (const json_object& o)
+    {
+        type (j_object);
+        *v.jobj = o;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::obj (json_object&& o)
+    {
+        type (j_object);
+        *v.jobj = std::forward<json_object&&> (o);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    json_array& jvalue::array ()
+    {
+        if (jtype == j_array) {
+            return *v.jarray;
+        }else{
+            static json_array invalid_array;
+            invalid_array.clear ();
+            return invalid_array;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::array (const json_array& a)
+    {
+        type (j_array);
+        *v.jarray = a;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::array (json_array&& a)
+    {
+        type (j_array);
+        *v.jarray = std::forward<json_array&&> (a);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const std::string& jvalue::str () const
+    {
+        if (jtype == j_string) {
+            return *v.jstr;
+        }else{
+            static std::string invalid_str;
+            invalid_str = "";
+            return invalid_str;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::str (const std::string& s)
+    {
+        type (j_string);
+        *v.jstr = s;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::str (std::string&& s)
+    {
+        type (j_string);
+        *v.jstr = std::forward<std::string&&> (s);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    double jvalue::num () const
+    {
+        return (jtype==j_number ? v.jnum : 0.0);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::num (double n)
+    {
+        type (j_number);
+        v.jnum = n;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::boolean () const
+    {
+        return (jtype==j_bool ? v.jbool : false);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::boolean (bool b)
+    {
+        type (j_bool);
+        v.jbool = b;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::set_null ()
+    {
+        type (j_null);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::reset ()
+    {
+        switch (jtype) {
+        case j_invalid:
+            break;
+        case j_object:
+            if (v.jobj)
+                delete v.jobj;
+            v.jobj = nullptr;
+            break;
+        case j_array:
+            if (v.jarray)
+                delete v.jarray;
+            v.jarray = nullptr;
+            break;
+        case j_string:
+            if (v.jstr)
+                delete v.jstr;
+            v.jstr = nullptr;
+            break;
+        case j_number:
+            v.jnum = 0.0;
+            break;
+        case j_bool:
+            v.jbool = false;
+            break;
+        case j_null:
+            break;
+        }
+        jtype = j_invalid;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::type (const jvalue_type t)
+    {
+        if (jtype == t)
+            return; // This object is already of the requested type
+
+        // Free resources
+        reset ();
+
+        // Set the json value type for this object
+        jtype = t;
+
+        // Allocate and initialize resources
+        switch (jtype) {
+        case j_object:
+            v.jobj = new json_object;
+            break;
+        case j_array:
+            v.jarray = new json_array;
+            break;
+        case j_string:
+            v.jstr = new std::string;
+            break;
+        default:
+            break;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::have (const std::string& name) const
+    {
+        bool found = false;
+        if (type() == j_object) {
+            auto range = v.jobj->equal_range (name);
+            for (auto i=range.first; !found && i!=range.second; ++i) {
+                if (i->second.valid())
+                    found = true;
+            }
+        }
+        return found;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::get (const std::string& name)
+    {
+        if (type() == j_object) {
+            auto entry = find_last_in_jobj (name);
+            if (entry != v.jobj->send())
+                return entry->second;
+        }
+        // Name not found or not a json object, return an invalid json value
+        invalid_value.type (j_invalid);
+        return invalid_value;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator[] (const std::string& name)
+    {
+        if (type() != j_object) {
+            // This is not a json object, return an invalid json value
+            invalid_value.type (j_invalid);
+            return invalid_value;
+        }
+        auto entry = find_last_in_jobj (name);
+        if (entry != v.jobj->send()) {
+            // Found a valid json value associated with 'name'
+            return entry->second;
+        }else{
+            // 'name' not found, create an invalid json value
+            // associated with 'name'.
+            return v.jobj->emplace_back (name, jvalue()).second;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::operator[] (const size_t index)
+    {
+        if (type() == j_array) {
+            if (index < v.jarray->size())
+                return v.jarray->operator[] (index);
+        }
+        // Out of bounds, or this is not a json array,
+        // return an invalid json value
+        invalid_value.type (j_invalid);
+        return invalid_value;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    size_t jvalue::size () const
+    {
+        if (jtype == j_object)
+            return v.jobj->size ();
+        else if (jtype == j_array)
+            return v.jarray->size ();
+        else
+            return 0;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::add (const std::string& name, const jvalue& value,
+                      const bool overwrite)
+    {
+        if (type()!=j_object || !value.valid())
+            return false;
+
+        auto entry = find_last_in_jobj (name);
+        if (entry != v.jobj->send()) {
+            if (!overwrite)
+                return false;
+            else
+                entry->second = value;
+        }else{
+            v.jobj->emplace_back (name, value);
+        }
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::add (const std::string& name, jvalue&& value,
+                      const bool overwrite)
+    {
+        if (type()!=j_object || !value.valid())
+            return false;
+
+        bool is_added = true;
+        auto entry = find_last_in_jobj (name);
+        if (entry != v.jobj->send()) {
+            if (!overwrite)
+                is_added = false;
+            else
+                entry->second = std::move (value);
+        }else{
+            v.jobj->emplace_back (name, std::forward<jvalue&&>(value));
+        }
+        return is_added;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::add (const jvalue& value)
+    {
+        if (type()!=j_array || !value.valid())
+            return false;
+
+        v.jarray->emplace_back (value);
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool jvalue::add (jvalue&& value)
+    {
+        if (type()!=j_array || !value.valid())
+            return false;
+
+        v.jarray->emplace_back (std::forward<jvalue&&>(value));
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::remove (const std::string& name)
+    {
+        if (type() == j_object)
+            v.jobj->erase (name);
+        /*
+        bool valid_value_removed = false;
+        json_pair_key_cmp_t key_compare (name);
+        for (auto i=std::find_if(v.jobj->begin(), v.jobj->end(), key_compare);
+             i != v.jobj->end();
+             i = std::find_if(i, v.jobj->end(), key_compare))
+        {
+            if (i->second.valid())
+                valid_value_removed = true;
+            v.jobj->erase (i++);
+        }
+        return valid_value_removed;
+        */
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::remove (const size_t n)
+    {
+        if (type() == j_array) {
+            auto i = v.jarray->begin() + n;
+            if (i != v.jarray->end())
+                v.jarray->erase (i);
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::copy (const jvalue& rval)
+    {
+        type (rval.type());
+
+        switch (type()) {
+        case j_invalid:
+            break;
+        case j_object:
+            v.jobj->clear ();
+            *v.jobj = *rval.v.jobj;
+            break;
+        case j_array:
+            v.jarray->clear ();
+            *v.jarray = *rval.v.jarray;
+            break;
+        case j_string:
+            *v.jstr = *rval.v.jstr;
+            break;
+        case j_number:
+            v.jnum = rval.v.jnum;
+            break;
+        case j_bool:
+            v.jbool = rval.v.jbool;
+            break;
+        case j_null:
+            break;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::move (jvalue&& rval)
+    {
+        reset ();
+
+        jtype = rval.type ();
+
+        switch (jtype) {
+        case j_invalid:
+            break;
+        case j_object:
+            v.jobj = rval.v.jobj;
+            rval.v.jobj = nullptr;
+            break;
+        case j_array:
+            v.jarray = rval.v.jarray;
+            rval.v.jarray = nullptr;
+            break;
+        case j_string:
+            v.jstr = rval.v.jstr;
+            rval.v.jstr = nullptr;
+            break;
+        case j_number:
+            v.jnum = rval.v.jnum;
+            rval.v.jnum = 0.0;
+            break;
+        case j_bool:
+            v.jbool = rval.v.jbool;
+            rval.v.jbool = false;
+            break;
+        case j_null:
+            break;
+        }
+        rval.jtype = j_invalid;
+    }
+
+
+    //--------------------------------------------------------------------------
+    // Assume jtype is j_object
+    //--------------------------------------------------------------------------
+    json_object::iterator jvalue::find_last_in_jobj (const std::string& key)
+    {
+        auto range = v.jobj->equal_range (key);
+        auto first = range.first;
+        auto last  = range.second;
+
+        if (last == first)
+            return v.jobj->send ();
+
+        --last;
+        while (!last->second.valid()) {
+            if (last == first) {
+                v.jobj->erase (last);
+                return v.jobj->send ();
+            }
+            v.jobj->erase (last--);
+        }
+        return last;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jvalue::describe (bool pretty,
+                                  const std::string& first_indent,
+                                  const std::string& indent_step) const
+    {
+        std::stringstream ss;
+
+        std::string indent;
+        if (pretty) {
+            indent = first_indent + indent_step;
+        }
+        switch (type()) {
+        case j_object: {
+                bool first {true};
+                ss << "{";
+                auto& members = *v.jobj;
+                if (!members.empty()) {
+                    auto i = members.begin ();
+                    for (; i!=members.end(); ++i) {
+                        if (! i->second.valid())
+                            continue; // Skip invalid values
+                        if (!first) {
+                            ss << (pretty?",":", ");
+                        }else{
+                            first = false;
+                        }
+                        if (pretty)
+                            ss << std::endl << indent;
+                        ss << "\"";
+                        ss << escape (i->first);
+                        ss << (pretty ? "\": " : "\":");
+                        ss << i->second.describe (pretty, indent, indent_step);
+                    }
+                }
+                if (pretty && !first)
+                    ss << std::endl << first_indent;
+                ss << "}";
+            }
+            break;
+        case j_array: {
+                ss << "[";
+                auto& elements = *v.jarray;
+                if (!elements.empty()) {
+                    bool first {true};
+                    for (auto& obj : elements) {
+                        if (!obj.valid())
+                            continue; // Skip invalid values
+                        if (first)
+                            first = false;
+                        else
+                            ss << ", ";
+                        ss << obj.describe (pretty, indent, indent_step);
+                    }
+                }
+                ss << "]";
+            }
+            break;
+        case j_string:
+            ss << '"' << escape(*v.jstr) << '"';
+            break;
+        case j_number:
+            ss << num ();
+            break;
+        case j_bool:
+            ss << (boolean() ? "true" : "false");
+            break;
+        case j_null:
+            ss << "null";
+        case j_invalid:
+            break;
+        }
+        return ss.str ();
+    }
+
+
+    /*
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool operator== (const json_object& lhs, const json_object& rhs)
+    {
+        auto li = lhs.begin ();
+        auto ri = rhs.begin ();
+
+        for (; li!=lhs.end(); ++li) {
+            // Skip left hand side invalid values
+            if (li->second.valid() == false)
+                continue;
+
+            // Skip right hand side invalid values
+            while (ri!=rhs.end() && ri->second.valid()==false)
+                ++ri;
+
+            // Check if right hand side is out of values
+            if (ri == rhs.end())
+                return false;
+
+            // Compare the name and value
+            if (li->first != ri->first  ||  li->second != ri->second)
+                return false;
+        }
+
+        // Left hand side is out of objects,
+        // check if right hand side has valid objects left
+        while (ri!=rhs.end()) {
+            if (ri->second.valid())
+                return false;
+            ++ri;
+        }
+
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool operator== (const json_array& lhs, const json_array& rhs)
+    {
+        auto li = lhs.begin ();
+        auto ri = rhs.begin ();
+
+        for (; li!=lhs.end(); ++li) {
+            // Skip left hand side invalid values
+            if (li->valid() == false)
+                continue;
+
+            // Skip right hand side invalid values
+            while (ri!=rhs.end() && ri->valid()==false)
+                ++ri;
+
+            // Check if right hand side is out of values
+            if (ri == rhs.end())
+                return false;
+
+            // Compare the value
+            if (*li != *ri)
+                return false;
+        }
+
+        // Left hand side is out of objects,
+        // check if right hand side has valid objects left
+        while (ri!=rhs.end()) {
+            if (ri->valid())
+                return false;
+            ++ri;
+        }
+
+        return true;
+    }
+    */
+
+}
