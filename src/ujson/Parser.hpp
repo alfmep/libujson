@@ -105,10 +105,10 @@ namespace ujson {
         void on_parse_pair (const std::string& key);
         void on_parse_array ();
         void on_parse_element ();
-        void on_parse_string (const std::string& str);
-        void on_parse_number (double num);
-        void on_parse_bool (const bool value);
-        void on_parse_null ();
+        void on_parse_string (const std::string& str, bool root_entry=false);
+        void on_parse_number (double num, bool root_entry=false);
+        void on_parse_bool (const bool value, bool root_entry=false);
+        void on_parse_null (bool root_entry=false);
 
         std::mutex parse_mutex;
         location pos;

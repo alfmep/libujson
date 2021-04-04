@@ -70,10 +70,15 @@ COLON ":"
 %token <int>         NULL       "null"
 
 %%
-%start obj_or_array;
+%start instance;
 
-obj_or_array:   object                   {parser.on_parse_root();}
+instance:       STRING                   {parser.on_parse_string($1, true);}
+        |       NUMBER                   {parser.on_parse_number($1, true);}
+        |       object                   {parser.on_parse_root();}
         |       array                    {parser.on_parse_root();}
+        |       TRUE                     {parser.on_parse_bool(true, true);}
+        |       FALSE                    {parser.on_parse_bool(false, true);}
+        |       NULL                     {parser.on_parse_null(true);}
                 ;
 
 object:         LCBRACK RCBRACK          {parser.on_parse_object();}

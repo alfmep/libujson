@@ -406,33 +406,41 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_string (const std::string& str)
+    void Parser::on_parse_string (const std::string& str, bool root_entry)
     {
         values.emplace (str);
+        if (root_entry)
+            on_parse_root ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_number (double num)
+    void Parser::on_parse_number (double num, bool root_entry)
     {
         values.emplace (num);
+        if (root_entry)
+            on_parse_root ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_bool (const bool value)
+    void Parser::on_parse_bool (const bool value, bool root_entry)
     {
         values.emplace (value);
+        if (root_entry)
+            on_parse_root ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_null ()
+    void Parser::on_parse_null (bool root_entry)
     {
         values.emplace (nullptr);
+        if (root_entry)
+            on_parse_root ();
     }
 
 }
