@@ -88,32 +88,6 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     }
     while (optind < argc)
         args.files.emplace_back (argv[optind++]);
-
-    if (args.files.empty()) {
-        cerr << "Missing filename" << endl;
-        exit (1);
-    }
-}
-
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static bool is_file_ok (const string& filename)
-{
-    bool retval = true;
-
-    auto fd = open (filename.c_str(), O_RDONLY);
-    if (fd < 0)
-        return false;
-
-    struct stat sb;
-    if (fstat(fd, &sb))
-        retval = false;
-    else
-        retval = sb.st_mode & S_IFREG ? true : false;
-
-    close (fd);
-    return retval;
 }
 
 
@@ -127,24 +101,27 @@ int main (int argc, char* argv[])
     int retval = 0;
     ujson::Json parser;
 
-    for (auto& filename : args.files) {
-        // Check if file can be read
-        if (!is_file_ok(filename)) {
-            if (!args.quiet)
-                cout << "Can't read file " << filename << endl;
-            retval = 1;
-            continue;
-        }
+    if (args.files.empty())
+        args.files.emplace_back (""); // Parse standard input
 
+    for (auto& filename : args.files) {
         // Parse file and check result
         auto root = parser.parse_file (filename);
         if (root.valid()) {
-            if (!args.quiet)
-                cout << filename << ": ok" << endl;
+            if (!args.quiet) {
+                if (filename.empty())
+                    cout << "ok" << endl;
+                else
+                    cout << filename << ": ok" << endl;
+            }
         }else{
             retval = 1;
-            if (!args.quiet)
-                cout << filename << ": error: " << parser.errors().front() << endl;
+            if (!args.quiet) {
+                if (filename.empty())
+                    cout << "Error: " << parser.errors().front() << endl;
+                else
+                    cout << filename << ": Error: " << parser.errors().front() << endl;
+            }
         }
     }
 
