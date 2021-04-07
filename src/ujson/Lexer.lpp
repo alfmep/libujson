@@ -71,7 +71,7 @@ INFINITY {MINUS}?{POSITIVE_INFINITY}
 NUMBER {INTEGER}|{DOUBLE}|{INFINITY}|{NAN}
 
 DBL_QUOTE [\"]
-WHITESPACE [ \t\v\r]+
+WHITESPACE [\t\n\r ]+
 
 ASCII [\x01-\x21\x23-\x5b\x5d-\x7f]
 U     [\x80-\xbf]
