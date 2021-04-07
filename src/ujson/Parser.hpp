@@ -83,7 +83,7 @@ namespace ujson {
         std::list<std::string> error_list;
 
         // Handling the lexer.
-        void scan_begin ();
+        int scan_begin ();
         void scan_end ();
         bool trace_scanning;
 

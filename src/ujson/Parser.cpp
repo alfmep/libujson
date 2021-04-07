@@ -51,13 +51,13 @@ namespace ujson {
         Analyzer analyzer (*this, yyscanner);
 
         analyzer.set_debug_level (trace_parsing);
-        scan_begin ();
-        ujset_debug (trace_scanning, yyscanner);
-        /*int res =*/ analyzer.parse ();
-
-        scan_end ();
-        ujlex_destroy (yyscanner);
-
+        if (!scan_begin()) {
+            ujset_debug (trace_scanning, yyscanner);
+            if (analyzer.parse())
+                root.reset ();
+            scan_end ();
+            ujlex_destroy (yyscanner);
+        }
         return std::move (root);
     }
 
@@ -86,7 +86,8 @@ namespace ujson {
         Analyzer analyzer (*this, yyscanner);
         analyzer.set_debug_level (trace_parsing);
         ujset_debug (trace_scanning, yyscanner);
-        /*int res =*/ analyzer.parse ();
+        if (analyzer.parse())
+            root.reset ();
 
         uj_delete_buffer (scan_buf, yyscanner);
         ujlex_destroy (yyscanner);
@@ -173,20 +174,21 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::scan_begin ()
+    int Parser::scan_begin ()
     {
         FILE* f;
 
-        if (file.empty () || file == "-") {
+        if (file.empty()) {
             ujset_in (stdin, yyscanner);
         }else{
             f = fopen (file.c_str (), "r");
             if (!f) {
-                error ("cannot open " + file + ": " + strerror(errno));
-                exit (EXIT_FAILURE);
+                error (strerror(errno));
+                return -1;
             }
             ujset_in (f, yyscanner);
         }
+        return 0;
     }
 
 
