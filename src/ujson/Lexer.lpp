@@ -73,7 +73,7 @@ NUMBER {INTEGER}|{DOUBLE}|{INFINITY}|{NAN}
 DBL_QUOTE [\"]
 WHITESPACE [\t\n\r ]+
 
-ASCII [\x20-\x21\x23-\x5b\x5d-\x7f]
+ASCII [\x00-\x21\x23-\x5b\x5d-\x7f]
 
 U     [\x80-\xbf]
 U2    [\xc2-\xdf]
