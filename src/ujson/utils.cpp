@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019,2021 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,10 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <string>
-#include <regex>
+#include <algorithm>
 #include <codecvt>
 #include <locale>
+#include <string>
 #include <ujson/utils.hpp>
 
 
@@ -72,24 +72,46 @@ namespace ujson {
     //--------------------------------------------------------------------------
     std::string escape (const std::string& in)
     {
-        static std::regex r_backslash ("\\\\");
-        static std::regex r_dbl_quote ("\\\"");
-        static std::regex r_slash ("/");
-        static std::regex r_newline ("\\n");
-        static std::regex r_backspace ("\\x08");
-        static std::regex r_formfeed ("\\f");
-        static std::regex r_return ("\\r");
-        static std::regex r_tab ("\\t");
-
+        static const char* hex = "0123456789abcdef";
         std::string result;
-        result = std::regex_replace (in, r_backslash, "\\\\");
-        result = std::regex_replace (result, r_dbl_quote, "\\\"");
-        result = std::regex_replace (result, r_slash, "\\/");
-        result = std::regex_replace (result, r_newline, "\\n");
-        result = std::regex_replace (result, r_formfeed, "\\f");
-        result = std::regex_replace (result, r_return, "\\r");
-        result = std::regex_replace (result, r_tab, "\\t");
-        result = std::regex_replace (result, r_backspace, "\\b");
+        for (unsigned char ch : in) {
+            if (ch<0x20 || ch=='"' || ch=='/' || ch=='\\') {
+                switch (ch) {
+                case 0x08: // backspace
+                    result.append ("\\b");
+                    break;
+                case 0x09: // tab
+                    result.append ("\\t");
+                    break;
+                case 0x0a: // newline
+                    result.append ("\\n");
+                    break;
+                case 0x0c: // formfeed
+                    result.append ("\\f");
+                    break;
+                case 0x0d: // return
+                    result.append ("\\r");
+                    break;
+                case 0x22: // double quote
+                    result.append ("\\\"");
+                    break;
+                case 0x2f: // slash
+                    result.append ("\\/");
+                    break;
+                case 0x5c: // backslash
+                    result.append ("\\\\");
+                    break;
+                default:
+                    if (ch < 0x10)
+                        result.append ("\\u000");
+                    else
+                        result.append ("\\u001");
+                    result.push_back (hex[ch & 0x0f]);
+                }
+            }else{
+                result.push_back (ch);
+            }
+        }
         return result;
     }
 
