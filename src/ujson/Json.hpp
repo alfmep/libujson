@@ -55,33 +55,60 @@ namespace ujson {
         /**
          * Parse a json file.
          * @param f The name of the json file to parse.
+         * @param allow_duplicates_in_obj If <code>true</code>, duplicate
+         *                                member names in objects are allowed.<br/>
+         *                                If <code>false</code> and duplicate
+         *                                member names exist, only the last
+         *                                name/value pair will be present in
+         *                                the resulting parsed object.<br/>
+         *                                Default is <code>true</code> since
+         *                                the json specification does not
+         *                                prevent duplicate object member names.
          * @return A shared pointer to a json value that is
          *         either of type j_object or j_array.
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_file (const std::string& f, bool allow_duplicates_in_obj=false);
+        jvalue parse_file (const std::string& f, bool allow_duplicates_in_obj=true);
 
         /**
          * Parse a string in json syntax.
          * @param str The string to parse.
+         * @param allow_duplicates_in_obj If <code>true</code>, duplicate
+         *                                member names in objects are allowed.<br/>
+         *                                If <code>false</code> and duplicate
+         *                                member names exist, only the last
+         *                                name/value pair will be present in
+         *                                the resulting parsed object.<br/>
+         *                                Default is <code>true</code> since
+         *                                the json specification does not
+         *                                prevent duplicate object member names.
          * @return A shared pointer to a json value that is
          *         either of type j_object or j_array.
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_string (const std::string& str, bool allow_duplicates_in_obj=false);
+        jvalue parse_string (const std::string& str, bool allow_duplicates_in_obj=true);
 
         /**
          * Parse a text buffer in json syntax.
          * @param buf The text string to parse.
+         * @param allow_duplicates_in_obj If <code>true</code>, duplicate
+         *                                member names in objects are allowed.<br/>
+         *                                If <code>false</code> and duplicate
+         *                                member names exist, only the last
+         *                                name/value pair will be present in
+         *                                the resulting parsed object.<br/>
+         *                                Default is <code>true</code> since
+         *                                the json specification does not
+         *                                prevent duplicate object member names.
          * @param length The length of the text in the buffer.
          * @return A shared pointer to a json value that is
          *         either of type j_object or j_array.
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj=false);
+        jvalue parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj=true);
 
         /**
          * Check if parse debug trace is on.
