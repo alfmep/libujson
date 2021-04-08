@@ -104,19 +104,11 @@ namespace ujson {
         void trace_scanning (bool trace);
 
         /**
-         * Get maximum number of reported errors.
+         * Get the error if parsing has failed.
+         * @return An error string if the last parsing failed.
+         *         On successfull parsing an empty string is returned.
          */
-        int max_errors () const;
-
-        /**
-         * Set maximum number of reported errors.
-         */
-        void max_errors (int max_error_count);
-
-        /**
-         * Get a list of parse errors if parsing failed.
-         */
-        const std::list<std::string>& errors () const;
+        const std::string& error () const;
 
 
     private:

@@ -118,9 +118,9 @@ int main (int argc, char* argv[])
             retval = 1;
             if (!args.quiet) {
                 if (filename.empty())
-                    cout << "Error: " << parser.errors().front() << endl;
+                    cout << "Error: " << parser.error() << endl;
                 else
-                    cout << filename << ": Error: " << parser.errors().front() << endl;
+                    cout << filename << ": Error: " << parser.error() << endl;
             }
         }
     }

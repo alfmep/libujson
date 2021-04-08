@@ -31,15 +31,13 @@ namespace ujson {
 
     class Parser {
     public:
-        Parser (size_t max_errors=1, bool trace_scan=false, bool trace_parse=false);
+        Parser (bool trace_scan=false, bool trace_parse=false);
         virtual ~Parser () = default;
 
         // The location of the current token.
         location& loc () {return pos;}
 
-        const std::list<std::string>& errors () const;
-        size_t max_errors () const;
-        void max_errors (size_t max_error_count);
+        const std::string& error () const;
 
         bool trace_scan () const;
         void trace_scan (bool onoff);
@@ -79,8 +77,7 @@ namespace ujson {
     private:
         friend class Analyzer;
 
-        size_t max_error_count;
-        std::list<std::string> error_list;
+        std::string parse_error;
 
         // Handling the lexer.
         int scan_begin ();

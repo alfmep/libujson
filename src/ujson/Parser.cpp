@@ -29,9 +29,8 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Parser::Parser (size_t max_errors, bool trace_scan, bool trace_parse)
-        : max_error_count {max_errors},
-          trace_scanning  {trace_scan},
+    Parser::Parser (bool trace_scan, bool trace_parse)
+        : trace_scanning  {trace_scan},
           trace_parsing   {trace_parse}
     {
     }
@@ -45,7 +44,7 @@ namespace ujson {
 
         allow_key_duplicates = allow_duplicates_in_obj;
         root.reset ();
-        error_list.clear ();
+        parse_error.clear ();
         file = f;
         ujlex_init (&yyscanner);
         Analyzer analyzer (*this, yyscanner);
@@ -78,7 +77,7 @@ namespace ujson {
 
         allow_key_duplicates = allow_duplicates_in_obj;
         root.reset ();
-        error_list.clear ();
+        parse_error.clear ();
         ujlex_init (&yyscanner);
         auto scan_buf = uj_scan_bytes (buf, length, yyscanner);
         file = "";
@@ -98,28 +97,11 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    size_t Parser::max_errors () const
-    {
-        return max_error_count;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    void Parser::max_errors (size_t max_error_count)
-    {
-        this->max_error_count = max_error_count;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
     void Parser::error (const location& l, const std::string& m)
     {
         std::stringstream ss;
         ss << l << ": " << m;
-        if (error_list.size() < max_error_count)
-            error_list.push_back (ss.str());
+        parse_error = ss.str ();
     }
 
 
@@ -127,16 +109,15 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Parser::error (const std::string& m)
     {
-        if (error_list.size() < max_error_count)
-            error_list.push_back (m);
+        parse_error = m;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    const std::list<std::string>& Parser::errors () const
+    const std::string& Parser::error () const
     {
-        return error_list;
+        return parse_error;
     }
 
 
