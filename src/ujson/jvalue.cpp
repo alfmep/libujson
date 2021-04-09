@@ -240,19 +240,19 @@ namespace ujson {
         if (this == &rval)
             return true;
         if (jtype != rval.type())
-            return false;
+            return true;
 
         switch (jtype) {
         case j_invalid:
             return false;
         case j_object:
-            return v.jobj->equivalent(*rval.v.jobj) ?
-                false :
-                *v.jobj < *rval.v.jobj;
+            return *v.jobj < *rval.v.jobj;
         case j_array:
-            return *v.jarray < *rval.v.jarray;
+            return std::lexicographical_compare (v.jarray->begin(), v.jarray->end(),
+                                                 rval.v.jarray->begin(), rval.v.jarray->end());
         case j_string:
-            return *v.jstr < *rval.v.jstr;
+            return std::lexicographical_compare (v.jstr->begin(), v.jstr->end(),
+                                                 rval.v.jstr->begin(), rval.v.jstr->end());
         case j_number:
             return v.jnum < rval.v.jnum;
         case j_bool:
@@ -278,7 +278,7 @@ namespace ujson {
         case j_invalid:
             return false;
         case j_object:
-            return v.jobj->equivalent (*rval.v.jobj);
+            return *v.jobj == *rval.v.jobj;
         case j_array:
             return *v.jarray == *rval.v.jarray;
         case j_string:

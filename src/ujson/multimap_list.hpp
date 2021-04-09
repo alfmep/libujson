@@ -877,12 +877,14 @@ namespace ujson {
 
         /**
          * Check if two containers are equal.
-         * @param rhs The container to compare. The right-hand-side of '=='.
-         * @return <code>true</code> if the other container
-         *         contains equal number of elements that have
-         *         equal values in the same order as this container.
-         *         Otherwise <code>false</code>.
-         * @see multimap_list::equivalent()
+         * Two containers are equal if:<br/>
+         * <ul>
+         *   <li>They have the same number of elements.</li>
+         *   <li>All key-value elements in one container are present in the other.</li>
+         * </ul>
+         * The key-value elements need not be in the same order in the two containers.
+         * @param rhs The other container to compare with.
+         * @return <code>true</code> if the containers are equivalent.
          */
         bool operator== (const multimap_list& rhs) const {
             if (this == &rhs)
@@ -892,11 +894,12 @@ namespace ujson {
             std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
             if (items.size() != rhs.items.size())
                 return false;
-            auto lhs_i = items.begin ();
-            auto rhs_i = rhs.items.begin ();
+
+            auto lhs_i = sbegin ();
+            auto rhs_i = rhs.sbegin ();
             key_compare key_less;
             mapped_compare value_less;
-            while (lhs_i != items.end()) {
+            while (lhs_i != send()) {
                 if ( key_less(lhs_i->first, rhs_i->first) ||
                      key_less(rhs_i->first, lhs_i->first) ||
                      value_less(lhs_i->second, rhs_i->second) ||
@@ -914,10 +917,8 @@ namespace ujson {
         /**
          * Check if two containers are not equal.
          * @param rhs The container to compare. The right-hand-side of '!='.
-         * @return <code>false</code> if the other container
-         *         contains equal number of elements that have
-         *         equal values in the same order as this container.
-         *         Otherwise <code>true</code>.
+         * @return <code>true</code> if the other container
+         *         is equal to this, otherwise <code>false</code>.
          */
         bool operator!= (const multimap_list& rhs) const {
             return ! this->operator==(rhs);
@@ -925,7 +926,8 @@ namespace ujson {
 
 
         /**
-         * Compare the contents of two containers lexicographically.
+         * Compare the contents of two containers lexicographically.<br/>
+         * The two containers are compared using sorted keys.
          * @param rhs The other container to compare with. The right-hand side of '<'.
          * @return <code>true</code> if this container is lexicographically less than the other.
          */
@@ -935,90 +937,10 @@ namespace ujson {
             std::lock (mutex, rhs.mutex);
             std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
             std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-            return std::lexicographical_compare (items.begin(), items.end(),
-                                                 rhs.items.begin(), rhs.items.end(),
+            return std::lexicographical_compare (sbegin(), send(),
+                                                 rhs.sbegin(), rhs.send(),
                                                  value_type_compare{});
         }
-
-
-        /**
-         * Check if two containers are equivalent.
-         * Two containers are equivalent if:<br/>
-         * <ul>
-         *   <li>They have the same number of elements.</li>
-         *   <li>All key-value elements in one container are present in the other.</li>
-         * </ul>
-         * The key-value elements need not be in the same order in the two containers.
-         * @param rhs The other container to compare with.
-         * @return <code>true</code> if the containers are equivalent.
-         */
-        bool equivalent (const multimap_list& rhs) const
-            {
-                if (this == &rhs)
-                    return true;
-                std::lock (mutex, rhs.mutex);
-                std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-                std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-                if (items.size() != rhs.items.size())
-                    return false;
-
-                auto lhs_i = keys.begin ();
-                auto rhs_i = rhs.keys.begin ();
-                std::list<std::reference_wrapper<mapped_type>> tmp_values;
-                while (lhs_i != keys.end()) {
-
-                    // Compare key
-                    if (key_compare{}(lhs_i->first.get(), rhs_i->first.get()) ||
-                        key_compare{}(rhs_i->first.get(), lhs_i->first.get()))
-                    {
-                        // Keys not equal
-                        return false;
-                    }
-
-                    // Compare value
-                    if (mapped_compare{}(lhs_i->second->second, rhs_i->second->second) ||
-                        mapped_compare{}(rhs_i->second->second, lhs_i->second->second))
-                    {
-                        // Values not equal
-                        bool found_equal = false;
-                        for (auto i=tmp_values.begin(); i!=tmp_values.end(); ++i) {
-                            // Search our temporary value list with the same keys
-                            if (!mapped_compare{}(lhs_i->second->second, *i) &&
-                                !mapped_compare{}(*i, lhs_i->second->second))
-                            {
-                                // Found an equal value in our temporary value list
-                                tmp_values.erase (i);
-                                found_equal = true;
-                                break;
-                            }
-                        }
-                        if (!found_equal) {
-                            // Put the right hand value in our temporary value list
-                            // and search the rest of the right hand values with the same key
-                            tmp_values.emplace_back (rhs_i->second->second);
-                            auto tmp_rhs_i = rhs_i;
-                            ++tmp_rhs_i;
-                            while (tmp_rhs_i != rhs.keys.end() &&
-                                   !key_compare{}(lhs_i->first.get(), tmp_rhs_i->first.get()) &&
-                                   !key_compare{}(tmp_rhs_i->first.get(), lhs_i->first.get()))
-                            {
-                                if (!mapped_compare{}(lhs_i->second->second, tmp_rhs_i->second->second) &&
-                                    !mapped_compare{}(tmp_rhs_i->second->second, lhs_i->second->second))
-                                {
-                                    found_equal = true;
-                                    break;
-                                }
-                                ++tmp_rhs_i;
-                            }
-                        }
-                        if (!found_equal)
-                            return false;
-                    }
-                    ++lhs_i;
-                    ++rhs_i;
-                }
-                return true;
-            }
 
 
         /**
