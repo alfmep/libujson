@@ -20,7 +20,6 @@
 #define UJSON_JSON_HPP
 
 #include <string>
-#include <list>
 #include <ujson/jvalue.hpp>
 
 
@@ -55,6 +54,8 @@ namespace ujson {
         /**
          * Parse a json file.
          * @param f The name of the json file to parse.
+         * @param strict_mode if <code>true</code>, parsing is done strictly
+         *                    according to the json specification.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -69,11 +70,15 @@ namespace ujson {
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_file (const std::string& f, bool allow_duplicates_in_obj=true);
+        jvalue parse_file (const std::string& f,
+                           bool strict_mode=true,
+                           bool allow_duplicates_in_obj=true);
 
         /**
          * Parse a string in json syntax.
          * @param str The string to parse.
+         * @param strict_mode if <code>true</code>, parsing is done strictly
+         *                    according to the json specification.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -88,11 +93,15 @@ namespace ujson {
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_string (const std::string& str, bool allow_duplicates_in_obj=true);
+        jvalue parse_string (const std::string& str,
+                             bool strict_mode=true,
+                             bool allow_duplicates_in_obj=true);
 
         /**
          * Parse a text buffer in json syntax.
          * @param buf The text string to parse.
+         * @param strict_mode if <code>true</code>, parsing is done strictly
+         *                    according to the json specification.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -108,7 +117,10 @@ namespace ujson {
          *         If parsing failed a nullptr is returned.
          * @see ujson::jvalue
          */
-        jvalue parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj=true);
+        jvalue parse_buffer (const char* buf,
+                             size_t length,
+                             bool strict_mode=true,
+                             bool allow_duplicates_in_obj=true);
 
         /**
          * Check if parse debug trace is on.

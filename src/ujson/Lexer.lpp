@@ -67,11 +67,11 @@ INTEGER {MINUS}?{POSITIVE_INTEGER}
 DOUBLE {INTEGER}{FRAC}|{INTEGER}{EXP}|{INTEGER}{FRAC}{EXP}
 NAN (?i:nan)
 POSITIVE_INFINITY (?i:inf)|(?i:infinity)
-INFINITY {MINUS}?{POSITIVE_INFINITY}
-NUMBER {INTEGER}|{DOUBLE}|{INFINITY}|{NAN}
+INFINITY {SIGN}?{POSITIVE_INFINITY}
+NUMBER {INTEGER}|{DOUBLE}
 
 DBL_QUOTE [\"]
-WHITESPACE [\t\n\r ]+
+WHITESPACE [\t\r ]+
 
 ASCII [\x00-\x21\x23-\x5b\x5d-\x7f]
 
@@ -107,6 +107,8 @@ true           return parser.on_lex_true ();
 false          return parser.on_lex_false ();
 {STRING}       return parser.on_lex_string ();
 {NUMBER}       return parser.on_lex_number ();
+{NAN}          return parser.on_lex_nan ();
+{INFINITY}     return parser.on_lex_inf ();
 {WHITESPACE}   parser.on_lex_whitespace ();
 {NEWLINES}     parser.on_lex_newline ();
 {IDENTIFIER}   return parser.on_lex_identifier ();

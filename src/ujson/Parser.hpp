@@ -47,9 +47,9 @@ namespace ujson {
 
         // Run the parser on file F.
         // Return 0 on success.
-        jvalue parse_file (const std::string& f, bool allow_duplicates_in_obj);
-        jvalue parse_string (const std::string& str, bool allow_duplicates_in_obj);
-        jvalue parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj);
+        jvalue parse_file (const std::string& f, bool strict_mode, bool allow_duplicates_in_obj);
+        jvalue parse_string (const std::string& str, bool strict_mode, bool allow_duplicates_in_obj);
+        jvalue parse_buffer (const char* buf, size_t length, bool strict_mode, bool allow_duplicates_in_obj);
 
 
     public:
@@ -67,6 +67,8 @@ namespace ujson {
         Analyzer::symbol_type on_lex_identifier ();
         Analyzer::symbol_type on_lex_string ();
         Analyzer::symbol_type on_lex_number ();
+        Analyzer::symbol_type on_lex_nan ();
+        Analyzer::symbol_type on_lex_inf ();
         void on_lex_comment ();
         void on_lex_whitespace ();
         void on_lex_newline ();
@@ -78,6 +80,7 @@ namespace ujson {
         friend class Analyzer;
 
         std::string parse_error;
+        bool use_strict_mode;
 
         // Handling the lexer.
         int scan_begin ();
@@ -98,12 +101,14 @@ namespace ujson {
 
         void on_parse_root ();
         void on_parse_object ();
-        void on_parse_member ();
-        void on_parse_pair (const std::string& key);
+        void on_parse_member (bool relaxed=false);
+        void on_parse_pair (const std::string& key, bool relaxed=false);
         void on_parse_array ();
-        void on_parse_element ();
+        void on_parse_element (bool relaxed=false);
         void on_parse_string (const std::string& str, bool root_entry=false);
         void on_parse_number (double num, bool root_entry=false);
+        void on_parse_nan (double num, bool root_entry=false);
+        void on_parse_inf (double num, bool root_entry=false);
         void on_parse_bool (const bool value, bool root_entry=false);
         void on_parse_null (bool root_entry=false);
 

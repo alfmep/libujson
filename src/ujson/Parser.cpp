@@ -38,10 +38,13 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Parser::parse_file (const std::string& f, bool allow_duplicates_in_obj)
+    jvalue Parser::parse_file (const std::string& f,
+                               bool strict_mode,
+                               bool allow_duplicates_in_obj)
     {
         std::lock_guard<std::mutex> lock (parse_mutex);
 
+        use_strict_mode = strict_mode;
         allow_key_duplicates = allow_duplicates_in_obj;
         root.reset ();
         parse_error.clear ();
@@ -63,18 +66,27 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Parser::parse_string (const std::string& str, bool allow_duplicates_in_obj)
+    jvalue Parser::parse_string (const std::string& str,
+                                 bool strict_mode,
+                                 bool allow_duplicates_in_obj)
     {
-        return parse_buffer (str.c_str(), str.length(), allow_duplicates_in_obj);
+        return parse_buffer (str.c_str(),
+                             str.length(),
+                             strict_mode,
+                             allow_duplicates_in_obj);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Parser::parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj)
+    jvalue Parser::parse_buffer (const char* buf,
+                                 size_t length,
+                                 bool strict_mode,
+                                 bool allow_duplicates_in_obj)
     {
         std::lock_guard<std::mutex> lock (parse_mutex);
 
+        use_strict_mode = strict_mode;
         allow_key_duplicates = allow_duplicates_in_obj;
         root.reset ();
         parse_error.clear ();
@@ -257,6 +269,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     Analyzer::symbol_type Parser::on_lex_identifier ()
     {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting string");
         std::string str (ujget_text(yyscanner), ujget_leng(yyscanner));
         return Analyzer::make_IDENTIFIER (str, loc());
     }
@@ -282,6 +296,28 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    Analyzer::symbol_type Parser::on_lex_nan ()
+    {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, NaN as number not allowed in strict mode");
+        double num = strtod (ujget_text(yyscanner), nullptr);
+        return Analyzer::make_NAN (num, loc());
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    Analyzer::symbol_type Parser::on_lex_inf ()
+    {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, Infinite as number not allowed in strict mode");
+        double num = strtod (ujget_text(yyscanner), nullptr);
+        return Analyzer::make_INF (num, loc());
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void Parser::on_lex_whitespace ()
     {
         loc().step ();
@@ -301,6 +337,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Parser::on_lex_comment ()
     {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, c-style comments not allowed in strict mode");
         std::string comment (ujget_text(yyscanner));
         loc().lines (std::count(comment.begin(), comment.end(), '\n'));
         loc().step ();
@@ -311,7 +349,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Parser::on_lex_error ()
     {
-        error (loc(), "invalid character");
+        throw Analyzer::syntax_error (loc(), "invalid character");
     }
 
 
@@ -349,8 +387,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_member ()
+    void Parser::on_parse_member (bool relaxed)
     {
+        if (use_strict_mode && relaxed)
+            throw Analyzer::syntax_error (loc(), "syntax error, object ending with separator");
         if (allow_key_duplicates || !members.contains(pairs.top().first))
             members.push_front (std::move(pairs.top()));
         pairs.pop ();
@@ -359,8 +399,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_pair (const std::string& key)
+    void Parser::on_parse_pair (const std::string& key, bool relaxed)
     {
+        if (use_strict_mode && relaxed)
+            throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting } or string");
         pairs.emplace (std::make_pair(key, std::move(values.top())));
         values.pop ();
     }
@@ -380,8 +422,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_element ()
+    void Parser::on_parse_element (bool relaxed)
     {
+        if (use_strict_mode && relaxed)
+            throw Analyzer::syntax_error (loc(), "syntax error, array ending with separator");
         elements.emplace_front (std::move(values.top()));
         values.pop ();
     }
@@ -401,6 +445,30 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Parser::on_parse_number (double num, bool root_entry)
     {
+        values.emplace (num);
+        if (root_entry)
+            on_parse_root ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void Parser::on_parse_nan (double num, bool root_entry)
+    {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, NaN as number not allowed in strict mode");
+        values.emplace (num);
+        if (root_entry)
+            on_parse_root ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void Parser::on_parse_inf (double num, bool root_entry)
+    {
+        if (use_strict_mode)
+            throw Analyzer::syntax_error (loc(), "syntax error, Infinite as number not allowed in strict mode");
         values.emplace (num);
         if (root_entry)
             on_parse_root ();

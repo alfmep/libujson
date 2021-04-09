@@ -35,8 +35,14 @@ using std::string;
 
 
 struct appargs_t {
+    bool strict;
     bool quiet;
     std::vector<string> files;
+
+    appargs_t() {
+        strict = true;
+        quiet = false;
+    }
 };
 
 
@@ -50,6 +56,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << program_invocation_short_name << " [OPTIONS] <json-file ...>" << endl
         << endl
         << "Options:" <<endl
+        << "  -r, --relax   Relaxed parsing, don't use strict mode when parsing." << endl
         << "  -q, --quiet   Suppress all output." << endl
         << "  -h, --help    Print this help message." << endl
         << endl;
@@ -62,19 +69,21 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
+        { "relax", no_argument, 0, 'r'},
         { "quiet", no_argument, 0, 'q'},
         { "help",  no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "qh";
-
-    args.quiet = false;
+    const char* arg_format = "rqh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
         if (c == -1)
             break;
         switch (c) {
+        case 'r':
+            args.strict = false;
+            break;
         case 'q':
             args.quiet = true;
             break;
@@ -106,7 +115,7 @@ int main (int argc, char* argv[])
 
     for (auto& filename : args.files) {
         // Parse file and check result
-        auto root = parser.parse_file (filename);
+        auto root = parser.parse_file (filename, args.strict);
         if (root.valid()) {
             if (!args.quiet) {
                 if (filename.empty())

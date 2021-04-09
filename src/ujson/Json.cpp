@@ -44,25 +44,32 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_file (const std::string& f, bool allow_duplicates_in_obj)
+    jvalue Json::parse_file (const std::string& f,
+                             bool strict_mode,
+                             bool allow_duplicates_in_obj)
     {
-        return CTX->parse_file (f, allow_duplicates_in_obj);
+        return CTX->parse_file (f, strict_mode, allow_duplicates_in_obj);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_string (const std::string& str, bool allow_duplicates_in_obj)
+    jvalue Json::parse_string (const std::string& str,
+                               bool strict_mode,
+                               bool allow_duplicates_in_obj)
     {
-        return CTX->parse_string (str, allow_duplicates_in_obj);
+        return CTX->parse_string (str, strict_mode, allow_duplicates_in_obj);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_buffer (const char* buf, size_t length, bool allow_duplicates_in_obj)
+    jvalue Json::parse_buffer (const char* buf,
+                               size_t length,
+                               bool strict_mode,
+                               bool allow_duplicates_in_obj)
     {
-        return CTX->parse_buffer (buf, length, allow_duplicates_in_obj);
+        return CTX->parse_buffer (buf, length, strict_mode, allow_duplicates_in_obj);
     }
 
 
