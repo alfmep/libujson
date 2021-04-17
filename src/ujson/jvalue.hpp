@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2020 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -48,7 +48,8 @@ namespace ujson {
 
 
     /**
-     * A jvalue associated with a string.
+     * A jvalue associated with a string,
+     * representing a json object member.
      */
     using json_pair = std::pair<std::string, jvalue>;
 
@@ -631,20 +632,37 @@ namespace ujson {
          * Return a string representation of this json value.
          * All string output(object member names and string
          * values) will be json encoded using ujson::escape.
-         * Any invalid json values will not be included in the
-         * string representation.
+         * Any invalid json values (of type ujson::j_invalid)
+         * will not be included in the string representation.
          * @param pretty If <code>true</code>, return a string
          *               with each value on a separate line and
          *               use indentation to make it more readable.
          *               If <code>false</code>, return a compact
-         *               atring with everrything on a single line.
+         *               string with everrything on a single line.
+         * @param strict If <code>true</code>, all numbers that
+         *               are (+/-)infinite or NaN(not a number),
+         *               will be described as type 'null'.
+         * @param escape_slash If <code>true</code>, the
+         *                     forward slash character "/" will
+         *                     be esacped to "\/".
+         * @param sorted_properties If <code>true</code>, the
+         *                          properties of objects will be
+         *                          listed in a sorted order and
+         *                          not in the same order they were
+         *                          added.
          * @param indent Indentation to use if <code>pretty</code>
-         *               is <code>true</code>.
+         *               is <code>true</code>. Normally zero or more
+         *               space characters.
          * @return A string in json format describing this json value.
          * @see ujson::escape
          */
-        std::string describe (bool pretty=false, const std::string& indent="    ") const {
-            return describe (pretty, "", indent);
+        std::string describe (bool pretty=false,
+                              bool strict=false,
+                              bool escape_slash=false,
+                              bool sorted_properties=false,
+                              const std::string& indent="    ") const
+        {
+            return describe (pretty, strict, escape_slash, sorted_properties, "", indent);
         }
 
 
@@ -663,6 +681,9 @@ namespace ujson {
 
         json_object::iterator find_last_in_jobj (const std::string& key);
         std::string describe (bool pretty,
+                              bool strict,
+                              bool escape_slash,
+                              bool sorted_properties,
                               const std::string& first_indent,
                               const std::string& indent_step) const;
     };

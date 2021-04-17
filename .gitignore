@@ -35,3 +35,7 @@ depcomp
 /src/position.hh
 /src/stack.hh
 /utils/ujson-verify
+/utils/ujson-cmp
+/utils/ujson-get
+/utils/ujson-merge
+/utils/ujson-print

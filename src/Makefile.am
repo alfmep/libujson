@@ -66,6 +66,7 @@ nobase_libujson_HEADERS += ujson/Json.hpp
 
 # Header files that is not to be installed
 noinst_HEADERS =
+noinst_HEADERS += ujson/internal.hpp
 noinst_HEADERS += ujson/Parser.hpp
 
 #

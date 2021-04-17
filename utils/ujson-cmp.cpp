@@ -18,29 +18,22 @@
  */
 #include <ujson.hpp>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
-#include <vector>
-#include <cstdlib>
-#include <cstdint>
 #include <unistd.h>
 #include <getopt.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::string;
 
+using namespace std;
 
 struct appargs_t {
-    bool strict;
+    bool relaxed;
     bool quiet;
-    std::vector<string> files;
+    string filename[2];
 
-    appargs_t() {
-        strict = true;
+    appargs_t () {
+        relaxed = false;
         quiet = false;
     }
 };
@@ -51,14 +44,14 @@ struct appargs_t {
 static void print_usage_and_exit (std::ostream& out, int exit_code)
 {
     out << endl
-        << "Verify the syntax of JSON documents." << endl
+        << "Check if two JSON instances are equal." << endl
         << endl
-        << "Usage: " << program_invocation_short_name << " [OPTIONS] [FILE...]" << endl
+        << "Usage: " << program_invocation_short_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
         << endl
         << "Options:" <<endl
-        << "  -r, --relax   Relaxed parsing, don't use strict mode when parsing." << endl
-        << "  -q, --quiet   Silent mode, don't write anything to standard output." << endl
-        << "  -h, --help    Print this help message and exit." << endl
+        << "  -r, --relaxed    Parse JSON documents in relaxed mode." << endl
+        << "  -q, --quiet      Silent mode, don't write anything to standard output." << endl
+        << "  -h, --help       Print this help message and exit." << endl
         << endl;
         exit (exit_code);
 }
@@ -69,9 +62,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "relax", no_argument, 0, 'r'},
-        { "quiet", no_argument, 0, 'q'},
-        { "help",  no_argument, 0, 'h'},
+        { "relaxed", no_argument, 0, 'r'},
+        { "quiet",   no_argument, 0, 'q'},
+        { "help",    no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
     const char* arg_format = "rqh";
@@ -82,7 +75,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         switch (c) {
         case 'r':
-            args.strict = false;
+            args.relaxed = true;
             break;
         case 'q':
             args.quiet = true;
@@ -95,8 +88,21 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         }
     }
-    while (optind < argc)
-        args.files.emplace_back (argv[optind++]);
+    if (optind < argc)
+        args.filename[0] = argv[optind++];
+    if (optind < argc)
+        args.filename[1] = argv[optind++];
+
+    if (args.filename[0].empty() || args.filename[1].empty()) {
+        if (!args.quiet)
+            cerr << "Missing filename(s)" << endl;
+        exit (1);
+    }
+    if (optind < argc) {
+        if (!args.quiet)
+            cerr << "Too many arguments" << endl;
+        exit (1);
+    }
 }
 
 
@@ -104,34 +110,43 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 //------------------------------------------------------------------------------
 int main (int argc, char* argv[])
 {
-    appargs_t args;
-    parse_args (argc, argv, args);
+    appargs_t opt;
 
-    int retval = 0;
-    ujson::Json parser;
+    parse_args (argc, argv, opt);
 
-    if (args.files.empty())
-        args.files.emplace_back (""); // Parse standard input
+    // Read json files
+    //
+    ifstream ifs[2];
+    string json_desc[2];
+    for (auto i=0; i<2; ++i) {
+        ifs[i].open (opt.filename[i]);
+        json_desc[i] = string ((istreambuf_iterator<char>(ifs[i])), istreambuf_iterator<char>());
+        ifs[i].close ();
+    }
 
-    for (auto& filename : args.files) {
-        // Parse file and check result
-        auto root = parser.parse_file (filename, args.strict);
-        if (root.valid()) {
-            if (!args.quiet) {
-                if (filename.empty())
-                    cout << "ok" << endl;
-                else
-                    cout << filename << ": ok" << endl;
-            }
-        }else{
-            retval = 1;
-            if (!args.quiet) {
-                if (filename.empty())
-                    cout << "Error: " << parser.error() << endl;
-                else
-                    cout << filename << ": Error: " << parser.error() << endl;
-            }
+    // Parse json files
+    //
+    ujson::Json j;
+    ujson::jvalue instance[2];
+    for (auto i=0; i<2; ++i) {
+        instance[i] = j.parse_string (json_desc[i], false);
+        if (!instance[i].valid()) {
+            if (!opt.quiet)
+                cerr << "Error parsing " << opt.filename[i] << ": " << j.error() << endl;
+            exit (1);
         }
+    }
+
+    // Check if the instances are equal
+    //
+    int retval = 0;
+    if (instance[0] == instance[1]) {
+        if (!opt.quiet)
+            cout << "equal" << endl;
+    }else{
+        if (!opt.quiet)
+            cout << "not equal" << endl;
+        retval = 1;
     }
 
     return retval;

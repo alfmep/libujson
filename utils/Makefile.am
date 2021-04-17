@@ -24,10 +24,28 @@ AM_CXXFLAGS = -Wall -pipe -O2 -g
 AM_LDFLAGS = -L../src -lujson
 
 
-#noinst_bindir =
 bin_PROGRAMS =
 
 bin_PROGRAMS += ujson-verify
 ujson_verify_SOURCES = ujson-verify.cpp
+
+bin_PROGRAMS += ujson-print
+ujson_print_SOURCES = ujson-print.cpp
+
+bin_PROGRAMS += ujson-cmp
+ujson_cmp_SOURCES = ujson-cmp.cpp
+
+bin_PROGRAMS += ujson-get
+ujson_get_SOURCES = ujson-get.cpp
+
+bin_PROGRAMS += ujson-merge
+ujson_merge_SOURCES = ujson-merge.cpp
+
+man1_MANS =
+man1_MANS += ujson-verify.man
+man1_MANS += ujson-print.man
+man1_MANS += ujson-cmp.man
+man1_MANS += ujson-get.man
+man1_MANS += ujson-merge.man
 
 endif

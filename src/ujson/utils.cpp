@@ -20,11 +20,119 @@
 #include <codecvt>
 #include <locale>
 #include <string>
+#include <sstream>
+#include <cstdio>
 #include <ujson/utils.hpp>
+#include <ujson/internal.hpp>
 
 
 namespace ujson {
 
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jtype_to_str (const jvalue_type jtype)
+    {
+        switch (jtype) {
+        case j_bool:
+            return "boolean";
+        case j_number:
+            return "number";
+        case j_string:
+            return "string";
+        case j_array:
+            return "array";
+        case j_object:
+            return "object";
+        case j_null:
+            return "null";
+        default:
+            ;
+        }
+        return "invalid";
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jtype_to_str (const jvalue& instance)
+    {
+        return jtype_to_str (instance.type());
+    };
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue_type str_to_jtype (const std::string& jtype_name)
+    {
+        if (jtype_name == "boolean")
+            return j_bool;
+        else if (jtype_name == "number")
+            return j_number;
+        else if (jtype_name == "string")
+            return j_string;
+        else if (jtype_name == "array")
+            return j_array;
+        else if (jtype_name == "object")
+            return j_object;
+        else if (jtype_name == "null")
+            return j_null;
+        else
+            return j_invalid;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    static jvalue& get_property_value (jvalue& instance,
+                                       const std::string& property)
+    {
+        std::stringstream ss (property);
+        std::string name;
+        jvalue* value = nullptr;
+
+        if (!getline(ss, name, '[') || name.empty()) {
+            if (property[0] != '[')
+                return instance.get (unescape(property));
+        }
+
+        if (property[0] != '[')
+            value = &(instance.get(unescape(name)));
+        else
+            value = &instance;
+
+        std::string index;
+        while (getline(ss, index, ']')) {
+            value = &((*value)[stol(index)]);
+            if (!value->valid() || !getline(ss, name, '['))
+                break;
+        }
+        return *value;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& find_jvalue (jvalue& instance, const std::string& location)
+    {
+        try {
+            std::stringstream ss (location);
+            std::string property;
+            jvalue* entry = &instance;
+            while (getline(ss, property, '.')) {
+                if (!property.empty()) {
+                    entry = &(get_property_value(*entry, property));
+                    if (entry->type() == j_invalid)
+                        break;
+                }
+            }
+            return *entry;
+        }
+        catch (...) {
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
+    }
 
 
     //--------------------------------------------------------------------------
@@ -67,15 +175,14 @@ namespace ujson {
     }
 
 
-
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    std::string escape (const std::string& in)
+    std::string escape (const std::string& in, bool escape_slash)
     {
         static const char* hex = "0123456789abcdef";
         std::string result;
         for (unsigned char ch : in) {
-            if (ch<0x20 || ch=='"' || ch=='/' || ch=='\\') {
+            if (ch<0x20 || ch=='"' || (escape_slash?ch=='/':false) || ch=='\\') {
                 switch (ch) {
                 case 0x08: // backspace
                     result.append ("\\b");

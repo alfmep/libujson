@@ -1,0 +1,75 @@
+.\" Manpage for ujson-verify
+.\" Contact dan@ultramarin.se to correct errors or types.
+.TH ujson-verify 1 "" "" "User Commands"
+
+
+.SH NAME
+ujson-verify \- Check for errors in a JSON document
+
+
+.SH SYNOPSIS
+.B ujson-verify
+[OPTIONS...] [FILE...]
+
+
+.SH DESCRIPTION
+ujson-verify is a utility used for verifying that JSON documents are syntactically correct. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
+
+
+.SH OPTIONS
+.TP
+.B -r, --relax
+Relaxed parsing, don't use strict mode when parsing.
+.TP
+.B -q, --quiet
+Silent mode, don't write anything to standard output.
+.TP
+.B -h, --help
+Print help and exit.
+
+
+.SH NOTES
+By default JSON documents are verified using the official JSON syntax. But libujson also support a more relaxed format.
+.PP
+The following is allowed in JSON documents when relaxed format is used:
+
+.nf
+- C-style comments.
+- When parsing a number, the identifiers nan and (+/-)inf/infinite are allowed.
+- Object definitions are allowed to end with a separator(,).
+- Array items are allowed to end with a separator(,).
+- In object definitions, a member name can be an identifier instead of a string.
+  An identifier is a name in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+  Exceptions are: nan, inf, and infinite (case insensitive).
+  Those names are reserved for numbers and are not allowed to be used as identifiers.
+
+.PP
+Example of a JSON document that is allowed in relaxed mode:
+
+.EX
+{
+    /*
+     * An invalid JSON syntax in strict mode, but allowed in relaxed mode.
+     */
+    name: "relaxed document",
+    value: 42,
+    desc: "Some text here",
+    large_number: inf,
+    not_a_number: NaN,
+    "normal_member_name": "Another string",
+
+    // Note that the last array item ends with a separator
+    list_of_values: [1, 2, 3, 4, 5, 6, 7,],
+
+    // Also, the last object member can end with a separator
+    last_member: true,
+}
+.EE
+
+
+.SH SEE ALSO
+ujson-cmp(1) ujson-print(1) ujson-get(1) ujson-merge(1)
+
+
+.SH AUTHOR
+Dan Arrhenius (dan@ultramarin.se)

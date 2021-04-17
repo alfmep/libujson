@@ -1,0 +1,59 @@
+.\" Manpage for ujson-verify
+.\" Contact dan@ultramarin.se to correct errors or types.
+.TH ujson-get 1 "" "" "User Commands"
+
+
+.SH NAME
+ujson-get \- Print a specific value from a JSON document to standard output
+
+
+.SH SYNOPSIS
+.B ujson-get
+[OPTIONS] [FILE] [LOCATION]
+
+
+.SH DESCRIPTION
+ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified in LOCATION is found, ujson-get prints the value and exits with code 0.
+
+
+.SH OPTIONS
+.TP
+.B -c, --compact
+If the JSON value is an object or an array, print it without whitespace.
+.TP
+.B -t, --type=TYPE
+Require the value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the value is of a different type, exit with code 1.
+.TP
+.B -r, --relaxed
+Parse the JSON document in relaxed mode.
+.TP
+.B -h, --help
+Print help and exit.
+
+
+.SH LOCATION
+A
+.B LOCATION
+is specified in the following way:
+.nf
+- An single dot "." prints the whole JSON instance.
+- A name is used to access an object property with the that name.
+- To accesses nested object properties, separate the property names with a dot "."
+- For arrays, use [n] to access the n'th array item. (Example: root_obj.some_array[4]).
+- To print the whole array, omit the [n]. (Example: root_obj.some_array).
+- Object member names are assumed to be JSON escaped where needed.
+
+
+.SH NOTES
+Since dots "." and left brackets "[" are used to find specific object members and/or array items,
+they can't be used directly in member names in a
+.B LOCATION.
+To access object members with a "." or "[" in the name, escape the dot as \\u002e and left bracket as \\u005b.
+
+
+.SH SEE ALSO
+ujson-verify(1) ujson-cmp(1) ujson-print(1) ujson-merge(1)
+
+
+.SH AUTHOR
+Dan Arrhenius (dan@ultramarin.se)

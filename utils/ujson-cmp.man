@@ -1,0 +1,74 @@
+.\" Manpage for ujson-verify
+.\" Contact dan@ultramarin.se to correct errors or types.
+.TH ujson-cmp 1 "" "" "User Commands"
+
+
+.SH NAME
+ujson-cmp \- Compare two JSON documents
+
+
+.SH SYNOPSIS
+.B ujson-cmp
+[OPTIONS...] [FILE_1] [FILE_2]
+
+
+.SH DESCRIPTION
+ujson-cmp parses two JSON documents and compares the instances for equality. If the JSON instances are equal, ujson-cmp exits with code 0. If they are not equal, or if a parsing error occurs, ujson-cmp exits with code 1.
+
+
+.SH OPTIONS
+.TP
+.B -r, --relax
+Parse JSON documents in relaxed mode.
+.TP
+.B -q, --quiet
+Silent mode, don't write anything to standard output.
+.TP
+.B -h, --help
+Print help and exit.
+
+
+.SH NOTES
+By default JSON documents are parsed using the official JSON syntax. But libujson also support a more relaxed format.
+.PP
+The following is allowed in JSON documents when relaxed format is used:
+
+.nf
+- C-style comments.
+- When parsing a number, the identifiers nan and (+/-)inf/infinite are allowed.
+- Object definitions are allowed to end with a separator(,).
+- Array items are allowed to end with a separator(,).
+- In object definitions, a member name can be an identifier instead of a string.
+  An identifier is a name in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+  Exceptions are: nan, inf, and infinite (case insensitive).
+  Those names are reserved for numbers and are not allowed to be used as identifiers.
+
+.PP
+Example of a JSON document that is allowed in relaxed mode:
+
+.EX
+{
+    /*
+     * An invalid JSON syntax in strict mode, but allowed in relaxed mode.
+     */
+    name: "relaxed document",
+    value: 42,
+    desc: "Some text here",
+    large_number: inf,
+    not_a_number: NaN,
+    "normal_member_name": "Another string",
+
+    // Note that the last array item ends with a separator
+    list_of_values: [1, 2, 3, 4, 5, 6, 7,],
+
+    // Also, the last object member can end with a separator
+    last_member: true,
+}
+.EE
+
+.SH SEE ALSO
+ujson-verify(1) ujson-print(1) ujson-get(1) ujson-merge(1)
+
+
+.SH AUTHOR
+Dan Arrhenius (dan@ultramarin.se)

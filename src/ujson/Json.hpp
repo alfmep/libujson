@@ -123,6 +123,14 @@ namespace ujson {
                              bool allow_duplicates_in_obj=true);
 
         /**
+         * Get the error if parsing has failed.
+         * @return An error string if the last parsing failed.
+         *         On successfull parsing an empty string is returned.
+         */
+        const std::string& error () const;
+
+#if (PARSER_DEBUGGING)
+        /**
          * Check if parse debug trace is on.
          */
         bool trace_parsing ();
@@ -141,14 +149,7 @@ namespace ujson {
          * Set/unset scan debug trace.
          */
         void trace_scanning (bool trace);
-
-        /**
-         * Get the error if parsing has failed.
-         * @return An error string if the last parsing failed.
-         *         On successfull parsing an empty string is returned.
-         */
-        const std::string& error () const;
-
+#endif
 
     private:
         void* parse_context;

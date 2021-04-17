@@ -21,13 +21,15 @@
 #include <algorithm>
 #include <ujson/jvalue.hpp>
 #include <ujson/utils.hpp>
+#include <ujson/internal.hpp>
 #include <cstring>
+#include <math.h>
 
 
 namespace ujson {
 
 
-    static jvalue invalid_value;
+    jvalue invalid_jvalue;
 
 
     //--------------------------------------------------------------------------
@@ -523,8 +525,8 @@ namespace ujson {
                 return entry->second;
         }
         // Name not found or not a json object, return an invalid json value
-        invalid_value.type (j_invalid);
-        return invalid_value;
+        invalid_jvalue.reset ();
+        return invalid_jvalue;
     }
 
 
@@ -534,8 +536,8 @@ namespace ujson {
     {
         if (type() != j_object) {
             // This is not a json object, return an invalid json value
-            invalid_value.type (j_invalid);
-            return invalid_value;
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
         }
         auto entry = find_last_in_jobj (name);
         if (entry != v.jobj->send()) {
@@ -559,8 +561,8 @@ namespace ujson {
         }
         // Out of bounds, or this is not a json array,
         // return an invalid json value
-        invalid_value.type (j_invalid);
-        return invalid_value;
+        invalid_jvalue.reset ();
+        return invalid_jvalue;
     }
 
 
@@ -775,6 +777,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     std::string jvalue::describe (bool pretty,
+                                  bool strict,
+                                  bool escape_slash,
+                                  bool sorted_properties,
                                   const std::string& first_indent,
                                   const std::string& indent_step) const
     {
@@ -790,21 +795,27 @@ namespace ujson {
                 ss << "{";
                 auto& members = *v.jobj;
                 if (!members.empty()) {
-                    auto i = members.begin ();
-                    for (; i!=members.end(); ++i) {
+                    auto i = sorted_properties ? members.sbegin() : members.begin();
+                    auto member_end = sorted_properties ? members.send() : members.end();
+                    for (; i!=member_end; ++i) {
                         if (! i->second.valid())
                             continue; // Skip invalid values
                         if (!first) {
-                            ss << (pretty?",":", ");
+                            ss << ",";
                         }else{
                             first = false;
                         }
                         if (pretty)
                             ss << std::endl << indent;
                         ss << "\"";
-                        ss << escape (i->first);
+                        ss << escape (i->first, escape_slash);
                         ss << (pretty ? "\": " : "\":");
-                        ss << i->second.describe (pretty, indent, indent_step);
+                        ss << i->second.describe (pretty,
+                                                  strict,
+                                                  escape_slash,
+                                                  sorted_properties,
+                                                  indent,
+                                                  indent_step);
                     }
                 }
                 if (pretty && !first)
@@ -823,18 +834,26 @@ namespace ujson {
                         if (first)
                             first = false;
                         else
-                            ss << ", ";
-                        ss << obj.describe (pretty, indent, indent_step);
+                            ss << (pretty?", ":",");
+                        ss << obj.describe (pretty,
+                                            strict,
+                                            escape_slash,
+                                            sorted_properties,
+                                            indent,
+                                            indent_step);
                     }
                 }
                 ss << "]";
             }
             break;
         case j_string:
-            ss << '"' << escape(*v.jstr) << '"';
+            ss << '"' << escape(*v.jstr, escape_slash) << '"';
             break;
         case j_number:
-            ss << num ();
+            if (strict && (isinf(num()) || isnan(num())))
+                ss << "null";
+            else
+                ss << num ();
             break;
         case j_bool:
             ss << (boolean() ? "true" : "false");

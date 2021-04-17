@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-AC_INIT([libujson], [1.0.0], [dan@ultramarin.se])
+AC_INIT([libujson], [1.0.1], [dan@ultramarin.se])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 subdir-objects])
 
 AC_PROG_CC
@@ -35,7 +35,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_SILENT_RULES([yes])
 
 #
-# Release 1.0.0
+# Release 1.0.1
 #
 # Library interface version x:y:z
 #                           | | |
@@ -47,7 +47,7 @@ AM_SILENT_RULES([yes])
 #
 # Library version (CURRENT:REVISION:AGE)
 #
-LIBRARY_VERSION=1:0:0
+LIBRARY_VERSION=2:0:1
 AC_SUBST([LIBRARY_VERSION])
 
 #
@@ -64,6 +64,22 @@ REQUIRE_IN_PC_FILE=
 # Defines in the doxygen config file
 #
 PREDEFINED_IN_DOXYGEN=
+
+
+#
+# Give the user an option to enable parser trace debugging
+#
+AC_ARG_ENABLE([parser-debugging],
+	[AS_HELP_STRING([--enable-parser-debugging],
+		[enable API for debugging the libujson parser])],,
+	enable_parser_debugging=no)
+AM_CONDITIONAL([ENABLE_PARSER_DEBUGGING_SET], [test "x$enable_parser_debugging" != "xno"])
+AM_COND_IF([ENABLE_PARSER_DEBUGGING_SET],
+	[AC_DEFINE([PARSER_DEBUGGING], [1])
+	 PREDEFINED_IN_DOXYGEN+=" PARSER_DEBUGGING=1"
+	],
+	[AC_DEFINE([PARSER_DEBUGGING], [0])]
+)
 
 
 #
@@ -88,7 +104,7 @@ AC_SUBST([PREDEFINED_IN_DOXYGEN])
 #
 AC_ARG_ENABLE([doxygen],
 	[AS_HELP_STRING([--enable-doxygen],
-	[Build doxygen documentation, if possible])],,
+	[build doxygen documentation, if possible])],,
 	enable_doxygen=no)
 AM_CONDITIONAL([ENABLE_DOXYGEN_SET], [test "x$enable_doxygen" != "xno"])
 
