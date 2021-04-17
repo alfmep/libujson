@@ -40,6 +40,7 @@ struct appargs_t {
     bool strict;
     bool quiet;
     std::vector<string> files;
+    std::string schema_file;
 
     appargs_t() {
         strict = true;
@@ -58,9 +59,10 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << prog_name << " [OPTIONS] [FILE...]" << endl
         << endl
         << "Options:" <<endl
-        << "  -r, --relax   Relaxed parsing, don't use strict mode when parsing." << endl
-        << "  -q, --quiet   Silent mode, don't write anything to standard output." << endl
-        << "  -h, --help    Print this help message and exit." << endl
+        << "  -r, --relax         Relaxed parsing, don't use strict mode when parsing." << endl
+        << "  -s, --schema=FILE   Validate the JSON document with a schema file.." << endl
+        << "  -q, --quiet         Silent mode, don't write anything to standard output." << endl
+        << "  -h, --help          Print this help message and exit." << endl
         << endl;
         exit (exit_code);
 }
@@ -71,12 +73,13 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "relax", no_argument, 0, 'r'},
-        { "quiet", no_argument, 0, 'q'},
-        { "help",  no_argument, 0, 'h'},
+        { "relax",  no_argument,       0, 'r'},
+        { "schema", required_argument, 0, 's'},
+        { "quiet",  no_argument,       0, 'q'},
+        { "help",   no_argument,       0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "rqh";
+    const char* arg_format = "rs:qh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -85,6 +88,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         switch (c) {
         case 'r':
             args.strict = false;
+            break;
+        case 's':
+            args.schema_file = optarg;
             break;
         case 'q':
             args.quiet = true;
@@ -104,36 +110,65 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+static int verify_document (const std::string& filename,
+                            ujson::Json& parser,
+                            ujson::Validator& v,
+                            ujson::jvalue& schema,
+                            bool strict,
+                            bool quiet)
+{
+    std::string log_filename = filename.empty() ? "JSON document" : filename;
+
+    // Parse file and check result
+    auto instance = parser.parse_file (filename, strict);
+    if (!instance.valid()) {
+        if (!quiet)
+            cout << log_filename << ": Error: " << parser.error() << endl;
+        return 1;
+    }
+
+    //
+    if (schema.valid() &&
+        v.validate(instance) != ujson::Validator::valid)
+    {
+        if (!quiet)
+            cout << log_filename << ": Not validated by schema" << endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int main (int argc, char* argv[])
 {
     appargs_t args;
     parse_args (argc, argv, args);
 
-    int retval = 0;
     ujson::Json parser;
+    ujson::jvalue schema;
+    if (!args.schema_file.empty()) {
+        schema = parser.parse_file (args.schema_file, args.strict);
+        if (!schema.valid()) {
+            if (!args.quiet)
+                std::cerr << "Schema error: " << parser.error() << std::endl;
+            exit (1);
+        }
+    }
 
     if (args.files.empty())
         args.files.emplace_back (""); // Parse standard input
 
+    int retval = 0;
+    ujson::Validator v (schema);
     for (auto& filename : args.files) {
-        // Parse file and check result
-        auto root = parser.parse_file (filename, args.strict);
-        if (root.valid()) {
-            if (!args.quiet) {
-                if (filename.empty())
-                    cout << "ok" << endl;
-                else
-                    cout << filename << ": ok" << endl;
-            }
-        }else{
+        std::string log_filename = filename.empty() ? "JSON document" : filename;
+        if (verify_document(filename, parser, v, schema, args.strict, args.quiet))
             retval = 1;
-            if (!args.quiet) {
-                if (filename.empty())
-                    cout << "Error: " << parser.error() << endl;
-                else
-                    cout << filename << ": Error: " << parser.error() << endl;
-            }
-        }
+        else if (!args.quiet)
+            cout << log_filename << ": ok" << endl;
     }
 
     return retval;

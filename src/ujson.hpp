@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019,2020 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -28,5 +28,6 @@ namespace ujson {}
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/Json.hpp>
+#include <ujson/Validator.hpp>
 
 #endif

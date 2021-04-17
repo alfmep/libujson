@@ -54,6 +54,7 @@ libujson_la_SOURCES += ujson/Parser.cpp
 libujson_la_SOURCES += ujson/jvalue.cpp
 libujson_la_SOURCES += ujson/utils.cpp
 libujson_la_SOURCES += ujson/Json.cpp
+libujson_la_SOURCES += ujson/Validator.cpp
 
 # Header files
 libujsondir = $(includedir)
@@ -63,6 +64,7 @@ nobase_libujson_HEADERS += ujson/multimap_list.hpp
 nobase_libujson_HEADERS += ujson/jvalue.hpp
 nobase_libujson_HEADERS += ujson/utils.hpp
 nobase_libujson_HEADERS += ujson/Json.hpp
+nobase_libujson_HEADERS += ujson/Validator.hpp
 
 # Header files that is not to be installed
 noinst_HEADERS =
