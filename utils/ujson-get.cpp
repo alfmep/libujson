@@ -28,6 +28,8 @@
 
 using namespace std;
 
+static constexpr const char* prog_name = "ujson-get";
+
 struct appargs_t {
     bool compact;
     bool relaxed;
@@ -50,7 +52,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Print a value from a JSON document." << endl;
     out << endl;
-    out << "Usage: " << program_invocation_short_name << " [OPTIONS] [FILE] [LOCATION]" << endl;
+    out << "Usage: " << prog_name << " [OPTIONS] [FILE] [LOCATION]" << endl;
     out << endl;
     out << "Options:" <<endl;
     out << "  -c, --compact    If the JSON value is an object or an array, print it without whitespace." << endl;
@@ -61,7 +63,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
     out << "If the value is not found in the JSON document, or on a parse error, "
-        << program_invocation_short_name << " exits with code 1." << endl;
+        << prog_name << " exits with code 1." << endl;
     out << endl;
     out << "A LOCATION is specified in the following way:" << endl;
     out << "    An single dot \".\" prints the whole JSON instance." << endl;

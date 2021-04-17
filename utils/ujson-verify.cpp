@@ -34,6 +34,8 @@ using std::endl;
 using std::string;
 
 
+static constexpr const char* prog_name = "ujson-verify";
+
 struct appargs_t {
     bool strict;
     bool quiet;
@@ -53,7 +55,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl
         << "Verify the syntax of JSON documents." << endl
         << endl
-        << "Usage: " << program_invocation_short_name << " [OPTIONS] [FILE...]" << endl
+        << "Usage: " << prog_name << " [OPTIONS] [FILE...]" << endl
         << endl
         << "Options:" <<endl
         << "  -r, --relax   Relaxed parsing, don't use strict mode when parsing." << endl

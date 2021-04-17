@@ -27,6 +27,8 @@
 
 using namespace std;
 
+static constexpr const char* prog_name = "ujson-cmp";
+
 struct appargs_t {
     bool relaxed;
     bool quiet;
@@ -46,7 +48,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl
         << "Check if two JSON instances are equal." << endl
         << endl
-        << "Usage: " << program_invocation_short_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
+        << "Usage: " << prog_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
         << endl
         << "Options:" <<endl
         << "  -r, --relaxed    Parse JSON documents in relaxed mode." << endl

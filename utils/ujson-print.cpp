@@ -27,6 +27,8 @@
 
 using namespace std;
 
+static constexpr const char* prog_name = "ujson-print";
+
 struct appargs_t {
     bool pretty;
     bool escape_slash;
@@ -50,7 +52,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl
         << "Parse a json file (in relaxed mode) and print it." << endl
         << endl
-        << "Usage: " << program_invocation_short_name << " [OPTIONS] [json-file]" << endl
+        << "Usage: " << prog_name << " [OPTIONS] [json-file]" << endl
         << endl
         << "In no file name is given, a json definition is read from standard input." << endl
         << "Options:" <<endl

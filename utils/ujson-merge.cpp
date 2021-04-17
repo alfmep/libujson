@@ -28,6 +28,8 @@
 
 using namespace std;
 
+static constexpr const char* prog_name = "ujson-merge";
+
 struct appargs_t {
     bool compact;
     bool relaxed;
@@ -70,7 +72,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Merge one or more JSON document into a target document.." << endl;
     out << endl;
-    out << "Usage: " << program_invocation_short_name << " [OPTIONS] [MASTER_FILE] [SLAVE_FILE...]" << endl;
+    out << "Usage: " << prog_name << " [OPTIONS] [MASTER_FILE] [SLAVE_FILE...]" << endl;
     out << endl;
     out << "MASTER_FILE: This JSON document serves as the base for the merge." <<endl;
     out << "SLAVE_FILE:  Values from this file will be merged with the master file." <<endl;
