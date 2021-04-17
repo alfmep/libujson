@@ -1,4 +1,11 @@
 
 libujson - A Json library for C++ developers.
 
-Includes a Json parser and classes for handling Json objects.
+
+Utility applications for handling JSON documents:
+
+ujson-verify - Verify the syntax of one or more JSON documents.
+ujson-get    - Get a specific value from a JSON document.
+ujson-cmp    - Check if two JSON documents are equal.
+ujson-print  - Print a JSON document to standard output in a few different ways.
+ujson-merge  - Merge two or more JSON documents.
