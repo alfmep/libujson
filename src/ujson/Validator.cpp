@@ -651,37 +651,42 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Validator::handle_patternProperties (vdata_t& vdata, jvalue& value)
     {
-        // 10.3.2.2. The value of "patternProperties" MUST be an object.
-        if (value.type() != j_object) {
-            DBG_ERR_SCHEMA;
-            vdata.result = err_schema;
-            return;
-        }
+        try {
+            // 10.3.2.2. The value of "patternProperties" MUST be an object.
+            if (value.type() != j_object) {
+                DBG_ERR_SCHEMA;
+                vdata.result = err_schema;
+                return;
+            }
 
-        vdata.have_pattern_properties = true;
-        if (!vdata.have_properties) {
-            for (auto& i : vdata.instance.obj())
-                vdata.additional_properties.emplace (i.first);
-        }
+            vdata.have_pattern_properties = true;
+            if (!vdata.have_properties) {
+                for (auto& i : vdata.instance.obj())
+                    vdata.additional_properties.emplace (i.first);
+            }
 
-        for (auto& member : value.obj()) {
-            auto& expr = member.first;
-            auto& sub_schema = member.second;
+            for (auto& member : value.obj()) {
+                auto& expr = member.first;
+                auto& sub_schema = member.second;
 
-            std::regex re (expr, std::regex::ECMAScript);
-            std::cmatch cm;
+                std::regex re (expr, std::regex::ECMAScript);
+                std::cmatch cm;
 
-            for (auto& instance_member : vdata.instance.obj()) {
-                auto& sub_instance_name = instance_member.first;
-                auto& sub_instance = instance_member.second;
+                for (auto& instance_member : vdata.instance.obj()) {
+                    auto& sub_instance_name = instance_member.first;
+                    auto& sub_instance = instance_member.second;
 
-                if (std::regex_match(sub_instance_name.c_str(), cm, re)) {
-                    vdata.additional_properties.erase (sub_instance_name);
-                    auto result = validate_impl (sub_schema, sub_instance);
-                    if (result != valid)
-                        vdata.result = result;
+                    if (std::regex_match(sub_instance_name.c_str(), cm, re)) {
+                        vdata.additional_properties.erase (sub_instance_name);
+                        auto result = validate_impl (sub_schema, sub_instance);
+                        if (result != valid)
+                            vdata.result = result;
+                    }
                 }
             }
+        }
+        catch (std::regex_error& re) {
+            vdata.result = err_schema;
         }
     }
 
@@ -1010,17 +1015,22 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Validator::handle_pattern (vdata_t& vdata, jvalue& value)
     {
-        // 6.3.3. The value of this keyword MUST be a string.
-        if (value.type() != j_string) {
-            DBG_ERR_SCHEMA;
-            vdata.result = err_schema;
-            return;
-        }
+        try {
+            // 6.3.3. The value of this keyword MUST be a string.
+            if (value.type() != j_string) {
+                DBG_ERR_SCHEMA;
+                vdata.result = err_schema;
+                return;
+            }
 
-        std::regex re (value.str(), std::regex::ECMAScript);
-        std::cmatch cm;
-        if (!std::regex_match(vdata.instance.str().c_str(), cm, re))
-            vdata.result = not_valid;
+            std::regex re (value.str(), std::regex::ECMAScript);
+            std::cmatch cm;
+            if (!std::regex_match(vdata.instance.str().c_str(), cm, re))
+                vdata.result = not_valid;
+        }
+        catch (std::regex_error& re) {
+            vdata.result = err_schema;
+        }
     }
 
 
