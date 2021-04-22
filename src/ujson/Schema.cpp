@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <ujson/Validator.hpp>
+#include <ujson/Schema.hpp>
 #include <regex>
 #include <math.h>
 
@@ -33,7 +33,7 @@
 
 namespace ujson {
 
-    Validator::vdata_t::vdata_t (jvalue& s, jvalue& i)
+    Schema::vdata_t::vdata_t (jvalue& s, jvalue& i)
         : schema (s),
           instance (i)
     {
@@ -73,7 +73,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Validator::Validator (jvalue& schema)
+    Schema::Schema (jvalue& schema)
         : root_schema (schema)
     {
     }
@@ -81,7 +81,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Validator::result_t Validator::validate (jvalue& instance)
+    Schema::result_t Schema::validate (jvalue& instance)
     {
         return validate_impl (root_schema, instance);
     }
@@ -96,7 +96,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue* Validator::get_ref_schema (const std::string& ref)
+    jvalue* Schema::get_ref_schema (const std::string& ref)
     {
         jvalue* schema = nullptr;
         std::stringstream ss (ref);
@@ -119,7 +119,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Validator::result_t Validator::validate_impl (jvalue& schema, jvalue& instance)
+    Schema::result_t Schema::validate_impl (jvalue& schema, jvalue& instance)
     {
         vdata_t vdata (schema, instance);
 
@@ -364,7 +364,7 @@ namespace ujson {
     // validates successfully against all schemas defined by this keyword's
     // value.
     //--------------------------------------------------------------------------
-    void Validator::handle_allOf (vdata_t& vdata, jvalue& value)
+    void Schema::handle_allOf (vdata_t& vdata, jvalue& value)
     {
         if (value.array().empty()) {
             DBG_ERR_SCHEMA;
@@ -382,7 +382,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_anyOf (vdata_t& vdata, jvalue& value)
+    void Schema::handle_anyOf (vdata_t& vdata, jvalue& value)
     {
         // 10.2.1.2. This keyword's value MUST be a non-empty array.
         if (value.array().empty()) {
@@ -402,7 +402,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_oneOf (vdata_t& vdata, jvalue& value)
+    void Schema::handle_oneOf (vdata_t& vdata, jvalue& value)
     {
         // 10.2.1.2. This keyword's value MUST be a non-empty array.
         if (value.array().empty()) {
@@ -425,7 +425,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_not (vdata_t& vdata, jvalue& value)
+    void Schema::handle_not (vdata_t& vdata, jvalue& value)
     {
         auto result = validate_impl (value, vdata.instance);
         if (result == not_valid) {
@@ -443,7 +443,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_if (vdata_t& vdata, jvalue& value)
+    void Schema::handle_if (vdata_t& vdata, jvalue& value)
     {
         auto result = validate_impl (value, vdata.instance);
         vdata.have_if = true;
@@ -462,7 +462,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_then (vdata_t& vdata, jvalue& value)
+    void Schema::handle_then (vdata_t& vdata, jvalue& value)
     {
         // 10.2.2.2. This keyword's value MUST be a valid JSON Schema
         if (!is_schema_type(value)) {
@@ -487,7 +487,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance type
     //--------------------------------------------------------------------------
-    void Validator::handle_else (vdata_t& vdata, jvalue& value)
+    void Schema::handle_else (vdata_t& vdata, jvalue& value)
     {
         // 10.2.2.3. This keyword's value MUST be a valid JSON Schema
         if (!is_schema_type(value)) {
@@ -512,7 +512,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only object instances
     //--------------------------------------------------------------------------
-    void Validator::handle_dependentSchemas (vdata_t& vdata, jvalue& value)
+    void Schema::handle_dependentSchemas (vdata_t& vdata, jvalue& value)
     {
         // 10.2.2.4. This keyword's value MUST be an object
         if (value.type() != j_object) {
@@ -535,7 +535,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_prefixItems (vdata_t& vdata, jvalue& value)
+    void Schema::handle_prefixItems (vdata_t& vdata, jvalue& value)
     {
         // 10.3.1.1. The value of "prefixItems" MUST be a non-empty array of valid JSON Schemas.
         if (value.array().empty()) {
@@ -566,7 +566,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_items (vdata_t& vdata, jvalue& value)
+    void Schema::handle_items (vdata_t& vdata, jvalue& value)
     {
         // 10.3.1.2. The value of "items" MUST be a valid JSON Schema.
         if (!is_schema_type(value)) {
@@ -593,7 +593,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_contains (vdata_t& vdata, jvalue& value)
+    void Schema::handle_contains (vdata_t& vdata, jvalue& value)
     {
         // 10.3.1.3. The value of this keyword MUST be a valid JSON Schema.
         if (!is_schema_type(value)) {
@@ -616,7 +616,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only object instances
     //--------------------------------------------------------------------------
-    void Validator::handle_properties (vdata_t& vdata, jvalue& value)
+    void Schema::handle_properties (vdata_t& vdata, jvalue& value)
     {
         // 10.3.2.1. The value of "properties" MUST be an object.
         if (value.type() != j_object) {
@@ -649,7 +649,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only object instances
     //--------------------------------------------------------------------------
-    void Validator::handle_patternProperties (vdata_t& vdata, jvalue& value)
+    void Schema::handle_patternProperties (vdata_t& vdata, jvalue& value)
     {
         try {
             // 10.3.2.2. The value of "patternProperties" MUST be an object.
@@ -694,7 +694,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only object instances
     //--------------------------------------------------------------------------
-    void Validator::handle_additionalProperties (vdata_t& vdata, jvalue& value)
+    void Schema::handle_additionalProperties (vdata_t& vdata, jvalue& value)
     {
         // 10.3.2.3. The value of "additionalProperties" MUST be a valid JSON Schema.
         if (!is_schema_type(value)) {
@@ -756,7 +756,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only object instances
     //--------------------------------------------------------------------------
-    void Validator::handle_propertyNames (vdata_t& vdata, jvalue& value)
+    void Schema::handle_propertyNames (vdata_t& vdata, jvalue& value)
     {
         // 10.3.2.4. The value of "propertyNames" MUST be a valid JSON Schema.
         if (!is_schema_type(value)) {
@@ -776,39 +776,39 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static Validator::result_t check_instance_type (const std::string& type_name, jvalue& instance)
+    static Schema::result_t check_instance_type (const std::string& type_name, jvalue& instance)
     {
         if (type_name == "object" && instance.type() == j_object)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "array" && instance.type() == j_array)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "string" && instance.type() == j_string)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "number" && instance.type() == j_number)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "boolean" && instance.type() == j_bool)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "null" && instance.type() == j_null)
-            return Validator::valid;
+            return Schema::valid;
 
         if (type_name == "integer" && instance.type() == j_number) {
             if (is_integer(instance.num()))
-                return Validator::valid;
+                return Schema::valid;
         }
 
-        return Validator::not_valid;
+        return Schema::not_valid;
     }
 
 
     //--------------------------------------------------------------------------
     // Any instance
     //--------------------------------------------------------------------------
-    void Validator::handle_type_keyword (vdata_t& vdata, jvalue& value)
+    void Schema::handle_type_keyword (vdata_t& vdata, jvalue& value)
     {
         if (value.type() == j_string) {
             vdata.result = check_instance_type (value.str(), vdata.instance);
@@ -836,7 +836,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance
     //--------------------------------------------------------------------------
-    void Validator::handle_enum (vdata_t& vdata, jvalue& value)
+    void Schema::handle_enum (vdata_t& vdata, jvalue& value)
     {
         // 6.1.2. The value of this keyword MUST be an array.
         if (value.type() != j_array) {
@@ -858,7 +858,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Any instance
     //--------------------------------------------------------------------------
-    void Validator::handle_const (vdata_t& vdata, jvalue& value)
+    void Schema::handle_const (vdata_t& vdata, jvalue& value)
     {
         if (value == vdata.instance)
             vdata.result = valid;
@@ -870,7 +870,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only numeric instances
     //--------------------------------------------------------------------------
-    void Validator::handle_multipleOf (vdata_t& vdata, jvalue& value)
+    void Schema::handle_multipleOf (vdata_t& vdata, jvalue& value)
     {
         // 6.2.1. The value of "multipleOf" MUST be a number, strictly greater than 0.
         if (value.type() != j_number) {
@@ -893,7 +893,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only numeric instances
     //--------------------------------------------------------------------------
-    void Validator::handle_maximum (vdata_t& vdata, jvalue& value)
+    void Schema::handle_maximum (vdata_t& vdata, jvalue& value)
     {
         // 6.2.2. The value of "maximum" MUST be a number.
         if (value.type() != j_number) {
@@ -911,7 +911,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only numeric instances
     //--------------------------------------------------------------------------
-    void Validator::handle_exclusiveMaximum (vdata_t& vdata, jvalue& value)
+    void Schema::handle_exclusiveMaximum (vdata_t& vdata, jvalue& value)
     {
         // 6.2.3. The value of "exclusiveMaximum" MUST be a number.
         if (value.type() != j_number) {
@@ -929,7 +929,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only numeric instances
     //--------------------------------------------------------------------------
-    void Validator::handle_minimum (vdata_t& vdata, jvalue& value)
+    void Schema::handle_minimum (vdata_t& vdata, jvalue& value)
     {
         // 6.2.4. The value of "minimum" MUST be a number.
         if (value.type() != j_number) {
@@ -947,7 +947,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only numeric instances
     //--------------------------------------------------------------------------
-    void Validator::handle_exclusiveMinimum (vdata_t& vdata, jvalue& value)
+    void Schema::handle_exclusiveMinimum (vdata_t& vdata, jvalue& value)
     {
         // 6.2.5. The value of "exclusiveMinimum" MUST be a number.
         if (value.type() != j_number) {
@@ -977,7 +977,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only string instances
     //--------------------------------------------------------------------------
-    void Validator::handle_maxLength (vdata_t& vdata, jvalue& value)
+    void Schema::handle_maxLength (vdata_t& vdata, jvalue& value)
     {
         // 6.3.1. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -995,7 +995,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only string instances
     //--------------------------------------------------------------------------
-    void Validator::handle_minLength (vdata_t& vdata, jvalue& value)
+    void Schema::handle_minLength (vdata_t& vdata, jvalue& value)
     {
         // 6.3.2. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1013,7 +1013,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only string instances
     //--------------------------------------------------------------------------
-    void Validator::handle_pattern (vdata_t& vdata, jvalue& value)
+    void Schema::handle_pattern (vdata_t& vdata, jvalue& value)
     {
         try {
             // 6.3.3. The value of this keyword MUST be a string.
@@ -1037,7 +1037,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_maxItems (vdata_t& vdata, jvalue& value)
+    void Schema::handle_maxItems (vdata_t& vdata, jvalue& value)
     {
         // 6.4.1. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1054,7 +1054,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_minItems (vdata_t& vdata, jvalue& value)
+    void Schema::handle_minItems (vdata_t& vdata, jvalue& value)
     {
         // 6.4.2. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1071,7 +1071,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_uniqueItems (vdata_t& vdata, jvalue& value)
+    void Schema::handle_uniqueItems (vdata_t& vdata, jvalue& value)
     {
         if (value.type() != j_bool) {
             DBG_ERR_SCHEMA;
@@ -1091,7 +1091,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_maxContains (vdata_t& vdata, jvalue& value)
+    void Schema::handle_maxContains (vdata_t& vdata, jvalue& value)
     {
         // 6.4.4. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1109,7 +1109,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Only array instances
     //--------------------------------------------------------------------------
-    void Validator::handle_minContains (vdata_t& vdata, jvalue& value)
+    void Schema::handle_minContains (vdata_t& vdata, jvalue& value)
     {
         // 6.4.5. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1127,7 +1127,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Instance is an object
     //--------------------------------------------------------------------------
-    void Validator::handle_maxProperties (vdata_t& vdata, jvalue& value)
+    void Schema::handle_maxProperties (vdata_t& vdata, jvalue& value)
     {
         // 6.5.1. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1143,7 +1143,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Instance is an object
     //--------------------------------------------------------------------------
-    void Validator::handle_minProperties (vdata_t& vdata, jvalue& value)
+    void Schema::handle_minProperties (vdata_t& vdata, jvalue& value)
     {
         // 6.5.2. The value of this keyword MUST be a non-negative integer.
         if (!is_non_negative_integer(value)) {
@@ -1159,7 +1159,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Instance is an object
     //--------------------------------------------------------------------------
-    void Validator::handle_required (vdata_t& vdata, jvalue& value)
+    void Schema::handle_required (vdata_t& vdata, jvalue& value)
     {
         // 6.5.3. The value of this keyword MUST be an array.
         if (value.type() != j_array) {
@@ -1185,7 +1185,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     // Instance is an object
     //--------------------------------------------------------------------------
-    void Validator::handle_dependentRequired (vdata_t& vdata, jvalue& value)
+    void Schema::handle_dependentRequired (vdata_t& vdata, jvalue& value)
     {
         // 6.5.4. The value of this keyword MUST be an object.
         if (value.type() != j_object) {
@@ -1221,7 +1221,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Validator::handle_contentSchema (vdata_t& vdata, jvalue& value)
+    void Schema::handle_contentSchema (vdata_t& vdata, jvalue& value)
     {
         // Not implemented yet
         DBG_ERR_SCHEMA;

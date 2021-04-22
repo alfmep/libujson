@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UJSON_VALIDATOR_HPP
-#define UJSON_VALIDATOR_HPP
+#ifndef UJSON_SCHEMA_HPP
+#define UJSON_SCHEMA_HPP
 
 #include <ujson/jvalue.hpp>
 #include <string>
@@ -29,7 +29,7 @@ namespace ujson {
     /**
      *
      */
-    class Validator {
+    class Schema {
     public:
         enum result_t {
             //in_progress = -1, // Validation in progress
@@ -42,15 +42,15 @@ namespace ujson {
         /**
          * Constructor.
          */
-        Validator (jvalue& schema);
+        Schema (jvalue& schema);
 
         /**
          * Destructor.
          */
-        ~Validator () = default;
+        ~Schema () = default;
 
         /**
-         * @return Validator::valid on success.
+         * @return Schema::valid on success.
          */
         result_t validate (jvalue& instance);
 

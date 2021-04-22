@@ -28,6 +28,6 @@ namespace ujson {}
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/Json.hpp>
-#include <ujson/Validator.hpp>
+#include <ujson/Schema.hpp>
 
 #endif

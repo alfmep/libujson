@@ -112,7 +112,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 //------------------------------------------------------------------------------
 static int verify_document (const std::string& filename,
                             ujson::Json& parser,
-                            ujson::Validator& v,
+                            ujson::Schema& v,
                             ujson::jvalue& schema,
                             bool strict,
                             bool quiet)
@@ -129,7 +129,7 @@ static int verify_document (const std::string& filename,
 
     //
     if (schema.valid() &&
-        v.validate(instance) != ujson::Validator::valid)
+        v.validate(instance) != ujson::Schema::valid)
     {
         if (!quiet)
             cout << log_filename << ": Not validated by schema" << endl;
@@ -162,7 +162,7 @@ int main (int argc, char* argv[])
         args.files.emplace_back (""); // Parse standard input
 
     int retval = 0;
-    ujson::Validator v (schema);
+    ujson::Schema v (schema);
     for (auto& filename : args.files) {
         std::string log_filename = filename.empty() ? "JSON document" : filename;
         if (verify_document(filename, parser, v, schema, args.strict, args.quiet))
