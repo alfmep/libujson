@@ -374,6 +374,7 @@ namespace ujson {
         while (!pairs.empty())
             pairs.pop ();
         members.clear ();
+        str_value = "";
     }
 
 
@@ -433,9 +434,20 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_string (const std::string& str, bool root_entry)
+    void Parser::on_parse_string (const std::string& str, bool relaxed)
     {
-        values.emplace (str);
+        if (use_strict_mode && relaxed)
+            throw Analyzer::syntax_error (loc(), "syntax error, string separation not allowed in strict mode");
+        str_value = str + str_value;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void Parser::on_parse_str_value (bool root_entry)
+    {
+        values.emplace (str_value);
+        str_value = "";
         if (root_entry)
             on_parse_root ();
     }

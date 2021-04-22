@@ -105,7 +105,8 @@ namespace ujson {
         void on_parse_pair (const std::string& key, bool relaxed=false);
         void on_parse_array ();
         void on_parse_element (bool relaxed=false);
-        void on_parse_string (const std::string& str, bool root_entry=false);
+        void on_parse_string (const std::string& str, bool relaxed=false);
+        void on_parse_str_value (bool root_entry=false);
         void on_parse_number (double num, bool root_entry=false);
         void on_parse_nan (double num, bool root_entry=false);
         void on_parse_inf (double num, bool root_entry=false);
@@ -122,6 +123,7 @@ namespace ujson {
         std::list<jvalue> elements;
         std::stack<json_pair> pairs;
         std::stack<jvalue> values;
+        std::string str_value;
     };
 
 }
