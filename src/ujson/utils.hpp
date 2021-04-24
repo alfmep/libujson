@@ -27,7 +27,7 @@ namespace ujson {
 
 
     /**
-     * Get the name of a json type.
+     * Get the name of a JSON type.
      * @return The name of a specific <code>jvalue_type</code>.
      * @see str_to_jtype
      */
@@ -81,82 +81,22 @@ namespace ujson {
     jvalue_type str_to_jtype (const std::string& name);
 
     /**
-     * Get a reference to a specific value in a json instance.
-     * @param instance A json instance.
-     * @param location The location of the value in the instance.
-     *                 The location string is assumed to be json
-     *                 escaped where needed.<br/>
-     *                 A <b>location</b> is specified by:
-     *                  - An single dot "." returns a reference to
-     *                    the whole JSON instance.
-     *                  - A name is used to access an object property
-     *                    with the that name.
-     *                  - To accesses nested object properties,
-     *                    separate the property names with a dot "."
-     *                  - For arrays, use [n] to access the n'th array item.
-     *                    (Example: <code>"root_obj.some_array[4]"</code>).
-     *                  - To get the whole array, omit the [n].
-     *                    (Example: <code>"root_obj.some_array"</code>).
-     *                  - Object member names are assumed to be JSON
-     *                    escaped where needed.<br/>
-     *                  - Since dots "." and left brackets "[" are used
-     *                    to find specific object members and/or array items,
-     *                    they can't be used directly in member names in
-     *                    a location. To access object members with
-     *                    a "." or "[" in the name, escape the dot
-     *                    as <code>\\u002e</code> and left bracket
-     *                    as <code>\\u005b</code>.
+     * Get a reference to a specific value in a JSON instance.
+     * @param instance A JSON instance.
+     * @param pointer A JSON pointer.
+     *                JSON pointers are described in RFC 6901.
      * @return A reference to a jvalue in the instance.<br/>
-     *         If the location can't be found, a reference
+     *         If the value can't be found, a reference
      *         to a static invalid jvalue is returned
      *         (a jvalue of type ujson::j_invalid). Do not
      *         modify this value since it will be reset to
      *         an invalid state by the library.
-     *
-     * \par Exampe:
-     * Given an instance of <code>ujson::jvalue</code> named
-     * <i>instance</i> containing the following:
-     * \code
-     * {
-     *   "name": "Foo",
-     *   "value": 42,
-     *   "list": ["zero", "one", "two"],
-     *   "subobj": {
-     *     "value": 128,
-     *     "items": [{"a":false}, {"a":true}],
-     *     ".hidden": "secret"
-     *   },
-     * }
-     * \endcode
-     * The code:
-     * \code
-     * auto& jv1 = ujson::find_jvalue(instance, "value");
-     * auto& jv2 = ujson::find_jvalue(instance, "list");
-     * auto& jv3 = ujson::find_jvalue(instance, "list[1]");
-     * auto& jv4 = ujson::find_jvalue(instance, "subobj.non.existent");
-     * auto& jv5 = ujson::find_jvalue(instance, "subobj.items[1].a");
-     * auto& jv6 = ujson::find_jvalue(instance, "subobj.\\u002ehidden");
-     * std::cout << "jv1 (" << ujson::jtype_to_str(jv1) << "):\t " << jv1.describe() << std::endl;
-     * std::cout << "jv2 (" << ujson::jtype_to_str(jv2) << "):\t " << jv2.describe() << std::endl;
-     * std::cout << "jv3 (" << ujson::jtype_to_str(jv3) << "):\t " << jv3.describe() << std::endl;
-     * std::cout << "jv4 (" << ujson::jtype_to_str(jv4) << "):\t " << jv4.describe() << std::endl;
-     * std::cout << "jv5 (" << ujson::jtype_to_str(jv5) << "):\t " << jv5.describe() << std::endl;
-     * std::cout << "jv6 (" << ujson::jtype_to_str(jv6) << "):\t " << jv6.describe() << std::endl;
-     * \endcode
-     * Will give the following output:<br/>
-     * \code
-     * jv1 (number):	 42
-     * jv2 (array):	 ["zero","one","two"]
-     * jv3 (string):	 "one"
-     * jv4 (invalid):	 
-     * jv5 (boolean):	 true
-     * jv6 (string):	 "secret"
-     * \endcode
+     * @see https://tools.ietf.org/html/rfc6901
      */
-    jvalue& find_jvalue (jvalue& instance, const std::string& location);
+    jvalue& find_jvalue (jvalue& instance, const std::string& pointer);
 
     /**
-     * Convert a string to a json escaped string.
+     * Convert a string to a JSON escaped string.
      * Backslash(0x5c) \  is translated to: \\\\<br>
      * Double quote(0x22) " is translated to: \"<br>
      * Tab(0x09) is translated to: \\t<br>
@@ -178,7 +118,7 @@ namespace ujson {
     std::string escape (const std::string& in, bool escape_slash=false);
 
     /**
-     * Convert a json escaped string to an unescaped string.
+     * Convert a JSON escaped string to an unescaped string.
      * @param in An escaped string.
      * @param ok This will be set to <code>false</code>
      *           if the input string is formatted in an
@@ -192,7 +132,7 @@ namespace ujson {
     std::string unescape (const std::string& in, bool& ok);
 
     /**
-     * Convert a json escaped string to an unescaped string, ignoring errors.
+     * Convert a JSON escaped string to an unescaped string, ignoring errors.
      * @param in An escaped string.
      * @return An unescaped string. All escape sequences that
      *         are found incorrect will be excluded from the result.

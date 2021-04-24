@@ -9,11 +9,11 @@ ujson-get \- Print a specific value from a JSON document to standard output
 
 .SH SYNOPSIS
 .B ujson-get
-[OPTIONS] [FILE] [LOCATION]
+[OPTIONS] [FILE] [POINTER]
 
 
 .SH DESCRIPTION
-ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified in LOCATION is found, ujson-get prints the value and exits with code 0.
+ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value and exits with code 0.
 
 
 .SH OPTIONS
@@ -31,25 +31,9 @@ Parse the JSON document in relaxed mode.
 Print help and exit.
 
 
-.SH LOCATION
-A
-.B LOCATION
-is specified in the following way:
-.nf
-- An single dot "." prints the whole JSON instance.
-- A name is used to access an object property with the that name.
-- To accesses nested object properties, separate the property names with a dot "."
-- For arrays, use [n] to access the n'th array item. (Example: root_obj.some_array[4]).
-- To print the whole array, omit the [n]. (Example: root_obj.some_array).
-- Object member names are assumed to be JSON escaped where needed.
-
-
-.SH NOTES
-Since dots "." and left brackets "[" are used to find specific object members and/or array items,
-they can't be used directly in member names in a
-.B LOCATION.
-To access object members with a "." or "[" in the name, escape the dot as \\u002e and left bracket as \\u005b.
-
+.SH POINTER
+A JSON Pointer as described in RFC 6901.
+A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encodec as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
 
 .SH SEE ALSO
 ujson-verify(1) ujson-cmp(1) ujson-print(1) ujson-merge(1)

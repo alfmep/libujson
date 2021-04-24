@@ -36,8 +36,8 @@ struct appargs_t {
     bool type_check;
     string master_filename;
     vector<string> slave_filenames;
-    string master_location;
-    string slave_location;
+    string master_pointer;
+    string slave_pointer;
 
     appargs_t () {
         compact = false;
@@ -79,12 +79,12 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "The resulting JSON document will be printed to standard output." << endl;
     out << endl;
     out << "Options:" <<endl;
-    out << "  -c, --compact                Print the resulting JSON document without whitespaces." << endl;
-    out << "  -r, --relaxed                Parse JSON documents in relaxed mode." << endl;
-    out << "  -d, --dst-location=LOCATION  Merge into this specific location in the master document." << endl;
-    out << "  -s, --src-location=LOCATION  Merge from this specific location in the slave document(s)." << endl;
-    out << "  -m, --match-type             The value(s) in the master and slave document must be of the same type." << endl;
-    out << "  -h, --help                   Print this help message and exit." << endl;
+    out << "  -c, --compact              Print the resulting JSON document without whitespaces." << endl;
+    out << "  -r, --relaxed              Parse JSON documents in relaxed mode." << endl;
+    out << "  -d, --dst-pointer=POINTER  Merge into this specific place in the master document." << endl;
+    out << "  -s, --src-pointer=POINTER  Merge from this specific place in the slave document(s)." << endl;
+    out << "  -m, --match-type           The value(s) in the master and slave document must be of the same type." << endl;
+    out << "  -h, --help                 Print this help message and exit." << endl;
     out << endl;
     out << "" << endl;
     exit (exit_code);
@@ -98,8 +98,8 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     struct option long_options[] = {
         { "compact",      no_argument,       0, 'c'},
         { "relaxed",      no_argument,       0, 'r'},
-        { "dst-location", required_argument, 0, 'd'},
-        { "src-location", required_argument, 0, 's'},
+        { "dst-pointer",  required_argument, 0, 'd'},
+        { "src-pointer",  required_argument, 0, 's'},
         { "match-type",   no_argument,       0, 'm'},
         { "help",         no_argument,       0, 'h'},
         { 0, 0, 0, 0}
@@ -118,10 +118,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.relaxed = true;
             break;
         case 'd':
-            args.master_location = optarg;
+            args.master_pointer = optarg;
             break;
         case 's':
-            args.slave_location = optarg;
+            args.slave_pointer = optarg;
             break;
         case 'm':
             args.type_check = true;
@@ -199,13 +199,13 @@ static int parse_and_merge (const appargs_t& opt,
         return 1;
     }
 
-    auto& slave = ujson::find_jvalue (slave_root, opt.slave_location);
+    auto& slave = ujson::find_jvalue (slave_root, opt.slave_pointer);
     if (!slave.valid()) {
         if (slave_filename.empty())
-            cerr << "Invalid location in input document: " << opt.slave_location << endl;
+            cerr << "Invalid pointer in input document: " << opt.slave_pointer << endl;
         else
-            cerr << "Invalid location in document "
-                 << slave_filename << ": " << opt.slave_location << endl;
+            cerr << "Invalid pointer in document "
+                 << slave_filename << ": " << opt.slave_pointer << endl;
         return 1;
     }
     return merge_instance (master, slave, opt.type_check);
@@ -228,12 +228,12 @@ int main (int argc, char* argv[])
         exit (1);
     }
 
-    // Get the location in the master instance
+    // Get the pointer in the master instance
     //
-    auto& master = ujson::find_jvalue (master_root, opt.master_location);
+    auto& master = ujson::find_jvalue (master_root, opt.master_pointer);
     if (!master.valid()) {
-        cerr << "Invalid location in document "
-             << opt.master_filename << ": " << opt.master_location << endl;
+        cerr << "Invalid pointer in document "
+             << opt.master_filename << ": " << opt.master_pointer << endl;
         exit (1);
     }
 

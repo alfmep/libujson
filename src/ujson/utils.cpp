@@ -84,49 +84,49 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static jvalue& get_property_value (jvalue& instance,
-                                       const std::string& property)
+    static std::string unescape_path_element (const std::string& element)
     {
-        std::stringstream ss (property);
-        std::string name;
-        jvalue* value = nullptr;
+        std::string retval = element;
+        std::string::size_type pos = 0;
 
-        if (!getline(ss, name, '[') || name.empty()) {
-            if (property[0] != '[')
-                return instance.get (unescape(property));
-        }
-
-        if (property[0] != '[')
-            value = &(instance.get(unescape(name)));
-        else
-            value = &instance;
-
-        std::string index;
-        while (getline(ss, index, ']')) {
-            value = &((*value)[stol(index)]);
-            if (!value->valid() || !getline(ss, name, '['))
-                break;
-        }
-        return *value;
+        while ((pos=retval.find("~1", pos)) != std::string::npos)
+            retval = retval.replace (pos, 2, "/");
+        pos = 0;
+        while ((pos=retval.find("~0", pos)) != std::string::npos)
+            retval = retval.replace (pos, 2, "~");
+        return unescape (retval);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue& find_jvalue (jvalue& instance, const std::string& location)
+    jvalue& find_jvalue (jvalue& instance, const std::string& pointer)
     {
+        if (!pointer.empty() && pointer[0]!='/') {
+            // Absolute pointer must start with /
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
         try {
-            std::stringstream ss (location);
-            std::string property;
-            jvalue* entry = &instance;
-            while (getline(ss, property, '.')) {
-                if (!property.empty()) {
-                    entry = &(get_property_value(*entry, property));
-                    if (entry->type() == j_invalid)
-                        break;
+            jvalue* value = &instance;
+            std::stringstream ss (pointer);
+            std::string path_element;
+            while (getline(ss, path_element, '/')) {
+                if (path_element.empty())
+                    continue;
+                std::string name = unescape_path_element (path_element);
+                jvalue* tmp = &invalid_jvalue;
+                if (value->type() == j_object)
+                    tmp = &(value->get(name));
+                else if (value->type() == j_array)
+                    tmp = &((*value)[stol(name)]);
+                value = tmp;
+                if (!value->valid()) {
+                    invalid_jvalue.reset ();
+                    break;
                 }
             }
-            return *entry;
+            return *value;
         }
         catch (...) {
             invalid_jvalue.reset ();

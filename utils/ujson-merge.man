@@ -38,12 +38,12 @@ Print the resulting JSON document without whitespaces.
 Parse JSON documents in relaxed mode.
 
 .TP
-.B -d, --dst-location=LOCATION
-Merge into this specific location in the master document.
+.B -d, --dst-pointer=POINTER
+Merge into this specific place in the master document.
 
 .TP
-.B -s, --src-location=LOCATION
-Merge from this specific location in the slave document(s).
+.B -s, --src-pointer=POINTER
+Merge from this specific place in the slave document(s).
 
 .TP
 .B -m, --match-type
@@ -54,24 +54,9 @@ All values that are merged must be of the same type. Note that the content in tw
 Print help and exit.
 
 
-.SH LOCATION
-A
-.B LOCATION
-describes a specific position in a JSON instance. It is specified in the following way:
-.nf
-- An single dot "." specifies the root of the whole JSON instance.
-- A name is used to access an object property with the that name.
-- To accesses nested object properties, separate the property names with a dot "."
-- For arrays, use [n] to access the n'th array item. (Example: root_obj.some_array[4]).
-- To print the whole array, omit the [n]. (Example: root_obj.some_array).
-- Object member names are assumed to be JSON escaped where needed.
-
-
-.SH NOTES
-Since dots "." and left brackets "[" are used to find specific object members and/or array items,
-they can't be used directly in member names in a
-.B LOCATION.
-To access object members with a "." or "[" in the name, escape the dot as \\u002e and left bracket as \\u005b.
+.SH POINTER
+A JSON Pointer as described in RFC 6901.
+A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encodec as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
 
 
 .SH EXAMPLES
@@ -125,7 +110,7 @@ JSON type mismatch. Trying to assign a value of type string to an instance of ty
 .EE
 
 .pp
-Result of runnning command "ujson-merge --dst-location=list --src-location=obj.misc A.json B.json":
+Result of runnning command "ujson-merge --dst-pointer=/list --src-pointer=/obj/misc A.json B.json":
 .EX
 {
     "name": "master",

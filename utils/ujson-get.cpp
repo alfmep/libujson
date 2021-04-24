@@ -35,7 +35,7 @@ struct appargs_t {
     bool relaxed;
     ujson::jvalue_type jtype;
     string filename;
-    string location;
+    string pointer;
 
     appargs_t () {
         compact = false;
@@ -52,7 +52,11 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Print a value from a JSON document." << endl;
     out << endl;
-    out << "Usage: " << prog_name << " [OPTIONS] [FILE] [LOCATION]" << endl;
+    out << "Usage: " << prog_name << " [OPTIONS] [FILE] [POINTER]" << endl;
+    out << endl;
+    out << "A POINTER is a JSON pointer as described in RFC 6901." << endl;
+    out << "If the value is not found in the JSON document, or on a parse error, "
+        << prog_name << " exits with code 1." << endl;
     out << endl;
     out << "Options:" <<endl;
     out << "  -c, --compact    If the JSON value is an object or an array, print it without whitespace." << endl;
@@ -62,22 +66,6 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -r, --relaxed    Parse the JSON document in relaxed mode." << endl;
     out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
-    out << "If the value is not found in the JSON document, or on a parse error, "
-        << prog_name << " exits with code 1." << endl;
-    out << endl;
-    out << "A LOCATION is specified in the following way:" << endl;
-    out << "    An single dot \".\" prints the whole JSON instance." << endl;
-    out << "    A name is used to access an object property with the that name." << endl;
-    out << "    To accesses nested object properties, separate the property names with a dot \".\"" << endl;
-    out << "    For arrays, use [n] to access the n'th array item. (Example: root_obj.some_array[4])." << endl;
-    out << "    To print the whole array, omit the [n]. (Example: root_obj.some_array)." << endl;
-    out << "    Object member names are assumed to be JSON escaped where needed." << endl;
-    out << "" << endl;
-    out << "Notes:" << endl;
-    out << "    Since dots \".\" and left brackets \"[\" are used to find specific object members and/or array items," << endl;
-    out << "    they can't be used directly in member names in a LOCATION." << endl;
-    out << "    To access object members with a \".\" or \"[\" in the name, escape the dot as \\u002e and left bracket as \\u005b." << endl;
-    out << "" << endl;
     exit (exit_code);
 }
 
@@ -124,8 +112,8 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     if (optind < argc)
         args.filename = argv[optind++];
     if (optind < argc)
-        args.location = argv[optind++];
-    if (args.filename.empty() || args.location.empty()) {
+        args.pointer = argv[optind++];
+    if (args.filename.empty() || args.pointer.empty()) {
         cerr << "Too few arguments" << endl;
         exit (1);
     }
@@ -162,13 +150,18 @@ int main (int argc, char* argv[])
 
     // Get the value
     //
-    auto& value = ujson::find_jvalue (instance, opt.location);
+    auto& value = ujson::find_jvalue (instance, opt.pointer);
     int retval = 0;
+    bool type_mismatch = false;
 
     // Print the result
     //
     if (opt.jtype != ujson::j_invalid  &&  value.type() != opt.jtype) {
         // The value is not of the type we required
+        type_mismatch = true;
+        std::cerr << "Type mismatch, value at \"" << opt.pointer
+                  << "\" is of type \"" << jtype_to_str(value.type())
+                  << "\"" << std::endl;
         value.reset ();
     }
     switch (value.type()) {
@@ -183,6 +176,9 @@ int main (int argc, char* argv[])
         cout << value.describe(!opt.compact, !opt.relaxed) << endl;
         break;
     }
+
+    if (retval && !type_mismatch)
+        std::cerr << "Value at location \"" << opt.pointer << "\" not found" << endl;
 
     return retval;
 }
