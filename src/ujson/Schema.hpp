@@ -40,19 +40,36 @@ namespace ujson {
         };
 
         /**
-         * Constructor.
+         * Default constructor.
          */
-        Schema (jvalue& schema);
+        Schema () = default;
 
         /**
-         * Destructor.
+         * Constructor.
          */
-        ~Schema () = default;
+        Schema (jvalue& root_instance);
 
         /**
          * @return Schema::valid on success.
          */
         result_t validate (jvalue& instance);
+
+        /**
+         * Add a schema that this schema mey refer to.
+         */
+        bool add_ref_schema (const Schema& schema);
+
+        /**
+         * Remove a schema that this schema mey refer to.
+         * @param id The id of the schema to remove.
+         */
+        void del_ref_schema (const std::string& id);
+
+        /**
+         * Return the root schema instance.
+         */
+        jvalue& root ();
+
 
     private:
         struct vdata_t {
@@ -74,8 +91,14 @@ namespace ujson {
         };
 
         jvalue root_schema;
-        jvalue* get_ref_schema (const std::string& ref);
+        std::map<std::string, Schema> ref_schemas;
+        std::map<std::string,
+                 std::pair<std::reference_wrapper<Schema>,
+                           std::reference_wrapper<jvalue>>> ref_cache;
+
         result_t validate_impl (jvalue& schema, jvalue& instance);
+
+        result_t handle_ref (const std::string& ref, jvalue& instance);
 
         // Core - all types
         void handle_allOf (vdata_t& vdata, jvalue& value);

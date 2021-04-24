@@ -16,7 +16,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <ujson/internal.hpp>
 #include <ujson/Schema.hpp>
+#include <ujson/utils.hpp>
 #include <regex>
 #include <math.h>
 
@@ -73,11 +75,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Schema::Schema (jvalue& schema)
-        : root_schema (schema)
+    Schema::Schema (jvalue& root_instance)
+        : root_schema (root_instance)
     {
     }
-
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
@@ -85,6 +86,38 @@ namespace ujson {
     {
         return validate_impl (root_schema, instance);
     }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool Schema::add_ref_schema (const Schema& schema)
+    {
+        auto& id = find_jvalue (const_cast<jvalue&>(schema.root_schema), "/$id");
+        if (id.type() != j_string)
+            return false;
+
+        ref_schemas.emplace (id.str(), Schema(schema));
+        ref_cache.clear ();
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void Schema::del_ref_schema (const std::string& id)
+    {
+        ref_schemas.erase (id);
+        ref_cache.clear ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& Schema::root ()
+    {
+        return root_schema;
+    }
+
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
@@ -96,24 +129,51 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue* Schema::get_ref_schema (const std::string& ref)
+    Schema::result_t Schema::handle_ref (const std::string& ref, jvalue& instance)
     {
-        jvalue* schema = nullptr;
-        std::stringstream ss (ref);
-        std::string part;
-        std::vector<std::string> parts;
-        std::getline(ss, part, '/');
-        if (part == "#") {
-            while (std::getline(ss, part, '/')) {
-                if (schema == nullptr)
-                    schema = &(root_schema.get(part));
-                else
-                    schema = &(schema->get(part));
-                if (schema->type() == j_invalid)
-                    break;
-            }
+        auto entry = ref_cache.find (ref);
+        if (entry != ref_cache.end()) {
+            Schema& ref_root = entry->second.first;
+            jvalue& ref_schema = entry->second.second;
+            return ref_root.validate_impl (ref_schema, instance);
         }
-        return schema;
+
+        std::string id;
+        std::string pointer;
+
+        auto pos = ref.find ("#");
+        if (pos == std::string::npos) {
+            pointer = ref;
+        }else{
+            id = ref.substr (0, pos);
+            pointer = ref.substr (pos+1);
+        }
+        pointer.insert (0, 1, '/'); // Make sure the pointer starts with /
+
+        if (id.empty()) {
+            // Reference to pointer in this schema
+            auto& ref_schema = find_jvalue (root_schema, pointer);
+            if (ref_schema.valid()) {
+                ref_cache.emplace (ref,
+                                   std::make_pair(std::reference_wrapper<Schema>(*this),
+                                                  std::reference_wrapper<jvalue>(ref_schema)));
+            }
+            return validate_impl (ref_schema, instance);
+        }else{
+            // Reference to pointer in other schema
+            auto entry = ref_schemas.find (id);
+            if (entry == ref_schemas.end()) {
+                return err_schema;
+            }
+            auto& ref_root = entry->second;
+            auto& ref_schema = find_jvalue (ref_root.root_schema, pointer);
+            if (ref_schema.valid()) {
+                ref_cache.emplace (ref,
+                                   std::make_pair(std::reference_wrapper<Schema>(ref_root),
+                                                  std::reference_wrapper<jvalue>(ref_schema)));
+            }
+            return ref_root.validate_impl (ref_schema, instance);
+        }
     }
 
 
@@ -141,14 +201,8 @@ namespace ujson {
         // Handle keyword "$ref" first
         //
         auto& ref = schema.get("$ref");
-        if (ref.type() != j_invalid) {
-            jvalue* ref_schema = get_ref_schema (ref.str());
-            if (!ref_schema)
-                return err_schema;
-            vdata.result = validate_impl (*ref_schema, instance);
-            if (vdata.result != valid)
-                return vdata.result;
-        }
+        if (ref.type() != j_invalid)
+            return handle_ref (ref.str(), instance);
 
         // Handle the schema keywords
         //
@@ -339,11 +393,6 @@ namespace ujson {
                     handle_minContains (vdata, value);
                 }
             }
-
-            //
-            // Validation
-            //
-
 
             if (vdata.result != valid)
                 return vdata.result;
