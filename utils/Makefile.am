@@ -41,11 +41,11 @@ ujson_get_SOURCES = ujson-get.cpp
 bin_PROGRAMS += ujson-merge
 ujson_merge_SOURCES = ujson-merge.cpp
 
-man1_MANS =
-man1_MANS += ujson-verify.man
-man1_MANS += ujson-print.man
-man1_MANS += ujson-cmp.man
-man1_MANS += ujson-get.man
-man1_MANS += ujson-merge.man
+dist_man1_MANS =
+dist_man1_MANS += ujson-verify.man
+dist_man1_MANS += ujson-print.man
+dist_man1_MANS += ujson-cmp.man
+dist_man1_MANS += ujson-get.man
+dist_man1_MANS += ujson-merge.man
 
 endif
