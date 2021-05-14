@@ -58,7 +58,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Options:" <<endl
         << "  -c, --compact        Compact output, no newlines or intendation." << endl
         << "  -e, --escape-slash   Forward slash characters(\"/\") are escaped to \"\\/\"." << endl
-        << "  -s, --sort           Object members are listed is a sorted order, not in natural order." << endl
+        << "  -s, --sort           Object members are listed in sorted order, not in natural order." << endl
         << "  -r, --relaxed        Numbers that are infinite or NaN are representated as numbers (-)inf and nan," << endl
         << "                       and not as type null as in the JSON specification." << endl
         << "  -h, --help           Print this help message and exit." << endl

@@ -61,7 +61,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << endl
         << "Options:" <<endl
         << "  -r, --relax            Relaxed parsing, don't use strict mode when parsing." << endl
-        << "  -s, --schema=FILE      Validate the JSON document with a schema file.." << endl
+        << "  -s, --schema=FILE      Validate the JSON document with a schema file." << endl
         << "                         This option can be used multiple times." << endl
         << "                         The first schema will be used to validate the JSON document." << endl
         << "                         All schemas added after the first are schemas" << endl

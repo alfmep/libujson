@@ -25,7 +25,7 @@ Compact output, print the JSON document without whitespace.
 When printing JSON strings, forward slash characters("/") are escaped to "\\/".
 .TP
 .B -s, --sort
-Object members are printed is a sorted order, not in natural order. Sorting is made on the member name.
+Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
 .TP
 .B -r, --relaxed
 Numbers that are infinite or NaN are printed as (-)inf and nan, and not as null as in the JSON specification.
