@@ -648,35 +648,32 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void jvalue::remove (const std::string& name)
+    bool jvalue::remove (const std::string& name)
     {
-        if (type() == j_object)
-            v.jobj->erase (name);
-        /*
-        bool valid_value_removed = false;
-        json_pair_key_cmp_t key_compare (name);
-        for (auto i=std::find_if(v.jobj->begin(), v.jobj->end(), key_compare);
-             i != v.jobj->end();
-             i = std::find_if(i, v.jobj->end(), key_compare))
-        {
-            if (i->second.valid())
-                valid_value_removed = true;
-            v.jobj->erase (i++);
+        bool retval = false;
+        if (type() == j_object) {
+            if (v.jobj->find(name) != v.jobj->end()) {
+                v.jobj->erase (name);
+                retval = true;
+            }
         }
-        return valid_value_removed;
-        */
+        return retval;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void jvalue::remove (const size_t n)
+    bool jvalue::remove (const size_t n)
     {
+        bool retval = false;
         if (type() == j_array) {
             auto i = v.jarray->begin() + n;
-            if (i != v.jarray->end())
+            if (i != v.jarray->end()) {
                 v.jarray->erase (i);
+                retval = true;
+            }
         }
+        return retval;
     }
 
 

@@ -614,19 +614,30 @@ namespace ujson {
 
         /**
          * Remove a named json value from a json object.
-         * If this object isn't a json object, the
+         * If this object isn't a json object or the
+         * named value doesn't exist, the
          * method will return <code>false</code>.
          * @param name The name of the json value to be removed.
+         * @return <code>true</code> if the value associated with
+         *         the specified name was removed.
+         *         <code>false</code> if this is not a json object,
+         *         or it doesn't contain a value with the
+         *         specified name.
          */
-        void remove (const std::string& name);
+        bool remove (const std::string& name);
 
         /**
          * Remove the n'th value from a json array.
-         * If this object isn't a json array, the
+         * If this object isn't a json array, or the
+         * index <code>n</code> is out of bounds, the
          * method will return <code>false</code>.
          * @param n The index in the json array to be removed.
+         * @return <code>true</code> if the n'th item in
+         *         the array was removed.
+         *         <code>false</code> if this is not a json array,
+         *         or the value <code>n</code> is out of bounds.
          */
-        void remove (const size_t n);
+        bool remove (const size_t n);
 
         /**
          * Return a string representation of this json value.
