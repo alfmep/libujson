@@ -479,6 +479,12 @@ namespace ujson {
         jvalue_type type () const {return jtype;}
 
         /**
+         * Check if this is a container.
+         * @return <code>true</code> if this is an object or an array.
+         */
+        bool is_container () const;
+
+        /**
          * Set the type of json value.
          * If the json value already is of the the same type nothing is done.
          * If not, the json value is resetted and initialized to the
