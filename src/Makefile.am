@@ -21,7 +21,7 @@ lib_LTLIBRARIES = libujson.la
 AM_CPPFLAGS = -I$(srcdir)
 AM_LDFLAGS =
 
-AM_CXXFLAGS = -Wall -pipe -O2 -g
+AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
 #AM_YFLAGS = -d
 #AM_LFLAGS =
 

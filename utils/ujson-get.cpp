@@ -109,14 +109,14 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         }
     }
-    if (optind < argc)
+    if (optind < argc) {
         args.filename = argv[optind++];
-    if (optind < argc)
-        args.pointer = argv[optind++];
-    if (args.filename.empty() || args.pointer.empty()) {
+    }else{
         cerr << "Too few arguments" << endl;
         exit (1);
     }
+    if (optind < argc)
+        args.pointer = argv[optind++];
     if (optind < argc) {
         cerr << "Too many arguments" << endl;
         exit (1);

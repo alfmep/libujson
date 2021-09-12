@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017,2021 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -16,14 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-ACLOCAL_AMFLAGS=-I m4
 
-SUBDIRS  = src
-if ENABLE_UTILS_SET
-SUBDIRS += utils
-endif
 if ENABLE_EXAMPLES_SET
-SUBDIRS += examples
-endif
 
-SUBDIRS  += doc
+AM_CPPFLAGS = -I$(srcdir)/../src
+AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
+AM_LDFLAGS = -L../src -lujson
+
+
+noinst_bindir =
+noinst_bin_PROGRAMS =
+
+noinst_bin_PROGRAMS += find_jvalue
+find_jvalue_SOURCES  = find_jvalue.cpp
+
+endif

@@ -8,4 +8,4 @@ Description: ujson
 Requires: @REQUIRE_IN_PC_FILE@
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lujson @LIBS_IN_PC_FILE@
-Cflags: -I${includedir}
+Cflags: -I${includedir} -std=c++17

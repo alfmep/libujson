@@ -589,68 +589,70 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvalue::add (const std::string& name, const jvalue& value,
-                      const bool overwrite)
+    jvalue& jvalue::add (const std::string& name,
+                         const jvalue& value,
+                         const bool overwrite)
     {
-        if (type()!=j_object || !value.valid())
-            return false;
+        if (type()!=j_object || !value.valid()) {
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
 
         auto entry = find_last_in_jobj (name);
-        if (entry != v.jobj->send()) {
-            if (!overwrite)
-                return false;
-            else
+        if (entry == v.jobj->send()) {
+            return v.jobj->emplace_back(name, value).second;
+        }else{
+            if (overwrite)
                 entry->second = value;
-        }else{
-            v.jobj->emplace_back (name, value);
+            return entry->second;
         }
-        return true;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvalue::add (const std::string& name, jvalue&& value,
-                      const bool overwrite)
+    jvalue& jvalue::add (const std::string& name,
+                         jvalue&& value,
+                         const bool overwrite)
     {
-        if (type()!=j_object || !value.valid())
-            return false;
+        if (type()!=j_object || !value.valid()) {
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
 
-        bool is_added = true;
         auto entry = find_last_in_jobj (name);
-        if (entry != v.jobj->send()) {
-            if (!overwrite)
-                is_added = false;
-            else
-                entry->second = std::move (value);
+        if (entry == v.jobj->send()) {
+            return v.jobj->emplace_back(name, std::forward<jvalue&&>(value)).second;
         }else{
-            v.jobj->emplace_back (name, std::forward<jvalue&&>(value));
+            if (overwrite)
+                //entry->second = std::move (value);
+                entry->second = std::forward<jvalue&&> (value);
+            return entry->second;
         }
-        return is_added;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvalue::add (const jvalue& value)
+    jvalue& jvalue::add (const jvalue& value)
     {
-        if (type()!=j_array || !value.valid())
-            return false;
-
-        v.jarray->emplace_back (value);
-        return true;
+        if (type()!=j_array || !value.valid()) {
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
+        return v.jarray->emplace_back (value);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvalue::add (jvalue&& value)
+    jvalue& jvalue::add (jvalue&& value)
     {
-        if (type()!=j_array || !value.valid())
-            return false;
-
-        v.jarray->emplace_back (std::forward<jvalue&&>(value));
-        return true;
+        if (type()!=j_array || !value.valid()) {
+            invalid_jvalue.reset ();
+            return invalid_jvalue;
+        }
+        return v.jarray->emplace_back (std::forward<jvalue&&>(value));
     }
 
 

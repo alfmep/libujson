@@ -570,12 +570,10 @@ namespace ujson {
          *                  If <code>false</code> and 'name' already
          *                  exists and the current value is a valid jvalue,
          *                  it will not be overwritten.
-         * @return <code>true</code> if the json value is
-         *         valid and was successfully added.
-         *         Otherwise <code>false</code>.
+         * @return A reference to the added jsaon value.
          */
-        bool add (const std::string& name, const jvalue& value,
-                  const bool overwrite=true);
+        jvalue& add (const std::string& name, const jvalue& value,
+                     const bool overwrite=true);
 
         /**
          * Add a named json value to a json object.
@@ -589,34 +587,28 @@ namespace ujson {
          *                  If <code>false</code> and 'name' already
          *                  exists and the current value is a valid jvalue,
          *                  it will not be overwritten.
-         * @return <code>true</code> if the json value is
-         *         valid and was successfully added.
-         *         Otherwise <code>false</code>.
+         * @return A reference to the added jsaon value.
          */
-        bool add (const std::string& name, jvalue&& value,
-                  const bool overwrite=true);
+        jvalue& add (const std::string& name, jvalue&& value,
+                     const bool overwrite=true);
 
         /**
          * Add a json value to a json array.
          * If this object isn't a json array, the
          * method will return <code>false</code>.
          * @param value The json value to add to the array.
-         * @return <code>true</code> if the json value is
-         *         valid and was successfully added.
-         *         Otherwise <code>false</code>.
+         * @return A reference to the added jsaon value.
          */
-        bool add (const jvalue& value);
+        jvalue& add (const jvalue& value);
 
         /**
          * Add a json value to a json array.
          * If this object isn't a json array, the
          * method will return <code>false</code>.
          * @param value The json value to move to the array.
-         * @return <code>true</code> if the json value is
-         *         valid and was successfully added.
-         *         Otherwise <code>false</code>.
+         * @return A reference to the added jsaon value.
          */
-        bool add (jvalue&& value);
+        jvalue& add (jvalue&& value);
 
         /**
          * Remove a named json value from a json object.

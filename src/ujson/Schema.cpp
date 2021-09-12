@@ -75,16 +75,24 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Schema::Schema (jvalue& root_instance)
-        : root_schema (root_instance)
+    Schema::Schema (const jvalue& root)
+        : root_schema (root)
+    {
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    Schema::Schema (jvalue&& root)
+        : root_schema (std::forward<jvalue&&>(root))
     {
     }
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Schema::result_t Schema::validate (jvalue& instance)
+    Schema::result_t Schema::validate (const jvalue& instance)
     {
-        return validate_impl (root_schema, instance);
+        return validate_impl (root_schema, const_cast<jvalue&>(instance));
     }
 
 
@@ -121,7 +129,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static bool is_schema_type (jvalue& schema)
+    static bool is_schema_type (const jvalue& schema)
     {
         return schema.type()==j_object || schema.type()==j_bool;
     }

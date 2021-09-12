@@ -39,3 +39,4 @@ depcomp
 /utils/ujson-get
 /utils/ujson-merge
 /utils/ujson-print
+/utils/ujson-patch

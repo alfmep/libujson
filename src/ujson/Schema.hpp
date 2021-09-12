@@ -31,12 +31,15 @@ namespace ujson {
      */
     class Schema {
     public:
+        /**
+         * Result of a validation.
+         */
         enum result_t {
             //in_progress = -1, // Validation in progress
-            valid=0,      // Instance was validated
-            not_valid,    // Instance was not validated
-            err_schema,   // Generic schema error, not a valid schema
-            err_instance, // Not an instance
+            valid=0,      /**< Instance was validated. */
+            not_valid,    /**< Instance was not validated. */
+            err_schema,   /**< Generic schema error, not a valid schema. */
+            err_instance, /**< Invalid instance. */
         };
 
         /**
@@ -47,12 +50,17 @@ namespace ujson {
         /**
          * Constructor.
          */
-        Schema (jvalue& root_instance);
+        Schema (const jvalue& root_schema);
+
+        /**
+         * Constructor.
+         */
+        Schema (jvalue&& root_schema);
 
         /**
          * @return Schema::valid on success.
          */
-        result_t validate (jvalue& instance);
+        result_t validate (const jvalue& instance);
 
         /**
          * Add a schema that this schema mey refer to.

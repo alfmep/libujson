@@ -92,6 +92,16 @@ AM_CONDITIONAL([ENABLE_UTILS_SET], [test "x$enable_utils" != "xno"])
 
 
 #
+# Give the user an option to not build example applications
+#
+AC_ARG_ENABLE([examples],
+	[AS_HELP_STRING([--enable-examples],
+	[build examples, but they are not installed])],,
+	enable_examples=no)
+AM_CONDITIONAL([ENABLE_EXAMPLES_SET], [test "x$enable_examples" != "xno"])
+
+
+#
 # All libraries are added
 #
 AC_SUBST([LIBS_IN_PC_FILE])
@@ -121,14 +131,8 @@ AM_COND_IF([ENABLE_DOXYGEN_SET],
 	AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 	AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/doxygen.cfg])])
 
-	#
-	# Check if doxygen can use dot
-	#
-	AC_CHECK_PROGS([DOT], [dot])
-	if test -z "$DOT";
-	   then AC_MSG_WARN([dot not found - continuing without doxygen dot support])
-	fi
-	AM_CONDITIONAL([HAVE_DOT], [test -n "$DOT"])
+	# Disable dot in doxygen
+	AM_CONDITIONAL([HAVE_DOT], false)
 	AM_COND_IF([HAVE_DOT], [DOXYGEN_HAVE_DOT=YES], [DOXYGEN_HAVE_DOT=NO])
 	AM_COND_IF([HAVE_DOT], [DOXYGEN_HAVE_CLASS_GRAPH=NO], [DOXYGEN_HAVE_CLASS_GRAPH=YES])
 	AC_SUBST([DOXYGEN_HAVE_DOT])
@@ -146,19 +150,24 @@ AC_OUTPUT([
 	src/Makefile
 	src/ujson.pc
 	utils/Makefile
+	examples/Makefile
 	doc/Makefile
 ])
 
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([************************************************************])
+AC_MSG_NOTICE([*************************************************************])
 AC_MSG_NOTICE([* Installation prefix  : ${prefix}])
 AM_COND_IF([ENABLE_UTILS_SET],
 	[AC_MSG_NOTICE([* Utilities            : enabled])],
 	[AC_MSG_NOTICE([* Utilities            : disabled])]
 )
+AM_COND_IF([ENABLE_EXAMPLES_SET],
+	[AC_MSG_NOTICE([* Examples             : enabled (exmples are not installed)])],
+	[AC_MSG_NOTICE([* Examples             : disabled])]
+)
 AM_COND_IF([HAVE_DOXYGEN],
 	[AC_MSG_NOTICE([* Doxygen documentation: enabled])],
 	[AC_MSG_NOTICE([* Doxygen documentation: disabled])]
 )
-AC_MSG_NOTICE([************************************************************])
+AC_MSG_NOTICE([*************************************************************])
 AC_MSG_NOTICE([])

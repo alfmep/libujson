@@ -31,6 +31,29 @@ namespace ujson {
 
     /**
      * A multimap that keeps items in the order they were inserted.
+     * When using an iterator, items are iterated the same order as they were added to the map.
+     * There are also iterators that can be used to iterate in a sorted order.<br/>
+     * A <code>multimap_list</code> have the following iterators:
+     *  - Normal iterators - Items are in the same order as they were added:
+     *    - <b>begin</b>  Iterate from the beginning to the end.
+     *    - <b>end</b>    Iterator to the end. Used with iterator <b>begin</b>.
+     *    - <b>cbegin</b> Same as <b>begin</b> but the iterated items are read-only.
+     *    - <b>cend</b>   Const Iterator to the end. Used with iterator <b>cbegin</b>.
+     *  - Normal reverse iterators - Items are in the same order as they were added:
+     *    - <b>rbegin</b>  Iterate from the end to the beginning.
+     *    - <b>rend</b>    Iterator to the end. Used with iterator <b>rbegin</b>.
+     *    - <b>crbegin</b> Same as <b>rbegin</b> but the iterated items are read-only.
+     *    - <b>crend</b>   Const Iterator to the end. Used with iterator <b>crbegin</b>.
+     *  - Sorted iterators - Items are in the sorted order:
+     *    - <b>sbegin</b>  Iterate from the beginning to the end.
+     *    - <b>send</b>    Iterator to the end. Used with iterator <b>sbegin</b>.
+     *    - <b>csbegin</b> Same as <b>begin</b> but the iterated items are read-only.
+     *    - <b>csend</b>   Const Iterator to the end. Used with iterator <b>csbegin</b>.
+     *  - Sorted reverse iterators - Items are in the sorted order:
+     *    - <b>rsbegin</b>  Iterate from the end to the beginning.
+     *    - <b>rsend</b>    Iterator to the end. Used with iterator <b>rsbegin</b>.
+     *    - <b>crsbegin</b> Same as <b>rbegin</b> but the iterated items are read-only.
+     *    - <b>crsend</b>   Const Iterator to the end. Used with iterator <b>crsbegin</b>.
      */
     template<class Key, class T, class CompareKey=std::less<Key>, class CompareValue=std::less<T>>
     class multimap_list {

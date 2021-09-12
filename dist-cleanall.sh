@@ -20,9 +20,10 @@ rm -rf \
    src/Makefile.in \
    src/include/ujson/config.h.in \
    src/include/ujson/config.h.in~ \
-   utils/Makefile.in \
-   doc/Makefile.in \
    ar-lib \
    compile \
    doc/doxygen_sqlite3.db \
-   ylwrap
+   ylwrap \
+   utils/Makefile.in \
+   doc/Makefile.in \
+   examples/Makefile.in
