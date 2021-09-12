@@ -36,7 +36,7 @@ A JSON Pointer as described in RFC 6901.
 A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encoded as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
 
 .SH SEE ALSO
-ujson-verify(1) ujson-cmp(1) ujson-print(1) ujson-merge(1)
+ujson-print(1) ujson-verify(1) ujson-cmp(1) ujson-patch(1)
 
 
 .SH AUTHOR

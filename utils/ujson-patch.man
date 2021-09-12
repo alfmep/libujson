@@ -1,0 +1,44 @@
+.\" Manpage for ujson-verify
+.\" Contact dan@ultramarin.se to correct errors or types.
+.TH ujson-patch 1 "" "" "User Commands"
+
+
+.SH NAME
+ujson-patch \- Apply JSON patches to a JSON document.
+
+
+.SH SYNOPSIS
+.B ujson-patch
+[OPTIONS] JSON_FILE [JSON_PATCH_FILE]
+
+
+.SH DESCRIPTION
+ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output.
+If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application returns with an error code.
+.PP
+Patch definitions are described in RFC 6902 - JavaScript Object Notation (JSON) Patch.
+.PP
+JSON_FILE is a JSON document we want to apply patches on.
+.PP
+JSON_PATCH_FILE is a JSON document containing the patches to apply. It no patch file is given, the patch definition is read from standard input.
+
+.SH OPTIONS
+.TP
+.B -c, --compact
+Print the resulting JSON document without whitespaces.
+.TP
+.B -r, --relaxed
+Parse JSON input files in relaxed mode.
+.TP
+.B -q, --quiet
+No errors are written to standard error. On errors, of failed patch test operations, the application exits with an error code. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
+.TP
+.B -h, --help
+Print help and exit.
+
+.SH SEE ALSO
+ujson-print(1) ujson-get(1) ujson-verify(1) ujson-cmp(1)
+
+
+.SH AUTHOR
+Dan Arrhenius (dan@ultramarin.se)

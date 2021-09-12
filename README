@@ -5,7 +5,7 @@ libujson - A Json library for C++ developers.
 Utility applications for handling JSON documents:
 
 ujson-verify - Verify the syntax of one or more JSON documents.
-ujson-get    - Get a specific value from a JSON document.
+ujson-get    - Get a specific value from a JSON document using a JSON pointer. JSON pointers are described in RFC 6901.
 ujson-cmp    - Check if two JSON documents are equal.
 ujson-print  - Print a JSON document to standard output in a few different ways.
-ujson-merge  - Merge two or more JSON documents.
+ujson-patch  - Patch JSON documents. JSON patches are described in RFC 6902.

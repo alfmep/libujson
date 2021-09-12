@@ -38,9 +38,6 @@ ujson_cmp_SOURCES = ujson-cmp.cpp
 bin_PROGRAMS += ujson-get
 ujson_get_SOURCES = ujson-get.cpp
 
-bin_PROGRAMS += ujson-merge
-ujson_merge_SOURCES = ujson-merge.cpp
-
 bin_PROGRAMS += ujson-patch
 ujson_patch_SOURCES = ujson-patch.cpp
 
@@ -49,7 +46,6 @@ dist_man1_MANS += ujson-verify.man
 dist_man1_MANS += ujson-print.man
 dist_man1_MANS += ujson-cmp.man
 dist_man1_MANS += ujson-get.man
-dist_man1_MANS += ujson-merge.man
-#dist_man1_MANS += ujson-patch.man
+dist_man1_MANS += ujson-patch.man
 
 endif

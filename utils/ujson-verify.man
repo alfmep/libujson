@@ -77,7 +77,7 @@ Example of a JSON document that is allowed in relaxed mode:
 
 
 .SH SEE ALSO
-ujson-cmp(1) ujson-print(1) ujson-get(1) ujson-merge(1)
+ujson-print(1) ujson-get(1) ujson-cmp(1) ujson-patch(1)
 
 
 .SH AUTHOR
