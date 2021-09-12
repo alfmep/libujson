@@ -34,12 +34,14 @@ static constexpr const char* prog_name = "ujson-patch";
 struct appargs_t {
     bool compact;
     bool relaxed;
+    bool quiet;
     std::string document_filename;
     std::string patch_filename;
 
     appargs_t () {
         compact = false;
         relaxed = false;
+        quiet   = false;
     }
 };
 
@@ -49,19 +51,24 @@ struct appargs_t {
 static void print_usage_and_exit (std::ostream& out, int exit_code)
 {
     out << endl;
-    out << "Patch a JSON document." << endl;
+    out << "Patch a JSON document using a patch as described by RFC 6902." << endl;
     out << endl;
-    out << "Usage: " << prog_name << " [OPTIONS] [JSON_FILE] [JSON_PATCH_FILE]" << endl;
+    out << "Usage: " << prog_name << " [OPTIONS] JSON_FILE [JSON_PATCH_FILE]" << endl;
     out << endl;
-    out << "JSON_FILE:       This JSON document to patch." <<endl;
+    out << "JSON_FILE:       This a JSON document to patch." <<endl;
     out << "JSON_PATCH_FILE: JSON document containing the patch/patches, or standard input if no filename given." <<endl;
     out << "The resulting JSON document will be printed to standard output." << endl;
     out << "If one or more patches fails, error info is written to standard error." << endl;
     out << endl;
     out << "Options:" <<endl;
-    out << "  -c, --compact       Print the resulting JSON document without whitespaces." << endl;
-    out << "  -r, --relaxed       Parse JSON documents in relaxed mode." << endl;
-    out << "  -h, --help          Print this help message and exit." << endl;
+    out << "  -c, --compact    Print the resulting JSON document without whitespaces." << endl;
+    out << "  -r, --relaxed    Parse JSON input files in relaxed mode." << endl;
+    out << "  -q, --quiet      No errors are written to standard error. On errors, of failed patch test operations," << endl;
+    out << "                   the application exits with an error code. If the patch definition only contains" << endl;
+    out << "                   patch operations of type 'test', nothing is written to standard output." << endl;
+    out << "                   If the patch definition contains operations other than 'test', the resulting JSON" << endl;
+    out << "                   document is still printed to standard output." << endl;
+    out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
     out << "" << endl;
     exit (exit_code);
@@ -75,10 +82,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     struct option long_options[] = {
         { "compact", no_argument, 0, 'c'},
         { "relaxed", no_argument, 0, 'r'},
+        { "quiet",   no_argument, 0, 'q'},
         { "help",    no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "crh";
+    const char* arg_format = "crqh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -91,6 +99,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'r':
             args.relaxed = true;
             break;
+        case 'q':
+            args.quiet = true;
+            break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
             break;
@@ -102,13 +113,15 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     if (optind < argc) {
         args.document_filename = argv[optind++];
     }else{
-        cerr << "Missing argument" << endl;
+        if (!args.quiet)
+            cerr << "Missing argument" << endl;
         exit (1);
     }
     if (optind < argc)
         args.patch_filename = argv[optind++];
     if (optind < argc) {
-        cerr << "Too many arguments" << endl;
+        if (!args.quiet)
+            cerr << "Too many arguments" << endl;
         exit (1);
     }
 }
@@ -126,7 +139,8 @@ int main (int argc, char* argv[])
     ujson::Json j;
     auto instance = j.parse_file (opt.document_filename, !opt.relaxed);
     if (!instance.valid()) {
-        cerr << "Parse error, " << opt.document_filename << ": " << j.error() << endl;
+        if (!opt.quiet)
+            cerr << "Parse error, " << opt.document_filename << ": " << j.error() << endl;
         exit (1);
     }
 
@@ -141,58 +155,61 @@ int main (int argc, char* argv[])
         patch = j.parse_file (opt.patch_filename, !opt.relaxed);
     }
     if (!patch.valid()) {
-        if (opt.patch_filename.empty())
-            cerr << "Parse error: <standard input>: " << j.error() << endl;
-        else
-            cerr << "Parse error, " << opt.patch_filename << ": " << j.error() << endl;
+        if (!opt.quiet) {
+            if (opt.patch_filename.empty())
+                cerr << "Parse error: <standard input>: " << j.error() << endl;
+            else
+                cerr << "Parse error, " << opt.patch_filename << ": " << j.error() << endl;
+        }
         exit (1);
     }
+
+    // Check the patch definition is a single patch or an array of patches
+    //
+    ujson::json_array single_patch;
+    bool use_single_patch = false;
+    if (patch.type() != ujson::j_array) {
+        single_patch.emplace_back (std::move(patch));
+        use_single_patch = true;
+    }
+    auto& patch_list = use_single_patch ? single_patch : patch.array();
 
     // Apply patches
     //
     int retval = 0;
-    if (patch.type() != ujson::j_array) {
-        ujson::patch (instance, patch);
-        if (errno != 0) {
-            switch (errno) {
-            case EINVAL:
-                cerr << "Patch 1 of 1 - Error: Invalid patch definition" << endl;
-                break;
-            case ENOENT:
-                cerr << "Patch 1 of 1 - Error: Invalid JSON pointer(s)" << endl;
-                break;
-            default:
-                cerr << "Patch 1 of 1 - Unknown error" << endl;
-                break;
-            }
-            retval = 1;
-        }
-    }else{
-        auto& patch_list = patch.array ();
-        size_t num_patches = patch_list.size ();
-        for (size_t i=0; i<num_patches; ++i) {
-            ujson::patch (instance, patch_list[i]);
-            if (errno != 0) {
+    bool print_result = false;
+    size_t num_patches = patch_list.size ();
+    for (size_t i=0; i<num_patches; ++i) {
+        auto& op = patch_list[i].get ("op");
+        if (op.valid() && op.str()!="test")
+            print_result = true;
+        auto result = ujson::patch (instance, patch_list[i]);
+        if (result != 1) {
+            if (!opt.quiet) {
                 cerr << "Patch " << (i+1) << " of " << num_patches << " - ";
                 switch (errno) {
+                case 0:
+                    cerr << "Test operation failed" << endl;
+                    break;
                 case EINVAL:
                     cerr << "Error: Invalid patch definition" << endl;
                     break;
                 case ENOENT:
-                    cerr << "Error: Invalid JSON pointer(s)" << endl;
+                    cerr << "Error: JSON pointer mismatch" << endl;
                     break;
                 default:
                     cerr << "Unknown error" << endl;
                     break;
                 }
-                retval = 1;
             }
+            retval = 1;
         }
     }
 
     // Print the patched json instance
     //
-    cout << instance.describe(!opt.compact, !opt.relaxed);
+    if (print_result || !opt.quiet)
+        cout << instance.describe(!opt.compact, !opt.relaxed) << endl;
 
     return retval;
 }
