@@ -130,9 +130,11 @@ namespace ujson {
 
     /**
      * Patch a JSON instance.
-     * @param instance The JSON instance to patch.
-     * @param patch A patch operation, or an array of patch operations.
-     * @return The number of successful patch operations.
+     * @param instance A JSON instance to patch.
+     * @param patch A JSON patch definition as described in RFC 6902.
+     * @return The number of successful patch operations.<br/>
+     *         A patch operation of type 'test' which fails the test is considered an unsuccessful operation,
+     *         but <code>errno</code> is not set to an error code for a failed test operation.<br/>
      *         On error, <code>errno</code> is set:
      *          - EINVAL is set if a patch is not a valid patch, or the instance isn't a valid JSON value.<br/>
      *          - ENOENT is set if one or more object paths in the patch is invalid.<br/>
