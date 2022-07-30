@@ -37,6 +37,7 @@ A pointer specifies a specific value in a JSON document. Is is a string containi
 
 .SH SEE ALSO
 ujson-print(1) ujson-verify(1) ujson-cmp(1) ujson-patch(1)
+https://datatracker.ietf.org/doc/html/rfc6901
 
 
 .SH AUTHOR

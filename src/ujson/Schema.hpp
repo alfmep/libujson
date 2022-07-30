@@ -63,12 +63,12 @@ namespace ujson {
         result_t validate (const jvalue& instance);
 
         /**
-         * Add a schema that this schema mey refer to.
+         * Add a schema that this schema may refer to.
          */
         bool add_ref_schema (const Schema& schema);
 
         /**
-         * Remove a schema that this schema mey refer to.
+         * Remove a schema that this schema may refer to.
          * @param id The id of the schema to remove.
          */
         void del_ref_schema (const std::string& id);
