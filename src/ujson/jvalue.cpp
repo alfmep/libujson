@@ -625,7 +625,6 @@ namespace ujson {
             return v.jobj->emplace_back(name, std::forward<jvalue&&>(value)).second;
         }else{
             if (overwrite)
-                //entry->second = std::move (value);
                 entry->second = std::forward<jvalue&&> (value);
             return entry->second;
         }
