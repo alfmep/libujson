@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -19,6 +19,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <regex>
 #include <ujson/Parser.hpp>
 #include <ujson/Analyzer.hpp>
 #include <ujson/utils.hpp>
@@ -400,10 +401,22 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_pair (const std::string& key, bool relaxed)
+    void Parser::on_parse_pair (const std::string& key, bool is_identifier)
     {
-        if (use_strict_mode && relaxed)
-            throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting } or string");
+        if (is_identifier) {
+            if (use_strict_mode)
+                throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting } or string");
+
+            static const std::regex re_reserved ("([nN][aA][nN])|"
+                                                 "([iI][nN][fF])([iI][nN][iI][tT][eE])?|"
+                                                 "([tT][rR][uU][eE])|"
+                                                 "([fF][aA][lL][sS][eE])|"
+                                                 "([nN][uU][lL][lL])",
+                                                 std::regex::ECMAScript);
+            std::cmatch re_match;
+            if (std::regex_match (key.c_str(), re_match, re_reserved))
+                throw Analyzer::syntax_error (loc(), "syntax error, reserved identifier name");
+        }
         pairs.emplace (std::make_pair(key, std::move(values.top())));
         values.pop ();
     }
@@ -434,9 +447,9 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_string (const std::string& str, bool relaxed)
+    void Parser::on_parse_string (const std::string& str, bool concatenate)
     {
-        if (use_strict_mode && relaxed)
+        if (use_strict_mode && concatenate)
             throw Analyzer::syntax_error (loc(), "syntax error, string separation not allowed in strict mode");
         str_value = str + str_value;
     }

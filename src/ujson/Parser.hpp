@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -102,10 +102,10 @@ namespace ujson {
         void on_parse_root ();
         void on_parse_object ();
         void on_parse_member (bool relaxed=false);
-        void on_parse_pair (const std::string& key, bool relaxed=false);
+        void on_parse_pair (const std::string& key, bool is_identifier=false);
         void on_parse_array ();
         void on_parse_element (bool relaxed=false);
-        void on_parse_string (const std::string& str, bool relaxed=false);
+        void on_parse_string (const std::string& str, bool concatenate=false);
         void on_parse_str_value (bool root_entry=false);
         void on_parse_number (double num, bool root_entry=false);
         void on_parse_nan (double num, bool root_entry=false);
