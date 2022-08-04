@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017,2020,2021 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2017,2020-2022 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -25,7 +25,7 @@ AC_PROG_MKDIR_P
 AC_PROG_INSTALL
 AC_PROG_YACC
 AM_PROG_AR
-AM_PROG_LEX
+AC_PROG_LEX([noyywrap])
 
 LT_INIT()
 LT_LANG([C++])
@@ -145,7 +145,7 @@ AM_COND_IF([ENABLE_DOXYGEN_SET],
 )
 
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
 	src/ujson.pc
@@ -153,6 +153,9 @@ AC_OUTPUT([
 	examples/Makefile
 	doc/Makefile
 ])
+
+AC_OUTPUT
+
 
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([*************************************************************])
