@@ -33,6 +33,9 @@ Print the JSON document in relaxed form. Numbers that are infinite or NaN are pr
 .B -t, --parse-strict
 Parse the JSON document in strict mode.
 .TP
+.B -v, --version
+Print version and exit.
+.TP
 .B -h, --help
 Print help and exit.
 

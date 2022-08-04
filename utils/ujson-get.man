@@ -27,6 +27,9 @@ Require the value to be of a specific type. TYPE is one of the following: boolea
 .B -r, --relaxed
 Parse the JSON document in relaxed mode.
 .TP
+.B -v, --version
+Print version and exit.
+.TP
 .B -h, --help
 Print help and exit.
 

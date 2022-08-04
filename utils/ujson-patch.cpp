@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -68,6 +68,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                   patch operations of type 'test', nothing is written to standard output." << endl;
     out << "                   If the patch definition contains operations other than 'test', the resulting JSON" << endl;
     out << "                   document is still printed to standard output." << endl;
+    out << "  -v, --version    Print version and exit." << endl;
     out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
     out << "" << endl;
@@ -83,10 +84,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { "compact", no_argument, 0, 'c'},
         { "relaxed", no_argument, 0, 'r'},
         { "quiet",   no_argument, 0, 'q'},
+        { "version", no_argument, 0, 'v'},
         { "help",    no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "crqh";
+    const char* arg_format = "crqvh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -101,6 +103,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'q':
             args.quiet = true;
+            break;
+        case 'v':
+            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -64,6 +64,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                   TYPE is one of the following: boolean, number, string, null, object, or array." << endl;
     out << "                   If the value is of a different type, exit with code 1." << endl;
     out << "  -r, --relaxed    Parse the JSON document in relaxed mode." << endl;
+    out << "  -v, --version    Print version and exit." << endl;
     out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
     exit (exit_code);
@@ -75,13 +76,14 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "compact",      no_argument,       0, 'c'},
-        { "type",         required_argument, 0, 't'},
-        { "relaxed",      no_argument,       0, 'r'},
-        { "help",         no_argument,       0, 'h'},
+        { "compact", no_argument,       0, 'c'},
+        { "type",    required_argument, 0, 't'},
+        { "relaxed", no_argument,       0, 'r'},
+        { "version", no_argument,       0, 'v'},
+        { "help",    no_argument,       0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "ct:rh";
+    const char* arg_format = "ct:rvh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -100,6 +102,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'r':
             args.relaxed = true;
+            break;
+        case 'v':
+            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);

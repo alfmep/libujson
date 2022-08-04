@@ -33,6 +33,9 @@ Parse JSON input files in relaxed mode.
 .B -q, --quiet
 No errors are written to standard error. On errors, of failed patch test operations, the application exits with an error code. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 .TP
+.B -v, --version
+Print version and exit.
+.TP
 .B -h, --help
 Print help and exit.
 

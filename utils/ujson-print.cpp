@@ -68,6 +68,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
     out << "  -t, --parse-strict    Parse the JSON document in strict mode." << endl;
+    out << "  -v, --version         Print version and exit." << endl;
     out << "  -h, --help            Print this help message and exit." << endl;
     out << endl;
     exit (exit_code);
@@ -84,10 +85,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { "sort",         no_argument, 0, 's'},
         { "relaxed",      no_argument, 0, 'r'},
         { "parse-strict", no_argument, 0, 't'},
+        { "version",      no_argument, 0, 'v'},
         { "help",         no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "cesrth";
+    const char* arg_format = "cesrtvh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, nullptr);
@@ -108,6 +110,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 't':
             args.parse_strict = true;
+            break;
+        case 'v':
+            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
