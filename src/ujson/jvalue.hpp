@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -674,6 +674,52 @@ namespace ujson {
             return describe (pretty, strict, escape_slash, sorted_properties, "", indent);
         }
 
+        /**
+         * Return a string representation of this json value.
+         * All string output(object member names and string
+         * values) will be json encoded using ujson::escape.
+         * Any invalid json values (of type ujson::j_invalid)
+         * will not be included in the string representation.
+         * @param pretty If <code>true</code>, return a string
+         *               with each value on a separate line and
+         *               use indentation to make it more readable.
+         *               If <code>false</code>, return a compact
+         *               string with everrything on a single line.
+         * @param strict If <code>true</code>, all numbers that
+         *               are (+/-)infinite or NaN(not a number),
+         *               will be described as type 'null'.
+         * @param escape_slash If <code>true</code>, the
+         *                     forward slash character "/" will
+         *                     be esacped to "\/".
+         * @param sorted_properties If <code>true</code>, the
+         *                          properties of objects will be
+         *                          listed in a sorted order and
+         *                          not in the same order they were
+         *                          added.
+         * @param relaxed_obj_member_names This parameter is only
+         *               relevant if parameter <code>strict</code>
+         *               is <code>false</code>.<br/>
+         *               If this parameter is <code>true</code>,
+         *               print object member names without enclosing double
+         *               quotes if the object member names are in the
+         *               following format: [_a-zA-Z][_a-zA-Z0-9]*
+         * @param indent Indentation to use if <code>pretty</code>
+         *               is <code>true</code>. Normally zero or more
+         *               space characters.
+         * @return A string in json format describing this json value.
+         * @see ujson::escape
+         */
+        std::string describe (bool pretty,
+                              bool strict,
+                              bool escape_slash,
+                              bool sorted_properties,
+                              bool relaxed_obj_member_names,
+                              const std::string& indent="    ") const
+        {
+            return describe (pretty, strict, escape_slash, sorted_properties,
+                             relaxed_obj_member_names, "", indent);
+        }
+
 
     private:
         jvalue_type jtype;
@@ -695,6 +741,27 @@ namespace ujson {
                               bool sorted_properties,
                               const std::string& first_indent,
                               const std::string& indent_step) const;
+        std::string describe (bool pretty,
+                              bool strict,
+                              bool escape_slash,
+                              bool sorted_properties,
+                              bool relaxed_obj_member_names,
+                              const std::string& first_indent,
+                              const std::string& indent_step) const;
+        std::string describe_object (bool pretty,
+                                     bool strict,
+                                     bool escape_slash,
+                                     bool sorted_properties,
+                                     bool relaxed_obj_member_names,
+                                     const std::string& first_indent,
+                                     const std::string& indent_step) const;
+        std::string describe_array (bool pretty,
+                                    bool strict,
+                                    bool escape_slash,
+                                    bool sorted_properties,
+                                    bool relaxed_obj_member_names,
+                                    const std::string& first_indent,
+                                    const std::string& indent_step) const;
     };
 
     /*

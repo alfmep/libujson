@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -19,12 +19,12 @@
 #include <utility>
 #include <sstream>
 #include <algorithm>
+#include <regex>
 #include <ujson/jvalue.hpp>
 #include <ujson/utils.hpp>
 #include <ujson/internal.hpp>
 #include <cstring>
 #include <math.h>
-
 
 namespace ujson {
 
@@ -789,86 +789,188 @@ namespace ujson {
                                   const std::string& first_indent,
                                   const std::string& indent_step) const
     {
-        std::stringstream ss;
+        return describe (pretty,
+                         strict,
+                         escape_slash,
+                         sorted_properties,
+                         false,
+                         first_indent,
+                         indent_step);
+    }
 
-        std::string indent;
-        if (pretty) {
-            indent = first_indent + indent_step;
-        }
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jvalue::describe (bool pretty,
+                                  bool strict,
+                                  bool escape_slash,
+                                  bool sorted_properties,
+                                  bool relaxed_obj_member_names,
+                                  const std::string& first_indent,
+                                  const std::string& indent_step) const
+    {
+        std::stringstream ss;
         switch (type()) {
-        case j_object: {
-                bool first {true};
-                ss << "{";
-                auto& members = *v.jobj;
-                if (!members.empty()) {
-                    auto i = sorted_properties ? members.sbegin() : members.begin();
-                    auto member_end = sorted_properties ? members.send() : members.end();
-                    for (; i!=member_end; ++i) {
-                        if (! i->second.valid())
-                            continue; // Skip invalid values
-                        if (!first) {
-                            ss << ",";
-                        }else{
-                            first = false;
-                        }
-                        if (pretty)
-                            ss << std::endl << indent;
-                        ss << "\"";
-                        ss << escape (i->first, escape_slash);
-                        ss << (pretty ? "\": " : "\":");
-                        ss << i->second.describe (pretty,
-                                                  strict,
-                                                  escape_slash,
-                                                  sorted_properties,
-                                                  indent,
-                                                  indent_step);
-                    }
-                }
-                if (pretty && !first)
-                    ss << std::endl << first_indent;
-                ss << "}";
-            }
+        case j_object:
+            ss << describe_object (pretty,
+                                   strict,
+                                   escape_slash,
+                                   sorted_properties,
+                                   relaxed_obj_member_names,
+                                   first_indent,
+                                   indent_step);
             break;
-        case j_array: {
-                ss << "[";
-                auto& elements = *v.jarray;
-                if (!elements.empty()) {
-                    bool first {true};
-                    for (auto& obj : elements) {
-                        if (!obj.valid())
-                            continue; // Skip invalid values
-                        if (first)
-                            first = false;
-                        else
-                            ss << (pretty?", ":",");
-                        ss << obj.describe (pretty,
-                                            strict,
-                                            escape_slash,
-                                            sorted_properties,
-                                            indent,
-                                            indent_step);
-                    }
-                }
-                ss << "]";
-            }
+
+        case j_array:
+            ss << describe_array (pretty,
+                                  strict,
+                                  escape_slash,
+                                  sorted_properties,
+                                  relaxed_obj_member_names,
+                                  first_indent,
+                                  indent_step);
             break;
+
         case j_string:
             ss << '"' << escape(*v.jstr, escape_slash) << '"';
             break;
+
         case j_number:
             if (strict && (isinf(num()) || isnan(num())))
                 ss << "null";
             else
                 ss << num ();
             break;
+
         case j_bool:
             ss << (boolean() ? "true" : "false");
             break;
+
         case j_null:
             ss << "null";
+
         case j_invalid:
+        default:
             break;
         }
+        return ss.str ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jvalue::describe_object (bool pretty,
+                                         bool strict,
+                                         bool escape_slash,
+                                         bool sorted_properties,
+                                         bool relaxed_obj_member_names,
+                                         const std::string& first_indent,
+                                         const std::string& indent_step) const
+    {
+        static const std::regex re_identifier ("[_a-zA-Z][_a-zA-Z0-9]*",
+                                               std::regex::ECMAScript);
+        static const std::regex re_reserved ("([nN][aA][nN])|"
+                                             "([iI][nN][fF])([iI][nN][iI][tT][eE])?|"
+                                             "([tT][rR][uU][eE])|"
+                                             "([fF][aA][lL][sS][eE])|"
+                                             "([nN][uU][lL][lL])",
+                                             std::regex::ECMAScript);
+        std::cmatch re_match;
+        std::stringstream ss;
+        bool first {true};
+        std::string indent;
+        if (pretty) {
+            indent = first_indent + indent_step;
+        }
+
+        ss << '{';
+        auto& members = *v.jobj;
+        if (!members.empty()) {
+            auto i = sorted_properties ? members.sbegin() : members.begin();
+            auto member_end = sorted_properties ? members.send() : members.end();
+            for (; i!=member_end; ++i) {
+                if (! i->second.valid())
+                    continue; // Skip invalid values
+                auto& name = i->first;
+                auto& value = i->second;
+                bool quoted_name = true;
+                if (strict==false && relaxed_obj_member_names==true) {
+                    // In relaxed mode, if the member name is an 'identifier',
+                    // print it without enclosing double quotes. Unless it
+                    // is a reserved name.
+                    if (std::regex_match (name.c_str(), re_match, re_identifier) &&
+                        ! std::regex_match (name.c_str(), re_match, re_reserved))
+                    {
+                        quoted_name = false;
+                    }
+                }
+                if (first)
+                    first = false;
+                else
+                    ss << ',';
+                if (pretty)
+                    ss << std::endl << indent;
+
+                if (quoted_name)
+                    ss << '"' << escape(name, escape_slash) << '"';
+                else
+                    ss << name;
+                ss << (pretty ? ": " : ":");
+                ss << value.describe (pretty,
+                                      strict,
+                                      escape_slash,
+                                      sorted_properties,
+                                      relaxed_obj_member_names,
+                                      indent,
+                                      indent_step);
+            }
+        }
+        if (pretty && !first)
+            ss << std::endl << first_indent;
+        ss << '}';
+
+        return ss.str ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string jvalue::describe_array (bool pretty,
+                                        bool strict,
+                                        bool escape_slash,
+                                        bool sorted_properties,
+                                        bool relaxed_obj_member_names,
+                                        const std::string& first_indent,
+                                        const std::string& indent_step) const
+    {
+        std::string indent;
+        std::stringstream ss;
+
+        if (pretty) {
+            indent = first_indent + indent_step;
+        }
+
+        ss << '[';
+        auto& elements = *v.jarray;
+        if (!elements.empty()) {
+            bool first {true};
+            for (auto& obj : elements) {
+                if (!obj.valid())
+                    continue; // Skip invalid values
+                if (first)
+                    first = false;
+                else
+                    ss << (pretty?", ":",");
+                ss << obj.describe (pretty,
+                                    strict,
+                                    escape_slash,
+                                    sorted_properties,
+                                    relaxed_obj_member_names,
+                                    indent,
+                                    indent_step);
+            }
+        }
+        ss << ']';
         return ss.str ();
     }
 
