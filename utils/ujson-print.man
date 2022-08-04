@@ -28,7 +28,10 @@ When printing JSON strings, forward slash characters("/") are escaped to "\\/".
 Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
 .TP
 .B -r, --relaxed
-Numbers that are infinite or NaN are printed as (-)inf and nan, and not as null as in the JSON specification.
+Print the JSON document in relaxed form. Numbers that are infinite or NaN are printed as (-)inf and nan, and not as type null as in the JSON specification. Object member names are printed without enclosing them in double quotes("") when the object member names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*. The exceptions are the object member names "true", "false", "null", "nan", "inf", and "infinite". Those object member names are always enclosed by double quotes("").
+.TP
+.B -t, --parse-strict
+Parse the JSON document in strict mode.
 .TP
 .B -h, --help
 Print help and exit.
