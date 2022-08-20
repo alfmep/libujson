@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -290,8 +291,16 @@ namespace ujson {
     //--------------------------------------------------------------------------
     Analyzer::symbol_type Parser::on_lex_number ()
     {
-        double num = strtod (ujget_text(yyscanner), nullptr);
-        return Analyzer::make_NUMBER (num, loc());
+        try {
+            auto num = std::stod (ujget_text(yyscanner));
+            return Analyzer::make_NUMBER (num, loc());
+        }
+        catch (std::invalid_argument& ia) {
+            throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting number");
+        }
+        catch (std::out_of_range& oor) {
+            throw Analyzer::syntax_error (loc(), "syntax error, number out of range");
+        }
     }
 
 
