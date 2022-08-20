@@ -63,8 +63,6 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -e, --escape-slash    Forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
     out << "  -s, --sort            Object members are listed in sorted order, not in natural order." << endl;
     out << "  -r, --relaxed         Print the JSON document in relaxed form." << endl;
-    out << "                        Numbers that are infinite or NaN are printed as (-)inf and nan," << endl;
-    out << "                        and not as type null as in the JSON specification." << endl;
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
     out << "  -t, --parse-strict    Parse the JSON document in strict mode." << endl;

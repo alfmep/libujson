@@ -1,6 +1,6 @@
 %{
 //
-// Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+// Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
 //
 // This file is part of ujson.
 //
@@ -65,9 +65,6 @@ GREATER_THAN_ZERO {ONE_TO_NINE}{OPTIONAL_DIGITS}
 POSITIVE_INTEGER {ZERO}|{GREATER_THAN_ZERO}
 INTEGER {MINUS}?{POSITIVE_INTEGER}
 DOUBLE {INTEGER}{FRAC}|{INTEGER}{EXP}|{INTEGER}{FRAC}{EXP}
-NAN (?i:nan)
-POSITIVE_INFINITY (?i:inf)|(?i:infinity)
-INFINITY {SIGN}?{POSITIVE_INFINITY}
 NUMBER {INTEGER}|{DOUBLE}
 
 DBL_QUOTE [\"]
@@ -107,8 +104,6 @@ true           return parser.on_lex_true ();
 false          return parser.on_lex_false ();
 {STRING}       return parser.on_lex_string ();
 {NUMBER}       return parser.on_lex_number ();
-{NAN}          return parser.on_lex_nan ();
-{INFINITY}     return parser.on_lex_inf ();
 {WHITESPACE}   parser.on_lex_whitespace ();
 {NEWLINES}     parser.on_lex_newline ();
 {IDENTIFIER}   return parser.on_lex_identifier ();

@@ -836,7 +836,7 @@ namespace ujson {
             break;
 
         case j_number:
-            if (strict && (isinf(num()) || isnan(num())))
+            if (isinf(num()) || isnan(num()))
                 ss << "null";
             else
                 ss << num ();
@@ -869,9 +869,7 @@ namespace ujson {
     {
         static const std::regex re_identifier ("[_a-zA-Z][_a-zA-Z0-9]*",
                                                std::regex::ECMAScript);
-        static const std::regex re_reserved ("([nN][aA][nN])|"
-                                             "([iI][nN][fF])([iI][nN][iI][tT][eE])?|"
-                                             "([tT][rR][uU][eE])|"
+        static const std::regex re_reserved ("([tT][rR][uU][eE])|"
                                              "([fF][aA][lL][sS][eE])|"
                                              "([nN][uU][lL][lL])",
                                              std::regex::ECMAScript);

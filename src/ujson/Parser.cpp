@@ -306,28 +306,6 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Analyzer::symbol_type Parser::on_lex_nan ()
-    {
-        if (use_strict_mode)
-            throw Analyzer::syntax_error (loc(), "syntax error, NaN as number not allowed in strict mode");
-        double num = strtod (ujget_text(yyscanner), nullptr);
-        return Analyzer::make_NAN (num, loc());
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    Analyzer::symbol_type Parser::on_lex_inf ()
-    {
-        if (use_strict_mode)
-            throw Analyzer::syntax_error (loc(), "syntax error, Infinite as number not allowed in strict mode");
-        double num = strtod (ujget_text(yyscanner), nullptr);
-        return Analyzer::make_INF (num, loc());
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
     void Parser::on_lex_whitespace ()
     {
         loc().step ();
@@ -416,9 +394,7 @@ namespace ujson {
             if (use_strict_mode)
                 throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting } or string");
 
-            static const std::regex re_reserved ("([nN][aA][nN])|"
-                                                 "([iI][nN][fF])([iI][nN][iI][tT][eE])?|"
-                                                 "([tT][rR][uU][eE])|"
+            static const std::regex re_reserved ("([tT][rR][uU][eE])|"
                                                  "([fF][aA][lL][sS][eE])|"
                                                  "([nN][uU][lL][lL])",
                                                  std::regex::ECMAScript);
@@ -479,30 +455,6 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Parser::on_parse_number (double num, bool root_entry)
     {
-        values.emplace (num);
-        if (root_entry)
-            on_parse_root ();
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    void Parser::on_parse_nan (double num, bool root_entry)
-    {
-        if (use_strict_mode)
-            throw Analyzer::syntax_error (loc(), "syntax error, NaN as number not allowed in strict mode");
-        values.emplace (num);
-        if (root_entry)
-            on_parse_root ();
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    void Parser::on_parse_inf (double num, bool root_entry)
-    {
-        if (use_strict_mode)
-            throw Analyzer::syntax_error (loc(), "syntax error, Infinite as number not allowed in strict mode");
         values.emplace (num);
         if (root_entry)
             on_parse_root ();

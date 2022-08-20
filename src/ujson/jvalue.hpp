@@ -648,9 +648,7 @@ namespace ujson {
          *               use indentation to make it more readable.
          *               If <code>false</code>, return a compact
          *               string with everrything on a single line.
-         * @param strict If <code>true</code>, all numbers that
-         *               are (+/-)infinite or NaN(not a number),
-         *               will be described as type 'null'.
+         * @param strict Obsolete parameter.
          * @param escape_slash If <code>true</code>, the
          *                     forward slash character "/" will
          *                     be esacped to "\/".
@@ -685,9 +683,7 @@ namespace ujson {
          *               use indentation to make it more readable.
          *               If <code>false</code>, return a compact
          *               string with everrything on a single line.
-         * @param strict If <code>true</code>, all numbers that
-         *               are (+/-)infinite or NaN(not a number),
-         *               will be described as type 'null'.
+         * @param strict Obsolete parameter.
          * @param escape_slash If <code>true</code>, the
          *                     forward slash character "/" will
          *                     be esacped to "\/".

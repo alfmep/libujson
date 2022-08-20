@@ -67,8 +67,6 @@ namespace ujson {
         Analyzer::symbol_type on_lex_identifier ();
         Analyzer::symbol_type on_lex_string ();
         Analyzer::symbol_type on_lex_number ();
-        Analyzer::symbol_type on_lex_nan ();
-        Analyzer::symbol_type on_lex_inf ();
         void on_lex_comment ();
         void on_lex_whitespace ();
         void on_lex_newline ();
@@ -108,8 +106,6 @@ namespace ujson {
         void on_parse_string (const std::string& str, bool concatenate=false);
         void on_parse_str_value (bool root_entry=false);
         void on_parse_number (double num, bool root_entry=false);
-        void on_parse_nan (double num, bool root_entry=false);
-        void on_parse_inf (double num, bool root_entry=false);
         void on_parse_bool (const bool value, bool root_entry=false);
         void on_parse_null (bool root_entry=false);
 
