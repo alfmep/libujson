@@ -20,6 +20,7 @@
 #define UJSON_JVALUE_HPP
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <list>
 #include <memory>
@@ -648,7 +649,15 @@ namespace ujson {
          *               use indentation to make it more readable.
          *               If <code>false</code>, return a compact
          *               string with everrything on a single line.
-         * @param strict Obsolete parameter.
+         * @param relaxed_mode If this parameter is <code>true</code>,
+         *               print object member names without enclosing double
+         *               quotes if the object member names are in the
+         *               following format: [_a-zA-Z][_a-zA-Z0-9]*
+         * @param array_items_on_same_line It <code>true</code>, array
+         *               items are printed on one line. If <code>false</code>,
+         *               every array item is printed on a separate line.
+         *               Only relevant is parameter <code>pretty</code>
+         *               is <code>true</code>.
          * @param escape_slash If <code>true</code>, the
          *                     forward slash character "/" will
          *                     be esacped to "\/".
@@ -664,57 +673,11 @@ namespace ujson {
          * @see ujson::escape
          */
         std::string describe (bool pretty=false,
-                              bool strict=false,
+                              bool relaxed_mode=false,
+                              bool array_items_on_same_line=true,
                               bool escape_slash=false,
                               bool sorted_properties=false,
-                              const std::string& indent="    ") const
-        {
-            return describe (pretty, strict, escape_slash, sorted_properties, "", indent);
-        }
-
-        /**
-         * Return a string representation of this json value.
-         * All string output(object member names and string
-         * values) will be json encoded using ujson::escape.
-         * Any invalid json values (of type ujson::j_invalid)
-         * will not be included in the string representation.
-         * @param pretty If <code>true</code>, return a string
-         *               with each value on a separate line and
-         *               use indentation to make it more readable.
-         *               If <code>false</code>, return a compact
-         *               string with everrything on a single line.
-         * @param strict Obsolete parameter.
-         * @param escape_slash If <code>true</code>, the
-         *                     forward slash character "/" will
-         *                     be esacped to "\/".
-         * @param sorted_properties If <code>true</code>, the
-         *                          properties of objects will be
-         *                          listed in a sorted order and
-         *                          not in the same order they were
-         *                          added.
-         * @param relaxed_obj_member_names This parameter is only
-         *               relevant if parameter <code>strict</code>
-         *               is <code>false</code>.<br/>
-         *               If this parameter is <code>true</code>,
-         *               print object member names without enclosing double
-         *               quotes if the object member names are in the
-         *               following format: [_a-zA-Z][_a-zA-Z0-9]*
-         * @param indent Indentation to use if <code>pretty</code>
-         *               is <code>true</code>. Normally zero or more
-         *               space characters.
-         * @return A string in json format describing this json value.
-         * @see ujson::escape
-         */
-        std::string describe (bool pretty,
-                              bool strict,
-                              bool escape_slash,
-                              bool sorted_properties,
-                              bool relaxed_obj_member_names,
-                              const std::string& indent="    ") const
-        {
-            return describe (pretty, strict, escape_slash, sorted_properties,
-                             relaxed_obj_member_names, "", indent);
-        }
+                              const std::string& indent="    ") const;
 
 
     private:
@@ -731,45 +694,32 @@ namespace ujson {
         void move (jvalue&& jvalue);
 
         json_object::iterator find_last_in_jobj (const std::string& key);
-        std::string describe (bool pretty,
-                              bool strict,
+        void describe (std::stringstream& ss,
+                       bool pretty,
+                       bool relaxed_mode,
+                       bool array_items_on_same_line,
+                       bool escape_slash,
+                       bool sorted_properties,
+                       const std::string& first_indent,
+                       const std::string& indent_step) const;
+        void describe_object (std::stringstream& ss,
+                              bool pretty,
+                              bool relaxed_mode,
+                              bool array_items_on_same_line,
                               bool escape_slash,
                               bool sorted_properties,
                               const std::string& first_indent,
                               const std::string& indent_step) const;
-        std::string describe (bool pretty,
-                              bool strict,
-                              bool escape_slash,
-                              bool sorted_properties,
-                              bool relaxed_obj_member_names,
-                              const std::string& first_indent,
-                              const std::string& indent_step) const;
-        std::string describe_object (bool pretty,
-                                     bool strict,
-                                     bool escape_slash,
-                                     bool sorted_properties,
-                                     bool relaxed_obj_member_names,
-                                     const std::string& first_indent,
-                                     const std::string& indent_step) const;
-        std::string describe_array (bool pretty,
-                                    bool strict,
-                                    bool escape_slash,
-                                    bool sorted_properties,
-                                    bool relaxed_obj_member_names,
-                                    const std::string& first_indent,
-                                    const std::string& indent_step) const;
+        void describe_array (std::stringstream& ss,
+                             bool pretty,
+                             bool relaxed_mode,
+                             bool array_items_on_same_line,
+                             bool escape_slash,
+                             bool sorted_properties,
+                             const std::string& first_indent,
+                             const std::string& indent_step) const;
     };
 
-    /*
-    bool operator== (const json_object& lhs, const json_object& rhs);
-    inline bool operator!= (const json_object& lhs, const json_object& rhs) {
-        return ! (lhs == rhs);
-    }
 
-    bool operator== (const json_array& lhs, const json_array& rhs);
-    inline bool operator!= (const json_array& lhs, const json_array& rhs) {
-        return ! (lhs == rhs);
-    }
-    */
 }
 #endif

@@ -215,7 +215,7 @@ int main (int argc, char* argv[])
     // Print the patched json instance
     //
     if (print_result || !opt.quiet)
-        cout << instance.describe(!opt.compact, !opt.relaxed) << endl;
+        cout << instance.describe(!opt.compact) << endl;
 
     return retval;
 }

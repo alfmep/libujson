@@ -179,7 +179,7 @@ int main (int argc, char* argv[])
         cout << value.str() << endl;
         break;
     default:
-        cout << value.describe(!opt.compact, !opt.relaxed) << endl;
+        cout << value.describe(!opt.compact) << endl;
         break;
     }
 

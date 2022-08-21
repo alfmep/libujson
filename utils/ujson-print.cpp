@@ -34,7 +34,7 @@ struct appargs_t {
     bool escape_slash;
     bool sorted;
     bool parse_strict;
-    bool print_strict;
+    bool print_relaxed;
     string filename;
 
     appargs_t () {
@@ -42,7 +42,7 @@ struct appargs_t {
         escape_slash = false;
         sorted = false;
         parse_strict = false;
-        print_strict = true;
+        print_relaxed = false;
     }
 };
 
@@ -104,7 +104,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.sorted = true;
             break;
         case 'r':
-            args.print_strict = false;
+            args.print_relaxed = true;
             break;
         case 't':
             args.parse_strict = true;
@@ -157,10 +157,10 @@ int main (int argc, char* argv[])
     // Print the parsed json instance
     //
     cout << instance.describe (opt.pretty,
-                               opt.print_strict,
+                               opt.print_relaxed,
+                               true,
                                opt.escape_slash,
-                               opt.sorted,
-                               true)
+                               opt.sorted)
          << endl;
 
     return 0;

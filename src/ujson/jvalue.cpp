@@ -20,6 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include <regex>
+#include <iomanip>
 #include <ujson/jvalue.hpp>
 #include <ujson/utils.hpp>
 #include <ujson/internal.hpp>
@@ -783,52 +784,52 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     std::string jvalue::describe (bool pretty,
-                                  bool strict,
+                                  bool relaxed_mode,
+                                  bool array_items_on_same_line,
                                   bool escape_slash,
                                   bool sorted_properties,
-                                  const std::string& first_indent,
-                                  const std::string& indent_step) const
+                                  const std::string& indent) const
     {
-        return describe (pretty,
-                         strict,
-                         escape_slash,
-                         sorted_properties,
-                         false,
-                         first_indent,
-                         indent_step);
+        std::stringstream ss;
+        ss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+        describe (ss, pretty, relaxed_mode, array_items_on_same_line,
+                  escape_slash, sorted_properties, "", indent);
+        return ss.str ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    std::string jvalue::describe (bool pretty,
-                                  bool strict,
-                                  bool escape_slash,
-                                  bool sorted_properties,
-                                  bool relaxed_obj_member_names,
-                                  const std::string& first_indent,
-                                  const std::string& indent_step) const
+    void jvalue::describe (std::stringstream& ss,
+                           bool pretty,
+                           bool relaxed_mode,
+                           bool array_items_on_same_line,
+                           bool escape_slash,
+                           bool sorted_properties,
+                           const std::string& first_indent,
+                           const std::string& indent_step) const
     {
-        std::stringstream ss;
         switch (type()) {
         case j_object:
-            ss << describe_object (pretty,
-                                   strict,
-                                   escape_slash,
-                                   sorted_properties,
-                                   relaxed_obj_member_names,
-                                   first_indent,
-                                   indent_step);
+            describe_object (ss,
+                             pretty,
+                             relaxed_mode,
+                             array_items_on_same_line,
+                             escape_slash,
+                             sorted_properties,
+                             first_indent,
+                             indent_step);
             break;
 
         case j_array:
-            ss << describe_array (pretty,
-                                  strict,
-                                  escape_slash,
-                                  sorted_properties,
-                                  relaxed_obj_member_names,
-                                  first_indent,
-                                  indent_step);
+            describe_array (ss,
+                            pretty,
+                            relaxed_mode,
+                            array_items_on_same_line,
+                            escape_slash,
+                            sorted_properties,
+                            first_indent,
+                            indent_step);
             break;
 
         case j_string:
@@ -836,7 +837,7 @@ namespace ujson {
             break;
 
         case j_number:
-            if (isinf(num()) || isnan(num()))
+            if (std::isinf(num()) || std::isnan(num()))
                 ss << "null";
             else
                 ss << num ();
@@ -853,19 +854,19 @@ namespace ujson {
         default:
             break;
         }
-        return ss.str ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    std::string jvalue::describe_object (bool pretty,
-                                         bool strict,
-                                         bool escape_slash,
-                                         bool sorted_properties,
-                                         bool relaxed_obj_member_names,
-                                         const std::string& first_indent,
-                                         const std::string& indent_step) const
+    void jvalue::describe_object (std::stringstream& ss,
+                                  bool pretty,
+                                  bool relaxed_mode,
+                                  bool array_items_on_same_line,
+                                  bool escape_slash,
+                                  bool sorted_properties,
+                                  const std::string& first_indent,
+                                  const std::string& indent_step) const
     {
         static const std::regex re_identifier ("[_a-zA-Z][_a-zA-Z0-9]*",
                                                std::regex::ECMAScript);
@@ -874,12 +875,10 @@ namespace ujson {
                                              "([nN][uU][lL][lL])",
                                              std::regex::ECMAScript);
         std::cmatch re_match;
-        std::stringstream ss;
         bool first {true};
         std::string indent;
-        if (pretty) {
+        if (pretty)
             indent = first_indent + indent_step;
-        }
 
         ss << '{';
         auto& members = *v.jobj;
@@ -892,7 +891,7 @@ namespace ujson {
                 auto& name = i->first;
                 auto& value = i->second;
                 bool quoted_name = true;
-                if (strict==false && relaxed_obj_member_names==true) {
+                if (relaxed_mode) {
                     // In relaxed mode, if the member name is an 'identifier',
                     // print it without enclosing double quotes. Unless it
                     // is a reserved name.
@@ -914,138 +913,73 @@ namespace ujson {
                 else
                     ss << name;
                 ss << (pretty ? ": " : ":");
-                ss << value.describe (pretty,
-                                      strict,
-                                      escape_slash,
-                                      sorted_properties,
-                                      relaxed_obj_member_names,
-                                      indent,
-                                      indent_step);
+                value.describe (ss,
+                                pretty,
+                                relaxed_mode,
+                                array_items_on_same_line,
+                                escape_slash,
+                                sorted_properties,
+                                indent,
+                                indent_step);
             }
         }
         if (pretty && !first)
             ss << std::endl << first_indent;
         ss << '}';
-
-        return ss.str ();
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    std::string jvalue::describe_array (bool pretty,
-                                        bool strict,
-                                        bool escape_slash,
-                                        bool sorted_properties,
-                                        bool relaxed_obj_member_names,
-                                        const std::string& first_indent,
-                                        const std::string& indent_step) const
+    void jvalue::describe_array (std::stringstream& ss,
+                                 bool pretty,
+                                 bool relaxed_mode,
+                                 bool array_items_on_same_line,
+                                 bool escape_slash,
+                                 bool sorted_properties,
+                                 const std::string& first_indent,
+                                 const std::string& indent_step) const
     {
         std::string indent;
-        std::stringstream ss;
-
-        if (pretty) {
+        if (pretty)
             indent = first_indent + indent_step;
+
+        auto& elements = *v.jarray;
+        if (elements.empty()) {
+            ss << "[]";
+            return;
         }
 
         ss << '[';
-        auto& elements = *v.jarray;
-        if (!elements.empty()) {
-            bool first {true};
-            for (auto& obj : elements) {
-                if (!obj.valid())
-                    continue; // Skip invalid values
-                if (first)
-                    first = false;
-                else
-                    ss << (pretty?", ":",");
-                ss << obj.describe (pretty,
-                                    strict,
-                                    escape_slash,
-                                    sorted_properties,
-                                    relaxed_obj_member_names,
-                                    indent,
-                                    indent_step);
+
+        bool first {true};
+        for (auto& obj : elements) {
+            if (!obj.valid())
+                continue; // Skip invalid values
+            if (!first)
+                ss << ',';
+            if (pretty) {
+                if (array_items_on_same_line) {
+                    if (!first)
+                        ss << ' ';
+                }else{
+                    ss << std::endl << indent;
+                }
             }
+            first = false;
+            obj.describe (ss,
+                          pretty,
+                          relaxed_mode,
+                          array_items_on_same_line,
+                          escape_slash,
+                          sorted_properties,
+                          indent,
+                          indent_step);
         }
+        if (pretty & !array_items_on_same_line)
+            ss << std::endl << first_indent;
         ss << ']';
-        return ss.str ();
     }
 
-
-    /*
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    bool operator== (const json_object& lhs, const json_object& rhs)
-    {
-        auto li = lhs.begin ();
-        auto ri = rhs.begin ();
-
-        for (; li!=lhs.end(); ++li) {
-            // Skip left hand side invalid values
-            if (li->second.valid() == false)
-                continue;
-
-            // Skip right hand side invalid values
-            while (ri!=rhs.end() && ri->second.valid()==false)
-                ++ri;
-
-            // Check if right hand side is out of values
-            if (ri == rhs.end())
-                return false;
-
-            // Compare the name and value
-            if (li->first != ri->first  ||  li->second != ri->second)
-                return false;
-        }
-
-        // Left hand side is out of objects,
-        // check if right hand side has valid objects left
-        while (ri!=rhs.end()) {
-            if (ri->second.valid())
-                return false;
-            ++ri;
-        }
-
-        return true;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    bool operator== (const json_array& lhs, const json_array& rhs)
-    {
-        auto li = lhs.begin ();
-        auto ri = rhs.begin ();
-
-        for (; li!=lhs.end(); ++li) {
-            // Skip left hand side invalid values
-            if (li->valid() == false)
-                continue;
-
-            // Skip right hand side invalid values
-            while (ri!=rhs.end() && ri->valid()==false)
-                ++ri;
-
-            // Check if right hand side is out of values
-            if (ri == rhs.end())
-                return false;
-
-            // Compare the value
-            if (*li != *ri)
-                return false;
-        }
-
-        // Left hand side is out of objects,
-        // check if right hand side has valid objects left
-        while (ri!=rhs.end()) {
-            if (ri->valid())
-                return false;
-            ++ri;
-        }
-
-        return true;
-    }
-    */
 
 }
