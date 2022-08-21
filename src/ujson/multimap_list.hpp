@@ -742,7 +742,7 @@ namespace ujson {
         /**
          * Erase all entries with a specific key.
          * @param key Entries with this key will be erased.
-         * @rturn The number of erased elements.
+         * @return The number of erased elements.
          */
         size_type erase (const key_type& key) {
             std::lock_guard<std::mutex> lock (mutex);
