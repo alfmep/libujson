@@ -31,7 +31,7 @@ LT_INIT()
 LT_LANG([C++])
 
 AC_CONFIG_MACRO_DIR([m4])
-#AC_CONFIG_HEADERS(src/include/ujson/config.h src/include/ujson/ujson_config.hpp)
+AC_CONFIG_HEADERS(src/ujson/config.hpp)
 AM_SILENT_RULES([yes])
 
 #
@@ -67,6 +67,57 @@ PREDEFINED_IN_DOXYGEN=
 
 
 #
+# Give the user an option to build with gmpxx to support numbers with arbitrary precision
+# Default is autodetect
+#
+AC_ARG_ENABLE(
+	[gmpxx],
+	[AS_HELP_STRING(
+		[--disable-gmpxx],
+		[don't use libgmpxx to support numbers with arbitrary precision, instead numbers are represented by type double [default=autodetect]]
+	)],
+	enable_gmpxx=$enableval,
+	enable_gmpxx=autodetect
+)
+AM_CONDITIONAL([ENABLE_GMPXX_AUTODETECT], [test "x$enable_gmpxx" = "xautodetect"])
+AM_CONDITIONAL([ENABLE_GMPXX_SET], [test "x$enable_gmpxx" != "xno"])
+AM_COND_IF([ENABLE_GMPXX_SET],
+	[
+		# Check for gmpxx
+		PKG_CHECK_MODULES([gmpxx],
+			[gmpxx],
+			[
+				# gmpxx found
+				AM_CONDITIONAL([HAVE_GMPXX], true)
+				AC_DEFINE([UJSON_HAVE_GMPXX],[1],[Define to 1 if libgmpxx is used])
+				PREDEFINED_IN_DOXYGEN+=" UJSON_HAVE_GMPXX=1"
+				REQUIRE_IN_PC_FILE+="gmpxx"
+			],
+			[
+				# gmpxx not found
+				AM_COND_IF([ENABLE_GMPXX_AUTODETECT],
+				[
+					# --enable-gmpxx=autodetect - allow building without gmpxx
+					AC_MSG_WARN([Could not find gmpxx - numbers will be represented by type double]);
+					AM_CONDITIONAL([HAVE_GMPXX], false)
+				],
+				[
+					# --enable-gmpxx=yes - Fail since we can't find gmpxx
+					AC_MSG_ERROR([Could not find gmpxx])
+				])
+			])
+	],
+	[
+		# --disable-gmpxx - Don't check for gmpxx
+		AM_CONDITIONAL([HAVE_GMPXX], false)
+		AC_MSG_NOTICE([gmpxx disabled - numbers will be represented by type double])
+	]
+)
+AC_SUBST([gmpxx_CFLAGS])
+AC_SUBST([gmpxx_LIBS])
+
+
+#
 # Give the user an option to enable parser trace debugging
 #
 AC_ARG_ENABLE([parser-debugging],
@@ -75,10 +126,10 @@ AC_ARG_ENABLE([parser-debugging],
 	enable_parser_debugging=no)
 AM_CONDITIONAL([ENABLE_PARSER_DEBUGGING_SET], [test "x$enable_parser_debugging" != "xno"])
 AM_COND_IF([ENABLE_PARSER_DEBUGGING_SET],
-	[AC_DEFINE([PARSER_DEBUGGING], [1])
-	 PREDEFINED_IN_DOXYGEN+=" PARSER_DEBUGGING=1"
+	[AC_DEFINE([UJSON_PARSER_DEBUGGING], [1], [Define to 1 if debugging parser])
+	 PREDEFINED_IN_DOXYGEN+=" UJSON_PARSER_DEBUGGING=1"
 	],
-	[AC_DEFINE([PARSER_DEBUGGING], [0])]
+	[AC_DEFINE([UJSON_PARSER_DEBUGGING], [0], [Define to 1 if debugging parser])]
 )
 
 
@@ -160,6 +211,10 @@ AC_OUTPUT
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([*************************************************************])
 AC_MSG_NOTICE([* Installation prefix  : ${prefix}])
+AM_COND_IF([HAVE_GMPXX],
+	[AC_MSG_NOTICE([* Using gmpxx          : yes - numbers with arbitrary precision supported])],
+	[AC_MSG_NOTICE([* Using gmpxx          : no - numbers are represented by type double])]
+)
 AM_COND_IF([ENABLE_UTILS_SET],
 	[AC_MSG_NOTICE([* Utilities            : enabled])],
 	[AC_MSG_NOTICE([* Utilities            : disabled])]

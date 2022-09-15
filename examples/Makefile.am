@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -22,6 +22,11 @@ if ENABLE_EXAMPLES_SET
 AM_CPPFLAGS = -I$(srcdir)/../src
 AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
 AM_LDFLAGS = -L../src -lujson
+
+if HAVE_GMPXX
+  AM_CXXFLAGS += $(gmpxx_CFLAGS)
+  AM_LDFLAGS += $(gmpxx_LIBS)
+endif
 
 
 noinst_bindir =

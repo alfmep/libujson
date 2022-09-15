@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -24,6 +24,10 @@ AM_LDFLAGS =
 AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
 #AM_YFLAGS = -d
 #AM_LFLAGS =
+if HAVE_GMPXX
+  AM_CXXFLAGS += $(gmpxx_CFLAGS)
+  AM_LDFLAGS += $(gmpxx_LIBS)
+endif
 
 
 # CURRENT : REVISION : AGE
@@ -60,6 +64,7 @@ libujson_la_SOURCES += ujson/Schema.cpp
 libujsondir = $(includedir)
 nobase_libujson_HEADERS =
 nobase_libujson_HEADERS += ujson.hpp
+nobase_libujson_HEADERS += ujson/config.hpp
 nobase_libujson_HEADERS += ujson/multimap_list.hpp
 nobase_libujson_HEADERS += ujson/jvalue.hpp
 nobase_libujson_HEADERS += ujson/utils.hpp

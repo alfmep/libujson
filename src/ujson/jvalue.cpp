@@ -25,12 +25,56 @@
 #include <ujson/utils.hpp>
 #include <ujson/internal.hpp>
 #include <cstring>
-#include <math.h>
+#include <cmath>
 
 namespace ujson {
 
 
     jvalue invalid_jvalue;
+
+
+#if UJSON_HAVE_GMPXX
+    static void num_t_to_str (const mpf_class& n, std::stringstream& ss)
+    {
+        mp_exp_t e;
+        std::string s = n.get_str (e);
+        auto slen = s.length ();
+
+        if (slen == 0) {
+            ss << "0";
+        }
+        else if (e == 0) {
+            ss << "0." << s;
+        }
+        else if (e >= (ssize_t)slen) {
+            if (e > 7) {
+                if (slen==1) {
+                    ss << s << "e+" << e-1;
+                }else{
+                    ss << s[0] << '.' << (s.c_str()+1) << "e+" << e-1;
+                }
+            }else{
+                ss << s << std::string(e - slen, '0');
+            }
+        }
+        else /* if (e < (ssize_t)slen) */ {
+            if (e < -2) {
+                if (slen==1) {
+                    ss << s << 'e' << e-1;
+                }else{
+                    ss << s[0] << '.' << (s.c_str()+1) << 'e' << e-1;
+                }
+            }else{
+                if (e > 0) {
+                    s.insert (e, 1, '.');
+                    ss << s;
+                }else{
+                    ss << "0." << std::string(std::abs(e), '0') << s;
+                }
+            }
+        }
+    }
+#endif
 
 
     //--------------------------------------------------------------------------
@@ -137,21 +181,49 @@ namespace ujson {
     }
 
 
+#if UJSON_HAVE_GMPXX
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue::jvalue (const double n)
+    jvalue::jvalue (const mpf_class& n)
         : jtype {j_number}
     {
-        v.jnum = n;
+        v.jnum = new num_t (n);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue::jvalue (const int n)
+    jvalue::jvalue (mpf_class&& n)
         : jtype {j_number}
     {
-        v.jnum = static_cast<double> (n);
+        v.jnum = new num_t (std::forward<mpf_class&&>(n));
+    }
+#endif
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const double n)
+        : jtype {j_number}
+    {
+#if UJSON_HAVE_GMPXX
+        v.jnum = new num_t (n);
+#else
+        v.jnum = n;
+#endif
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const long n)
+        : jtype {j_number}
+    {
+#if UJSON_HAVE_GMPXX
+        v.jnum = new num_t (n);
+#else
+        v.jnum = static_cast<num_t> (n);
+#endif
     }
 
 
@@ -192,10 +264,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue& jvalue::operator= (jvalue&& jval)
+    jvalue& jvalue::operator= (jvalue&& value)
     {
-        if (this != &jval)
-            move (std::forward<jvalue&&>(jval));
+        if (this != &value)
+            move (std::forward<jvalue&&>(value));
         return *this;
     }
 
@@ -241,25 +313,34 @@ namespace ujson {
     bool jvalue::operator< (const jvalue& rval) const
     {
         if (this == &rval)
-            return true;
+            return false;
         if (jtype != rval.type())
             return true;
 
         switch (jtype) {
         case j_invalid:
             return false;
+
         case j_object:
             return *v.jobj < *rval.v.jobj;
+
         case j_array:
             return std::lexicographical_compare (v.jarray->begin(), v.jarray->end(),
                                                  rval.v.jarray->begin(), rval.v.jarray->end());
+
         case j_string:
             return std::lexicographical_compare (v.jstr->begin(), v.jstr->end(),
                                                  rval.v.jstr->begin(), rval.v.jstr->end());
         case j_number:
+#if UJSON_HAVE_GMPXX
+            return *v.jnum < *rval.v.jnum;
+#else
             return v.jnum < rval.v.jnum;
+#endif
+
         case j_bool:
-            return false;
+            return v.jbool < rval.v.jbool;
+
         case j_null:
             return false;
         }
@@ -280,16 +361,26 @@ namespace ujson {
         switch (jtype) {
         case j_invalid:
             return false;
+
         case j_object:
             return *v.jobj == *rval.v.jobj;
+
         case j_array:
             return *v.jarray == *rval.v.jarray;
+
         case j_string:
             return *v.jstr == *rval.v.jstr;
+
         case j_number:
+#if UJSON_HAVE_GMPXX
+            return *v.jnum == *rval.v.jnum;
+#else
             return v.jnum == rval.v.jnum;
+#endif
+
         case j_bool:
             return v.jbool == rval.v.jbool;
+
         case j_null:
             return true;
         }
@@ -393,20 +484,80 @@ namespace ujson {
     }
 
 
+#if UJSON_HAVE_GMPXX
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const mpf_class& jvalue::mpf () const
+    {
+        if (jtype == j_number) {
+            return *v.jnum;
+        }else{
+            static const num_t invalid_num = 0;
+            return invalid_num;
+        }
+    }
+#endif
+
+
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     double jvalue::num () const
     {
-        return (jtype==j_number ? v.jnum : 0.0);
+#if UJSON_HAVE_GMPXX
+        return jtype==j_number ? v.jnum->get_d() : 0.0;
+#else
+        return jtype==j_number ? v.jnum : 0.0;
+#endif
+    }
+
+
+#if UJSON_HAVE_GMPXX
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::num (const mpf_class& n)
+    {
+        type (j_number);
+        if (n.get_prec() > v.jnum->get_prec())
+            v.jnum->set_prec (n.get_prec());
+        *v.jnum = n;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void jvalue::num (double n)
+    void jvalue::num (mpf_class&& n)
     {
         type (j_number);
+        if (n.get_prec() > v.jnum->get_prec())
+            v.jnum->set_prec (n.get_prec());
+        *v.jnum = std::forward<mpf_class&&> (n);
+    }
+#endif
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::num (const double n)
+    {
+        type (j_number);
+#if UJSON_HAVE_GMPXX
+        *v.jnum = n;
+#else
         v.jnum = n;
+#endif
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jvalue::num (const long n)
+    {
+        type (j_number);
+#if UJSON_HAVE_GMPXX
+        *v.jnum = n;
+#else
+        v.jnum = static_cast<num_t> (n);
+#endif
     }
 
 
@@ -420,7 +571,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void jvalue::boolean (bool b)
+    void jvalue::boolean (const bool b)
     {
         type (j_bool);
         v.jbool = b;
@@ -442,30 +593,47 @@ namespace ujson {
         switch (jtype) {
         case j_invalid:
             break;
+
         case j_object:
-            if (v.jobj)
+            if (v.jobj) {
                 delete v.jobj;
-            v.jobj = nullptr;
+                v.jobj = nullptr;
+            }
             break;
+
         case j_array:
-            if (v.jarray)
+            if (v.jarray) {
                 delete v.jarray;
-            v.jarray = nullptr;
+                v.jarray = nullptr;
+            }
             break;
+
         case j_string:
-            if (v.jstr)
+            if (v.jstr) {
                 delete v.jstr;
-            v.jstr = nullptr;
+                v.jstr = nullptr;
+            }
             break;
+
         case j_number:
+#if UJSON_HAVE_GMPXX
+            if (v.jnum) {
+                delete v.jnum;
+                v.jnum = nullptr;
+            }
+#else
             v.jnum = 0.0;
+#endif
             break;
+
         case j_bool:
             v.jbool = false;
             break;
+
         case j_null:
             break;
         }
+
         jtype = j_invalid;
     }
 
@@ -488,12 +656,21 @@ namespace ujson {
         case j_object:
             v.jobj = new json_object;
             break;
+
         case j_array:
             v.jarray = new json_array;
             break;
+
         case j_string:
             v.jstr = new std::string;
             break;
+#if UJSON_HAVE_GMPXX
+
+        case j_number:
+            v.jnum = new num_t (0);
+            break;
+#endif
+
         default:
             break;
         }
@@ -696,23 +873,35 @@ namespace ujson {
         switch (type()) {
         case j_invalid:
             break;
+
         case j_object:
             v.jobj->clear ();
             *v.jobj = *rval.v.jobj;
             break;
+
         case j_array:
             v.jarray->clear ();
             *v.jarray = *rval.v.jarray;
             break;
+
         case j_string:
             *v.jstr = *rval.v.jstr;
             break;
+
         case j_number:
+#if UJSON_HAVE_GMPXX
+            if (rval.v.jnum->get_prec() != v.jnum->get_prec())
+                v.jnum->set_prec (rval.v.jnum->get_prec());
+            *v.jnum = *rval.v.jnum;;
+#else
             v.jnum = rval.v.jnum;
+#endif
             break;
+
         case j_bool:
             v.jbool = rval.v.jbool;
             break;
+
         case j_null:
             break;
         }
@@ -730,26 +919,36 @@ namespace ujson {
         switch (jtype) {
         case j_invalid:
             break;
+
         case j_object:
             v.jobj = rval.v.jobj;
             rval.v.jobj = nullptr;
             break;
+
         case j_array:
             v.jarray = rval.v.jarray;
             rval.v.jarray = nullptr;
             break;
+
         case j_string:
             v.jstr = rval.v.jstr;
             rval.v.jstr = nullptr;
             break;
+
         case j_number:
             v.jnum = rval.v.jnum;
+#if UJSON_HAVE_GMPXX
+            rval.v.jnum = nullptr;
+#else
             rval.v.jnum = 0.0;
+#endif
             break;
+
         case j_bool:
             v.jbool = rval.v.jbool;
             rval.v.jbool = false;
             break;
+
         case j_null:
             break;
         }
@@ -791,7 +990,9 @@ namespace ujson {
                                   const std::string& indent) const
     {
         std::stringstream ss;
-        ss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+#if !(UJSON_HAVE_GMPXX)
+        ss << std::setprecision(std::numeric_limits<num_t>::digits10 + 1);
+#endif
         describe (ss, pretty, relaxed_mode, array_items_on_same_line,
                   escape_slash, sorted_properties, "", indent);
         return ss.str ();
@@ -837,10 +1038,14 @@ namespace ujson {
             break;
 
         case j_number:
+#if UJSON_HAVE_GMPXX
+            num_t_to_str (mpf(), ss);
+#else
             if (std::isinf(num()) || std::isnan(num()))
                 ss << "null";
             else
                 ss << num ();
+#endif
             break;
 
         case j_bool:

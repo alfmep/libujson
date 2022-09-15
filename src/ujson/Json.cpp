@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -81,7 +81,7 @@ namespace ujson {
     }
 
 
-#if (PARSER_DEBUGGING)
+#if (UJSON_PARSER_DEBUGGING)
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     bool Json::trace_parsing ()

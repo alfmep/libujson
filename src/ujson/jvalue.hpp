@@ -26,6 +26,10 @@
 #include <memory>
 #include <cstdio>
 #include <ujson/multimap_list.hpp>
+#include <ujson/config.hpp>
+#if UJSON_HAVE_GMPXX
+#  include <gmpxx.h>
+#endif
 
 
 namespace ujson {
@@ -39,7 +43,7 @@ namespace ujson {
         j_array,   /**< A json array. */
         j_string,  /**< A json string. */
         j_number,  /**< A json number. */
-        j_bool,    /**< A json boolean(true or false). */
+        j_bool,    /**< A json boolean (true or false). */
         j_null     /**< A json null value. */
     };
 
@@ -158,6 +162,25 @@ namespace ujson {
          */
         jvalue (const char* s);
 
+#if UJSON_HAVE_GMPXX
+        /**
+         * Create a jvalue of type j_number.
+         * @param n The json number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        jvalue (const mpf_class& n);
+
+        /**
+         * Create a jvalue of type j_number.
+         * @param n The json number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        jvalue (mpf_class&& n);
+#endif
         /**
          * Create a jvalue of type j_number.
          * @param n The json number value.
@@ -168,7 +191,7 @@ namespace ujson {
          * Create a jvalue of type j_number.
          * @param n The json number value.
          */
-        jvalue (const int n);
+        jvalue (const long n);
 
         /**
          * Create a jvalue of type j_bool.
@@ -196,16 +219,16 @@ namespace ujson {
         /**
          * Assignment operator.
          * Make a copy of another jvalue object.
-         * @param jvalue The json value to copy.
+         * @param value The json value to copy.
          */
-        jvalue& operator= (const jvalue& jvalue);
+        jvalue& operator= (const jvalue& value);
 
         /**
          * Move operator.
          * Move the contents of another jvalue to this object.
-         * @param jvalue The json value to move.
+         * @param value The json value to move.
          */
-        jvalue& operator= (jvalue&& jvalue);
+        jvalue& operator= (jvalue&& value);
 
         /**
          * Assignment operator.
@@ -278,26 +301,47 @@ namespace ujson {
          */
         jvalue& operator= (std::string&& s) {str(std::move(s)); return *this;}
 
+#if UJSON_HAVE_GMPXX
+        /**
+         * Assignment operator.
+         * Make this a value of type j_number.
+         * @param n The new number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        jvalue& operator= (const mpf_class& n) {num(n); return *this;}
+
+        /**
+         * Assignment operator.
+         * Make this a value of type j_number.
+         * @param n The new number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        jvalue& operator= (mpf_class&& n) {num(std::forward<mpf_class&&>(n)); return *this;}
+#endif
         /**
          * Assignment operator.
          * Make this a value of type j_number.
          * @param n The new number value.
          */
-        jvalue& operator= (double n) {num(n); return *this;}
+        jvalue& operator= (const double n) {num(n); return *this;}
 
         /**
          * Assignment operator.
          * Make this a value of type j_number.
          * @param n The new number value.
          */
-        jvalue& operator= (int n) {num(static_cast<double>(n)); return *this;}
+        jvalue& operator= (const long n) {num(n); return *this;}
 
         /**
          * Assignment operator.
          * Make this a value of type j_bool.
          * @param true_false The new boolean value.
          */
-        jvalue& operator= (bool true_false) {boolean(true_false); return *this;}
+        jvalue& operator= (const bool true_false) {boolean(true_false); return *this;}
 
         /**
          * Assignment operator.
@@ -417,25 +461,69 @@ namespace ujson {
          */
         void str (std::string&& s);
 
+#if UJSON_HAVE_GMPXX
         /**
          * Return the json number value.
          * @return The json number value.
-         *         If this value isn't of type j_number,
+         *         If this value isn't of type <code>j_number</code>,
+         *         0.0 is returned.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        const mpf_class& mpf () const;
+#endif
+#if UJSON_HAVE_GMPXX
+        /**
+         * Return the json number value.
+         * @note The returned value will be converted to
+         *       a <code>double</code> and possibly lose precision.
+         *       Use <code>jvalue::mpf()</code> to keep precision.
+         * @return The json number value.
+         *         If this value isn't of type <code>j_number</code>,
+         *         0.0 is returned.
+         * @see jvalue::mpf()
+         */
+#else
+        /**
+         * Return the json number value.
+         * @return The json number value.
+         *         If this value isn't of type <code>j_number</code>,
          *         0.0 is returned.
          */
+#endif
         double num () const;
 
+#if UJSON_HAVE_GMPXX
+        /**
+         * Make this a value of type j_number.
+         * @param n The new number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        void num (const mpf_class& n);
+
+        /**
+         * Make this a value of type j_number.
+         * @param n The new number value.
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        void num (mpf_class&& n);
+#endif
         /**
          * Make this a value of type j_number.
          * @param n The new number value.
          */
-        void num (double n);
+        void num (const double n);
 
         /**
          * Make this a value of type j_number.
          * @param n The new number value.
          */
-        void num (int n) {num(static_cast<double>(n));}
+        void num (const long n);
 
         /**
          * Return the json boolean value.
@@ -449,7 +537,7 @@ namespace ujson {
          * Make this a value of type j_bool.
          * @param b The new boolean value.
          */
-        void boolean (bool b);
+        void boolean (const bool b);
 
         /**
          * Check if this a json null value.
@@ -474,8 +562,9 @@ namespace ujson {
         void reset ();
 
         /**
-         * Return the type of json value this object has.
+         * Return the type of json value this object represent.
          * @return The json value type.
+         * @see jvalue_type
          */
         jvalue_type type () const {return jtype;}
 
@@ -681,12 +770,25 @@ namespace ujson {
 
 
     private:
+        // The internal representation of a number
+#if UJSON_HAVE_GMPXX
+        using num_t = mpf_class; // A number is represented by an instance of mpf_class
+#else
+        using num_t = double; // A number is represented by a double
+#endif
+        friend class Analyzer; // Using type jvalue::num_t
+        friend class Parser;   // Using type jvalue::num_t
+
         jvalue_type jtype;
         union {
             json_object* jobj;
             json_array*  jarray;
             std::string* jstr;
-            double       jnum;
+#if UJSON_HAVE_GMPXX
+            num_t*       jnum; // mpf_class*
+#else
+            num_t        jnum; // double
+#endif
             bool         jbool;
         } v;
 

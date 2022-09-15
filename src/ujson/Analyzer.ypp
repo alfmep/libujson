@@ -29,6 +29,7 @@
 
 %code requires {
     #include <string>
+    #include <ujson/jvalue.hpp>
     namespace ujson {
         class Parser;
     }
@@ -62,12 +63,12 @@ RCBRACK "}"
 SEPARATOR ","
 COLON ":"
 ;
-%token <std::string> IDENTIFIER "identifier"
-%token <std::string> STRING     "string"
-%token <double>      NUMBER     "number"
-%token <bool>        TRUE       "true"
-%token <bool>        FALSE      "false"
-%token <int>         NULL       "null"
+%token <std::string>   IDENTIFIER "identifier"
+%token <std::string>   STRING     "string"
+%token <jvalue::num_t> NUMBER     "number"
+%token <bool>          TRUE       "true"
+%token <bool>          FALSE      "false"
+%token <int>           NULL       "null"
 
 %%
 %start instance;

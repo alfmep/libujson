@@ -105,7 +105,7 @@ namespace ujson {
         void on_parse_element (bool relaxed=false);
         void on_parse_string (const std::string& str, bool concatenate=false);
         void on_parse_str_value (bool root_entry=false);
-        void on_parse_number (double num, bool root_entry=false);
+        void on_parse_number (const jvalue::num_t& num, bool root_entry=false);
         void on_parse_bool (const bool value, bool root_entry=false);
         void on_parse_null (bool root_entry=false);
 

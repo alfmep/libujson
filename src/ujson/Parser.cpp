@@ -292,14 +292,23 @@ namespace ujson {
     Analyzer::symbol_type Parser::on_lex_number ()
     {
         try {
-            auto num = std::stod (ujget_text(yyscanner));
+#if UJSON_HAVE_GMPXX
+            // Lazy way to adjust the precision to fit the number.
+            // 4 bits per decimal digit in the number string,
+            // or mpf_get_default_prec(), whatever is higher.
+            auto precision = std::max (mpf_get_default_prec(),
+                                       mp_bitcnt_t(ujget_leng(yyscanner)*4));
+            jvalue::num_t num (ujget_text(yyscanner), precision);
+#else
+            jvalue::num_t num = std::stod (ujget_text(yyscanner));
+#endif
             return Analyzer::make_NUMBER (num, loc());
         }
         catch (std::invalid_argument& ia) {
-            throw Analyzer::syntax_error (loc(), "syntax error, unexpected identifier, expecting number");
+            throw Analyzer::syntax_error (loc(), "syntax error, invalid number");
         }
         catch (std::out_of_range& oor) {
-            throw Analyzer::syntax_error (loc(), "syntax error, number out of range");
+            throw Analyzer::syntax_error (loc(), "number value error, number out of range");
         }
     }
 
@@ -453,7 +462,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Parser::on_parse_number (double num, bool root_entry)
+    void Parser::on_parse_number (const jvalue::num_t& num, bool root_entry)
     {
         values.emplace (num);
         if (root_entry)

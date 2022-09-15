@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -20,13 +20,13 @@
 #include <ujson/Schema.hpp>
 #include <ujson/utils.hpp>
 #include <regex>
-#include <math.h>
+#include <cmath>
 
 
 #if 0
 #include <iostream>
-#define DBG_ERR_SCHEMA do{std::cerr<<"Invalid schema at "<<__FUNCTION__<<':'<<__LINE__<<std::endl;}while(false)
-#define DBG_TRACE do{std::cerr<<"Trace at "<<__FUNCTION__<<':'<<__LINE__<<std::endl;}while(false)
+#define DBG_ERR_SCHEMA do{std::cerr<<"TRACE ERROR Invalid schema at "<<__FUNCTION__<<':'<<__LINE__<<std::endl;}while(false)
+#define DBG_TRACE do{std::cerr<<"TRACE "<<__FUNCTION__<<':'<<__LINE__<<std::endl;}while(false)
 #else
 #define DBG_ERR_SCHEMA do{;}while(false)
 #define DBG_TRACE do{;}while(false)
@@ -50,15 +50,22 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static bool is_integer (double value)
+#if UJSON_HAVE_GMPXX
+    static bool is_integer (const mpf_class& value)
+    {
+        return mpf_integer_p(value.get_mpf_t()) != 0;
+    }
+#else
+    static bool is_integer (const double value)
     {
         double i;
         // We don't count NaN or infinity as an integer
-        if (!isinf(value) && !isnan(value))
-            return modf(value, &i) == 0.0;
+        if (!std::isinf(value) && !std::isnan(value))
+            return modf(value, &i) == (double)0.0;
         else
             return false;
     }
+#endif
 
 
     //--------------------------------------------------------------------------
@@ -67,9 +74,11 @@ namespace ujson {
     {
         if (value.type() != j_number)
             return false;
-        if (!is_integer(value.num()) || value.num()<0)
-            return false;
-        return true;
+#if UJSON_HAVE_GMPXX
+        return is_integer(value.mpf())  &&  value.mpf() >= 0;
+#else
+        return is_integer(value.num())  &&  value.num() >= 0;
+#endif
     }
 
 
@@ -222,46 +231,36 @@ namespace ujson {
             // Core
             //
             if (keyword == "allOf") {
-                DBG_TRACE;
                 handle_allOf(vdata, value);
             }
             else if (keyword == "anyOf") {
-                DBG_TRACE;
                 handle_anyOf (vdata, value);
             }
             else if (keyword == "oneOf") {
-                DBG_TRACE;
                 handle_oneOf (vdata, value);
             }
             else if (keyword == "not") {
-                DBG_TRACE;
                 handle_not (vdata, value);
             }
             else if (keyword == "if" && !vdata.have_if) {
-                DBG_TRACE;
                 handle_if (vdata, value);
             }
             else if (keyword == "then") {
-                DBG_TRACE;
                 handle_then (vdata, value);
             }
             else if (keyword == "else") {
-                DBG_TRACE;
                 handle_else (vdata, value);
             }
             //
             // Validation
             //
             else if (keyword == "type") {
-                DBG_TRACE;
                 handle_type_keyword (vdata, value);
             }
             else if (keyword == "enum") {
-                DBG_TRACE;
                 handle_enum (vdata, value);
             }
             else if (keyword == "const") {
-                DBG_TRACE;
                 handle_const (vdata, value);
             }
 
@@ -269,25 +268,19 @@ namespace ujson {
             // Validation Keywords for Numeric Instances
             //
             if (instance.type()==j_number) {
-                DBG_TRACE;
                 if (keyword == "multipleOf") {
-                    DBG_TRACE;
                     handle_multipleOf (vdata, value);
                 }
                 else if (keyword == "maximum") {
-                    DBG_TRACE;
                     handle_maximum (vdata, value);
                 }
                 else if (keyword == "exclusiveMaximum") {
-                    DBG_TRACE;
                     handle_exclusiveMaximum (vdata, value);
                 }
                 else if (keyword == "minimum") {
-                    DBG_TRACE;
                     handle_minimum (vdata, value);
                 }
                 else if (keyword == "exclusiveMinimum") {
-                    DBG_TRACE;
                     handle_exclusiveMinimum (vdata, value);
                 }
             }
@@ -295,17 +288,13 @@ namespace ujson {
             // Validation Keywords for strings
             //
             else if (instance.type()==j_string) {
-                DBG_TRACE;
                 if (keyword == "maxLength") {
-                    DBG_TRACE;
                     handle_maxLength (vdata, value);
                 }
                 else if (keyword == "minLength") {
-                    DBG_TRACE;
                     handle_minLength (vdata, value);
                 }
                 else if (keyword == "pattern") {
-                    DBG_TRACE;
                     handle_pattern (vdata, value);
                 }
             }
@@ -313,47 +302,37 @@ namespace ujson {
             // Keywords ony relevant for objects
             //
             else if (instance.type()==j_object) {
-                DBG_TRACE;
                 //
                 // Core
                 //
                 if (keyword == "dependentSchemas") {
-                    DBG_TRACE;
                     handle_dependentSchemas (vdata, value);
                 }
                 else if (keyword == "properties" && !vdata.have_properties) {
-                    DBG_TRACE;
                     handle_properties (vdata, value);
                 }
                 else if (keyword == "patternProperties" && !vdata.have_pattern_properties) {
-                    DBG_TRACE;
                     handle_patternProperties (vdata, value);
                 }
                 else if (keyword == "additionalProperties") {
-                    DBG_TRACE;
                     handle_additionalProperties (vdata, value);
                 }
                 else if (keyword == "propertyNames") {
-                    DBG_TRACE;
                     handle_propertyNames (vdata, value);
                 }
                 //
                 // Validations
                 //
                 else if (keyword == "maxProperties") {
-                    DBG_TRACE;
                     handle_maxProperties (vdata, value);
                 }
                 else if (keyword == "minProperties") {
-                    DBG_TRACE;
                     handle_minProperties (vdata, value);
                 }
                 else if (keyword == "required") {
-                    DBG_TRACE;
                     handle_required (vdata, value);
                 }
                 else if (keyword == "dependentRequired") {
-                    DBG_TRACE;
                     handle_dependentRequired (vdata, value);
                 }
             }
@@ -361,43 +340,34 @@ namespace ujson {
             // Keywords ony relevant for arrays
             //
             else if (instance.type()==j_array) {
-                DBG_TRACE;
                 //
                 // Core
                 //
                 if (keyword == "prefixItems" && !vdata.have_prefix_items) {
-                    DBG_TRACE;
                     handle_prefixItems (vdata, value);
                 }
                 else if (keyword == "items") {
-                    DBG_TRACE;
                     handle_items (vdata, value);
                 }
                 else if (keyword == "contains") {
-                    DBG_TRACE;
                     handle_contains (vdata, value);
                 }
                 //
                 // Validations
                 //
                 else if (keyword == "maxItems") {
-                    DBG_TRACE;
                     handle_maxItems (vdata, value);
                 }
                 else if (keyword == "minItems") {
-                    DBG_TRACE;
                     handle_minItems (vdata, value);
                 }
                 else if (keyword == "uniqueItems") {
-                    DBG_TRACE;
                     handle_uniqueItems (vdata, value);
                 }
                 else if (keyword == "maxContains") {
-                    DBG_TRACE;
                     handle_maxContains (vdata, value);
                 }
                 else if (keyword == "minContains") {
-                    DBG_TRACE;
                     handle_minContains (vdata, value);
                 }
             }
@@ -777,22 +747,18 @@ namespace ujson {
             //
             auto& v = vdata.schema.get("patternProperties");
             if (v.type() == j_object) {
-                DBG_TRACE;
                 handle_patternProperties (vdata, v);
                 if (vdata.result != valid)
                     return;
             }
         }
 
-        DBG_TRACE;
         if (vdata.have_properties || vdata.have_pattern_properties) {
             // Valdate instance members that are left after
             // 'properties' and 'patternProperties' is done
             for (auto& property : vdata.additional_properties) {
-                DBG_TRACE;
                 vdata.result = validate_impl (value, vdata.instance.get(property));
                 if (vdata.result != valid) {
-                    DBG_TRACE;
                     return;
                 }
             }
@@ -802,7 +768,6 @@ namespace ujson {
             for (auto& i : vdata.instance.obj()) {
                 vdata.result = validate_impl (value, i.second);
                 if (vdata.result != valid) {
-                    DBG_TRACE;
                     return;
                 }
             }
@@ -854,8 +819,13 @@ namespace ujson {
             return Schema::valid;
 
         if (type_name == "integer" && instance.type() == j_number) {
+#if UJSON_HAVE_GMPXX
+            if (is_integer(instance.mpf()))
+                return Schema::valid;
+#else
             if (is_integer(instance.num()))
                 return Schema::valid;
+#endif
         }
 
         return Schema::not_valid;
@@ -935,15 +905,25 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
-        if (value.num()<=0.0 || isinf(value.num()) || isnan(value.num())) {
-            DBG_ERR_SCHEMA;
-            vdata.result = err_schema;
-            return;
-        }
-        if (is_integer(vdata.instance.num() / value.num()))
+#if UJSON_HAVE_GMPXX
+        auto& val = value.mpf ();
+        if (/*is_integer(val) &&*/ val>0 &&
+            is_integer(vdata.instance.mpf() / val))
+        {
             vdata.result = valid;
-        else
+        }else{
             vdata.result = not_valid;
+        }
+#else
+        auto val = value.num ();
+        if (/*is_integer(val) &&*/ val>0 &&
+            is_integer(vdata.instance.num() / val))
+        {
+            vdata.result = valid;
+        }else{
+            vdata.result = not_valid;
+        }
+#endif
     }
 
 
@@ -958,10 +938,17 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.mpf() <= value.mpf())
+            vdata.result = valid;
+        else
+            vdata.result = not_valid;
+#else
         if (vdata.instance.num() <= value.num())
             vdata.result = valid;
         else
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -976,10 +963,17 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.mpf() < value.mpf())
+            vdata.result = valid;
+        else
+            vdata.result = not_valid;
+#else
         if (vdata.instance.num() < value.num())
             vdata.result = valid;
         else
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -994,10 +988,17 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.mpf() >= value.mpf())
+            vdata.result = valid;
+        else
+            vdata.result = not_valid;
+#else
         if (vdata.instance.num() >= value.num())
             vdata.result = valid;
         else
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -1012,10 +1013,17 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.mpf() > value.mpf())
+            vdata.result = valid;
+        else
+            vdata.result = not_valid;
+#else
         if (vdata.instance.num() > value.num())
             vdata.result = valid;
         else
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -1043,7 +1051,11 @@ namespace ujson {
             return;
         }
 
+#if UJSON_HAVE_GMPXX
+        size_t max_len = (size_t) value.mpf().get_ui ();
+#else
         size_t max_len = (size_t) value.num ();
+#endif
         if (simple_utf8_len(vdata.instance.str()) > max_len)
             vdata.result = not_valid;
     }
@@ -1061,7 +1073,11 @@ namespace ujson {
             return;
         }
 
+#if UJSON_HAVE_GMPXX
+        size_t min_len = (size_t) value.mpf().get_ui ();
+#else
         size_t min_len = (size_t) value.num ();
+#endif
         if (simple_utf8_len(vdata.instance.str()) < min_len)
             vdata.result = not_valid;
     }
@@ -1103,8 +1119,13 @@ namespace ujson {
             return;
         }
 
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.size() > (size_t)value.mpf().get_ui())
+            vdata.result = not_valid;
+#else
         if (vdata.instance.size() > (size_t)value.num())
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -1120,8 +1141,13 @@ namespace ujson {
             return;
         }
 
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.size() < (size_t)value.mpf().get_ui())
+            vdata.result = not_valid;
+#else
         if (vdata.instance.size() < (size_t)value.num())
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -1192,8 +1218,13 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.size() > (size_t)value.mpf().get_ui())
+            vdata.result = not_valid;
+#else
         if (vdata.instance.size() > (size_t)value.num())
             vdata.result = not_valid;
+#endif
     }
 
 
@@ -1208,8 +1239,13 @@ namespace ujson {
             vdata.result = err_schema;
             return;
         }
+#if UJSON_HAVE_GMPXX
+        if (vdata.instance.size() < (size_t)value.mpf().get_ui())
+            vdata.result = not_valid;
+#else
         if (vdata.instance.size() < (size_t)value.num())
             vdata.result = not_valid;
+#endif
     }
 
 
