@@ -906,24 +906,21 @@ namespace ujson {
             return;
         }
 #if UJSON_HAVE_GMPXX
-        auto& val = value.mpf ();
-        if (/*is_integer(val) &&*/ val>0 &&
-            is_integer(vdata.instance.mpf() / val))
-        {
-            vdata.result = valid;
-        }else{
-            vdata.result = not_valid;
-        }
+        auto& vdata_num = vdata.instance.mpf ();
+        auto& value_num = value.mpf ();
 #else
-        auto val = value.num ();
-        if (/*is_integer(val) &&*/ val>0 &&
-            is_integer(vdata.instance.num() / val))
-        {
+        auto vdata_num = vdata.instance.num ();
+        auto& value_num = value.num ();
+#endif
+        if (value_num <= 0) {
+            // 6.2.1. The value of "multipleOf" MUST be a number, strictly greater than 0.
+            vdata.result = err_schema;
+        }
+        else if (is_integer(vdata_num / value_num)) {
             vdata.result = valid;
         }else{
             vdata.result = not_valid;
         }
-#endif
     }
 
 
