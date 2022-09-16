@@ -22,6 +22,7 @@
 #include <ujson/jvalue.hpp>
 #include <string>
 #include <set>
+#include <map>
 
 
 namespace ujson {
@@ -153,6 +154,10 @@ namespace ujson {
         void handle_dependentRequired (vdata_t& vdata, jvalue& value);
         // Validation - content
         void handle_contentSchema (vdata_t& vdata, jvalue& value);
+
+        using handler_func_t = void (Schema::*) (vdata_t&, jvalue&);
+        using schema_handler_map_t = std::map<const std::string, const std::pair<const jvalue_type, const handler_func_t>>;
+        static const schema_handler_map_t schema_handlers;
     };
 
 

@@ -35,6 +35,66 @@
 
 namespace ujson {
 
+    //
+    // Schema keywords mapped to methods to handle the keyword implementation
+    //
+    const Schema::schema_handler_map_t Schema::schema_handlers = {
+        //
+        // Core keywords for all instance types (here, j_invalid means no specific type)
+        //
+        {"allOf", {j_invalid, &Schema::handle_allOf}},
+        {"anyOf", {j_invalid, &Schema::handle_anyOf}},
+        {"oneOf", {j_invalid, &Schema::handle_oneOf}},
+        {"not",   {j_invalid, &Schema::handle_not}},
+        {"if",    {j_invalid, &Schema::handle_if}},
+        {"then",  {j_invalid, &Schema::handle_then}},
+        {"else",  {j_invalid, &Schema::handle_else}},
+        // Validation keywords for all instance types
+        {"type",  {j_invalid, &Schema::handle_type_keyword}},
+        {"enum",  {j_invalid, &Schema::handle_enum}},
+        {"const", {j_invalid, &Schema::handle_const}},
+        //
+        // Validation Keywords for Numeric Instances
+        //
+        {"multipleOf",       {j_number, &Schema::handle_multipleOf}},
+        {"maximum",          {j_number, &Schema::handle_maximum}},
+        {"exclusiveMaximum", {j_number, &Schema::handle_exclusiveMaximum}},
+        {"minimum",          {j_number, &Schema::handle_minimum}},
+        {"exclusiveMinimum", {j_number, &Schema::handle_exclusiveMinimum}},
+        //
+        // Validation Keywords for strings
+        //
+        {"maxLength", {j_string, &Schema::handle_maxLength}},
+        {"minLength", {j_string, &Schema::handle_minLength}},
+        {"pattern",   {j_string, &Schema::handle_pattern}},
+        //
+        // Keywords for objects
+        //
+        {"dependentSchemas",     {j_object, &Schema::handle_dependentSchemas}},
+        {"properties",           {j_object, &Schema::handle_properties}},
+        {"patternProperties",    {j_object, &Schema::handle_patternProperties}},
+        {"additionalProperties", {j_object, &Schema::handle_additionalProperties}},
+        {"propertyNames",        {j_object, &Schema::handle_propertyNames}},
+        // Validations
+        {"maxProperties",        {j_object, &Schema::handle_maxProperties}},
+        {"minProperties",        {j_object, &Schema::handle_minProperties}},
+        {"required",             {j_object, &Schema::handle_required}},
+        {"dependentRequired",    {j_object, &Schema::handle_dependentRequired}},
+        //
+        // Keywords for arrays
+        //
+        {"prefixItems", {j_array, &Schema::handle_prefixItems}},
+        {"items",       {j_array, &Schema::handle_items}},
+        {"contains",    {j_array, &Schema::handle_contains}},
+        {"maxItems",    {j_array, &Schema::handle_maxItems}},
+        {"minItems",    {j_array, &Schema::handle_minItems}},
+        {"uniqueItems", {j_array, &Schema::handle_uniqueItems}},
+        {"maxContains", {j_array, &Schema::handle_maxContains}},
+        {"minContains", {j_array, &Schema::handle_minContains}},
+    };
+
+
+
     Schema::vdata_t::vdata_t (jvalue& s, jvalue& i)
         : schema (s),
           instance (i)
@@ -227,155 +287,16 @@ namespace ujson {
             auto& keyword = member.first;
             auto& value = member.second;
 
-            //
-            // Core
-            //
-            if (keyword == "allOf") {
-                handle_allOf(vdata, value);
+            const auto& entry = schema_handlers.find (keyword);
+            if (entry != schema_handlers.end()) {
+                auto handler_type = entry->second.first;
+                auto handler_func = entry->second.second;
+                if (handler_type==j_invalid || handler_type==instance.type())
+                    (this->*handler_func) (vdata, value);
             }
-            else if (keyword == "anyOf") {
-                handle_anyOf (vdata, value);
-            }
-            else if (keyword == "oneOf") {
-                handle_oneOf (vdata, value);
-            }
-            else if (keyword == "not") {
-                handle_not (vdata, value);
-            }
-            else if (keyword == "if" && !vdata.have_if) {
-                handle_if (vdata, value);
-            }
-            else if (keyword == "then") {
-                handle_then (vdata, value);
-            }
-            else if (keyword == "else") {
-                handle_else (vdata, value);
-            }
-            //
-            // Validation
-            //
-            else if (keyword == "type") {
-                handle_type_keyword (vdata, value);
-            }
-            else if (keyword == "enum") {
-                handle_enum (vdata, value);
-            }
-            else if (keyword == "const") {
-                handle_const (vdata, value);
-            }
-
-            //
-            // Validation Keywords for Numeric Instances
-            //
-            if (instance.type()==j_number) {
-                if (keyword == "multipleOf") {
-                    handle_multipleOf (vdata, value);
-                }
-                else if (keyword == "maximum") {
-                    handle_maximum (vdata, value);
-                }
-                else if (keyword == "exclusiveMaximum") {
-                    handle_exclusiveMaximum (vdata, value);
-                }
-                else if (keyword == "minimum") {
-                    handle_minimum (vdata, value);
-                }
-                else if (keyword == "exclusiveMinimum") {
-                    handle_exclusiveMinimum (vdata, value);
-                }
-            }
-            //
-            // Validation Keywords for strings
-            //
-            else if (instance.type()==j_string) {
-                if (keyword == "maxLength") {
-                    handle_maxLength (vdata, value);
-                }
-                else if (keyword == "minLength") {
-                    handle_minLength (vdata, value);
-                }
-                else if (keyword == "pattern") {
-                    handle_pattern (vdata, value);
-                }
-            }
-            //
-            // Keywords ony relevant for objects
-            //
-            else if (instance.type()==j_object) {
-                //
-                // Core
-                //
-                if (keyword == "dependentSchemas") {
-                    handle_dependentSchemas (vdata, value);
-                }
-                else if (keyword == "properties" && !vdata.have_properties) {
-                    handle_properties (vdata, value);
-                }
-                else if (keyword == "patternProperties" && !vdata.have_pattern_properties) {
-                    handle_patternProperties (vdata, value);
-                }
-                else if (keyword == "additionalProperties") {
-                    handle_additionalProperties (vdata, value);
-                }
-                else if (keyword == "propertyNames") {
-                    handle_propertyNames (vdata, value);
-                }
-                //
-                // Validations
-                //
-                else if (keyword == "maxProperties") {
-                    handle_maxProperties (vdata, value);
-                }
-                else if (keyword == "minProperties") {
-                    handle_minProperties (vdata, value);
-                }
-                else if (keyword == "required") {
-                    handle_required (vdata, value);
-                }
-                else if (keyword == "dependentRequired") {
-                    handle_dependentRequired (vdata, value);
-                }
-            }
-            //
-            // Keywords ony relevant for arrays
-            //
-            else if (instance.type()==j_array) {
-                //
-                // Core
-                //
-                if (keyword == "prefixItems" && !vdata.have_prefix_items) {
-                    handle_prefixItems (vdata, value);
-                }
-                else if (keyword == "items") {
-                    handle_items (vdata, value);
-                }
-                else if (keyword == "contains") {
-                    handle_contains (vdata, value);
-                }
-                //
-                // Validations
-                //
-                else if (keyword == "maxItems") {
-                    handle_maxItems (vdata, value);
-                }
-                else if (keyword == "minItems") {
-                    handle_minItems (vdata, value);
-                }
-                else if (keyword == "uniqueItems") {
-                    handle_uniqueItems (vdata, value);
-                }
-                else if (keyword == "maxContains") {
-                    handle_maxContains (vdata, value);
-                }
-                else if (keyword == "minContains") {
-                    handle_minContains (vdata, value);
-                }
-            }
-
             if (vdata.result != valid)
                 return vdata.result;
         }
-
         return valid;
     }
 
@@ -472,6 +393,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Schema::handle_if (vdata_t& vdata, jvalue& value)
     {
+        if (vdata.have_if)
+            return;
         auto result = validate_impl (value, vdata.instance);
         vdata.have_if = true;
         if (result == valid) {
@@ -564,6 +487,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Schema::handle_prefixItems (vdata_t& vdata, jvalue& value)
     {
+        if (vdata.have_prefix_items)
+            return;
+
         // 10.3.1.1. The value of "prefixItems" MUST be a non-empty array of valid JSON Schemas.
         if (value.array().empty()) {
             DBG_ERR_SCHEMA;
@@ -645,6 +571,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Schema::handle_properties (vdata_t& vdata, jvalue& value)
     {
+        if (vdata.have_properties)
+            return;
+
         // 10.3.2.1. The value of "properties" MUST be an object.
         if (value.type() != j_object) {
             DBG_ERR_SCHEMA;
@@ -678,6 +607,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     void Schema::handle_patternProperties (vdata_t& vdata, jvalue& value)
     {
+        if (vdata.have_pattern_properties)
+            return;
+
         try {
             // 10.3.2.2. The value of "patternProperties" MUST be an object.
             if (value.type() != j_object) {
