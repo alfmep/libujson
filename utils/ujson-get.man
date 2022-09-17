@@ -13,7 +13,7 @@ ujson-get \- Print a specific value from a JSON document to standard output
 
 
 .SH DESCRIPTION
-ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value and exits with code 0.
+ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value and exits with code 0. If not found, or on parse error, an error message is printed to standard error and the exit code is 1.
 
 
 .SH OPTIONS
@@ -22,7 +22,7 @@ ujson-get prints a specific value in a JSON document. If the JSON document is co
 If the JSON value is an object or an array, print it without whitespace.
 .TP
 .B -t, --type=TYPE
-Require the value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the value is of a different type, exit with code 1.
+Require the found value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the found value is of a different type, exit with code 1.
 .TP
 .B -r, --relaxed
 Parse the JSON document in relaxed mode.

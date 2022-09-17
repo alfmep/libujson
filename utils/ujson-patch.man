@@ -14,7 +14,7 @@ ujson-patch \- Apply JSON patches to a JSON document.
 
 .SH DESCRIPTION
 ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output.
-If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application returns with an error code.
+If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application exits with code 1.
 .PP
 Patch definitions are described in RFC 6902 - JavaScript Object Notation (JSON) Patch.
 .PP
@@ -31,7 +31,7 @@ Print the resulting JSON document without whitespaces.
 Parse JSON input files in relaxed mode.
 .TP
 .B -q, --quiet
-No errors are written to standard error. On errors, of failed patch test operations, the application exits with an error code. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
+No errors are written to standard error. On errors, of failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 .TP
 .B -v, --version
 Print version and exit.

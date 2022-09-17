@@ -13,7 +13,7 @@ ujson-print \- Print a JSON document to standard output
 
 
 .SH DESCRIPTION
-ujson-print parses a JSON document and prints it to standard output. By default, the JSON document is parsed in relaxed mode and printed in strict mode. The document is also by default printed in a readable format. This tool can be used to convert JSON documents in relaxed form to strict form. And to make a JSON document more compact or more readable.
+ujson-print parses a JSON document and prints it to standard output. By default, ujson-print parses the JSON document in relaxed mode and prints it in strict mode. The document is also by default printed in a readable format. This tool can be used to convert JSON documents in relaxed form to strict form, to sort object members, and to make a JSON document more compact or more readable.
 
 
 .SH OPTIONS

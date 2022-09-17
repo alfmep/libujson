@@ -60,7 +60,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << prog_name << " [OPTIONS] [FILE...]" << endl
         << endl
         << "Options:" <<endl
-        << "  -r, --relax          Relaxed parsing, don't use strict mode when parsing." << endl
+        << "  -r, --relaxed        Relaxed parsing, don't use strict mode when parsing." << endl
         << "  -s, --schema=FILE    Validate the JSON document with a schema file." << endl
         << "                       This option can be used multiple times." << endl
         << "                       The first schema will be used to validate the JSON document." << endl
@@ -79,7 +79,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "relax",   no_argument,       0, 'r'},
+        { "relaxed", no_argument,       0, 'r'},
         { "schema",  required_argument, 0, 's'},
         { "quiet",   no_argument,       0, 'q'},
         { "version", no_argument,       0, 'v'},

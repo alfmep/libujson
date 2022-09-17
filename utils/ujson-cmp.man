@@ -13,12 +13,12 @@ ujson-cmp \- Compare two JSON documents
 
 
 .SH DESCRIPTION
-ujson-cmp parses two JSON documents and compares the instances for equality. If the JSON instances are equal, ujson-cmp exits with code 0. If they are not equal, or if a parsing error occurs, ujson-cmp exits with code 1.
+ujson-cmp parses two JSON documents and compares the instances for equality. If the JSON instances are equal, ujson-cmp prints 'equal' to standard output and exits with code 0. If they are not equal, ujson-cmp prints 'not equal' to standard output and exits with code 1. On errors, for example parsing errors, an error message is printed to standard error and the exit code is 1.
 
 
 .SH OPTIONS
 .TP
-.B -r, --relax
+.B -r, --relaxed
 Parse JSON documents in relaxed mode.
 .TP
 .B -q, --quiet
@@ -38,13 +38,13 @@ The following is allowed in JSON documents when relaxed format is used:
 
 .nf
 - C-style comments.
-- String values can be split up into more than one string separated by whitespace or comments.
+- String values can be split up into more than one string separated by whitespace or comments (like in C/C++).
 - Object definitions are allowed to end with a separator(,).
 - Array items are allowed to end with a separator(,).
-- In object definitions, a member name can be an identifier instead of a string.
-  An identifier is a name with the following format: [_a-zA-Z][_a-zA-Z0-9]*
+- In object definitions, a member name can be an 'identifier' instead of a string enclosed by double quotes.
+  An identifier is an UTF-8 encoded name in the following format: [_a-zA-Z][_a-zA-Z0-9]*
   Exceptions are: true, false, and null (case insensitive).
-  Those names are reserved and are not allowed to be used as identifiers (i.e. without enclosing double quotes).
+  Those names are reserved and not allowed to be used as identifiers (i.e. without enclosing double quotes).
 
 .PP
 Example of a JSON document that is allowed in relaxed mode:
@@ -57,9 +57,10 @@ Example of a JSON document that is allowed in relaxed mode:
     name: "relaxed document",
     value: 42,
     desc: "Some text here",
-    "normal_member_name": "Another string",
+    relaxed_member_name: "A string",
+    "strict_member_name": "Another string",
 
-    // The following object member name must be enclosed by double quotes
+    // The following object member name is reserved and must be enclosed by double quotes
     "null": 0,
 
     long_string: "This is a string value on " // This can be used to

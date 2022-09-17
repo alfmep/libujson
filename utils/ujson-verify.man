@@ -18,7 +18,7 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 .SH OPTIONS
 .TP
-.B -r, --relax
+.B -r, --relaxed
 Relaxed parsing, don't use strict mode when parsing.
 .TP
 .B -s, --schema=FILE
