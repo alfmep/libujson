@@ -170,18 +170,11 @@ int main (int argc, char* argv[])
                   << "\"" << std::endl;
         value.reset ();
     }
-    switch (value.type()) {
-    case ujson::j_invalid:
+
+    if (value.type() == ujson::j_invalid)
         retval = 1;
-        break;
-    case ujson::j_string:
-        // Don't escape string value output as method describe() does.
-        cout << value.str() << endl;
-        break;
-    default:
+    else
         cout << value.describe(!opt.compact) << endl;
-        break;
-    }
 
     if (retval && !type_mismatch)
         std::cerr << "Value at location \"" << opt.pointer << "\" not found" << endl;
