@@ -1,0 +1,27 @@
+/*
+ * This is an example of a JSON document in a format supported by libujson.
+ *
+ * C-style comments are allowed and ignored when parsing a JSON document.
+ */
+{
+    header: "A JSON document in 'relaxed' format.",
+
+    note_1: "As you can see, object member names doesn't have "
+            "to be enclosed by double quotes if they are written "
+            "in format: [_a-zA-Z][_a-zA-Z0-9]*",
+
+    note_2: "This is a string value on " // This can be used to
+            "more than one line that, "  // make it more readable.
+            "when parsed, will be one "
+            "single long string value.",
+
+    array: [1,2,3,4,5,6,7,8,9,],  // The array definition can end with a separator (,)
+
+    // Object member names not in format [_a-zA-Z][_a-zA-Z0-9]* must still be enclosed by double quotes.
+    "~tilde": "Other value",
+
+    // true is a reserved word and if used as an object member name, it must be enclosed by double quotes.
+    "true": "Some value",
+
+    last_object_member: null,  // The last object member can end with a separator (,)
+}
