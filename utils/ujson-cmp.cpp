@@ -21,6 +21,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <getopt.h>
 
@@ -127,8 +129,18 @@ int main (int argc, char* argv[])
     ifstream ifs[2];
     string json_desc[2];
     for (auto i=0; i<2; ++i) {
+        // Open
         ifs[i].open (opt.filename[i]);
+        if (ifs[i].fail()) {
+            cerr << "Can't open file \"" << opt.filename[i] << "\" - " << strerror(errno) << endl;
+            exit (1);
+        }
+        // Read
         json_desc[i] = string ((istreambuf_iterator<char>(ifs[i])), istreambuf_iterator<char>());
+        if (ifs[i].fail()) {
+            cerr << "Error reading file \"" << opt.filename[i] << "\" - " << strerror(errno) << endl;
+            exit (1);
+        }
         ifs[i].close ();
     }
 
@@ -137,7 +149,7 @@ int main (int argc, char* argv[])
     ujson::Json j;
     ujson::jvalue instance[2];
     for (auto i=0; i<2; ++i) {
-        instance[i] = j.parse_string (json_desc[i], false);
+        instance[i] = j.parse_string (json_desc[i], !opt.relaxed);
         if (!instance[i].valid()) {
             if (!opt.quiet)
                 cerr << "Error parsing " << opt.filename[i] << ": " << j.error() << endl;
