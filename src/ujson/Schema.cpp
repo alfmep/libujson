@@ -842,7 +842,7 @@ namespace ujson {
         auto& value_num = value.mpf ();
 #else
         auto vdata_num = vdata.instance.num ();
-        auto& value_num = value.num ();
+        auto value_num = value.num ();
 #endif
         if (value_num <= 0) {
             // 6.2.1. The value of "multipleOf" MUST be a number, strictly greater than 0.
