@@ -47,10 +47,10 @@ bin_PROGRAMS += ujson-patch
 ujson_patch_SOURCES = ujson-patch.cpp
 
 dist_man1_MANS =
-dist_man1_MANS += ujson-verify.man
-dist_man1_MANS += ujson-print.man
-dist_man1_MANS += ujson-cmp.man
-dist_man1_MANS += ujson-get.man
-dist_man1_MANS += ujson-patch.man
+dist_man1_MANS += ujson-verify.1
+dist_man1_MANS += ujson-print.1
+dist_man1_MANS += ujson-cmp.1
+dist_man1_MANS += ujson-get.1
+dist_man1_MANS += ujson-patch.1
 
 endif

@@ -1,6 +1,6 @@
 .\" Manpage for ujson-verify
-.\" Contact dan@ultramarin.se to correct errors or types.
-.TH ujson-patch 1 "" "" "User Commands"
+.\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
+.TH ujson-patch 1 "" "@PACKAGE_STRING@" "User Commands"
 
 
 .SH NAME
@@ -44,4 +44,4 @@ ujson-print(1) ujson-get(1) ujson-verify(1) ujson-cmp(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (dan@ultramarin.se)
+Dan Arrhenius (@PACKAGE_BUGREPORT@)

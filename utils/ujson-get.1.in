@@ -1,6 +1,6 @@
 .\" Manpage for ujson-verify
-.\" Contact dan@ultramarin.se to correct errors or types.
-.TH ujson-get 1 "" "" "User Commands"
+.\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
+.TH ujson-get 1 "" "@PACKAGE_STRING@" "User Commands"
 
 
 .SH NAME
@@ -44,4 +44,4 @@ https://datatracker.ietf.org/doc/html/rfc6901
 
 
 .SH AUTHOR
-Dan Arrhenius (dan@ultramarin.se)
+Dan Arrhenius (@PACKAGE_BUGREPORT@)

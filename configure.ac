@@ -201,6 +201,11 @@ AC_CONFIG_FILES([
 	src/Makefile
 	src/ujson.pc
 	utils/Makefile
+	utils/ujson-cmp.1
+	utils/ujson-get.1
+	utils/ujson-patch.1
+	utils/ujson-print.1
+	utils/ujson-verify.1
 	examples/Makefile
 	doc/Makefile
 ])
