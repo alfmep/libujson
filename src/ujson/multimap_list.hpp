@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020,2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2020,2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -102,7 +102,7 @@ namespace ujson {
          * Constructor.
          * Creates an empty container with a specific
          * function object for key comparisons.
-         * @param Comparison function object to use for all comparisons of keys.
+         * @param comp function object to use for all comparisons of keys.
          */
         explicit multimap_list (const key_compare& comp)
             : keys (comp)
@@ -142,7 +142,7 @@ namespace ujson {
          * Create a multimap_list objct and copy elements from a range of values.
          * @param first The first value in the range of values to copy.
          * @param last The position after the last value in the range of values to copy.
-         * @param Comparison function object to use for all comparisons of keys.
+         * @param comp function object to use for all comparisons of keys.
          */
         template<class InputIt>
         multimap_list (InputIt first,
@@ -159,6 +159,7 @@ namespace ujson {
          * Initializer list constructor.
          * Create a multimap_list and initialize the content.
          * @param ilist An initializer list.
+         * @param comp function object to use for all comparisons of keys.
          */
         multimap_list (std::initializer_list<value_type> ilist,
                        const key_compare& comp=key_compare())
@@ -555,7 +556,8 @@ namespace ujson {
         /**
          * Insert elements from a range of elements.
          * @param pos The elements will be inserted before this position.
-         * @param ilist Initializer list to insert values from.
+         * @param first An iterator to the first element to insert.
+         * @param last The position after the last element to insert.
          * @return Iterator pointing to the first element inserted,
          *         or <code>pos</code> if the initializer list is empty.
          */
@@ -718,7 +720,7 @@ namespace ujson {
         /**
          * Erase a range of entries from the container.
          * @param first The position of the first entry to erase.
-         * @param first The position after the last entry to erase.
+         * @param last The position after the last entry to erase.
          * @return Iterator following the last removed element.
          */
         iterator erase (iterator first, iterator last) {
@@ -730,7 +732,7 @@ namespace ujson {
         /**
          * Erase a range of entries from the container.
          * @param first The position of the first entry to erase.
-         * @param first The position after the last entry to erase.
+         * @param last The position after the last entry to erase.
          * @return Iterator following the last removed element.
          */
         const_iterator erase (const_iterator first, const_iterator last) {

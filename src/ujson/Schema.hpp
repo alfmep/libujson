@@ -28,7 +28,7 @@
 namespace ujson {
 
     /**
-     *
+     * A JSON schema used to validate JSON documents.
      */
     class Schema {
     public:

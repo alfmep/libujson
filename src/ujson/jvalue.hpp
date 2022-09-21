@@ -250,17 +250,17 @@ namespace ujson {
          * Assignment operator.
          * Set the value type to j_array and copy the
          * content of the supplied json_array to this object.
-         * @param o A json_array to be copied.
+         * @param array A json_array to be copied.
          */
-        jvalue& operator= (const json_array& aptr);
+        jvalue& operator= (const json_array& array);
 
         /**
          * Move operator.
          * Set the value type to j_array and move the
          * content of the supplied json_array to this object.
-         * @param o A json_array to be moved.
+         * @param array A json_array to be moved.
          */
-        jvalue& operator= (json_array&& aptr);
+        jvalue& operator= (json_array&& array);
 
         /**
          * Assignment operator.
@@ -397,7 +397,7 @@ namespace ujson {
          * content of the supplied json_object to this objec.
          * @param o A json_object to be moved.
          */
-        void obj (json_object&& optr);
+        void obj (json_object&& o);
 
         /**
          * Get a reference to the json_array
