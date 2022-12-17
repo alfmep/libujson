@@ -24,6 +24,7 @@ rm -rf \
    src/ujson/config.hpp \
    src/ujson/stamp-h1 \
    utils/Makefile.in \
+   utils/ujson-tool.1 \
    utils/ujson-cmp.1 \
    utils/ujson-get.1 \
    utils/ujson-patch.1 \

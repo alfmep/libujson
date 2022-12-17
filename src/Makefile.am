@@ -22,7 +22,7 @@ AM_CPPFLAGS = -I$(srcdir)
 AM_LDFLAGS =
 
 AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
-#AM_YFLAGS = -d
+AM_YFLAGS = -y -Wno-yacc
 #AM_LFLAGS =
 if HAVE_GMPXX
   AM_CXXFLAGS += $(gmpxx_CFLAGS)
@@ -56,9 +56,9 @@ libujson_la_SOURCES += ujson/Analyzer.ypp
 libujson_la_SOURCES += ujson/Lexer.lpp
 libujson_la_SOURCES += ujson/Parser.cpp
 libujson_la_SOURCES += ujson/jvalue.cpp
+libujson_la_SOURCES += ujson/jpointer.cpp
 libujson_la_SOURCES += ujson/utils.cpp
-libujson_la_SOURCES += ujson/Json.cpp
-libujson_la_SOURCES += ujson/Schema.cpp
+libujson_la_SOURCES += ujson/jparser.cpp
 
 # Header files
 libujsondir = $(includedir)
@@ -67,9 +67,9 @@ nobase_libujson_HEADERS += ujson.hpp
 nobase_libujson_HEADERS += ujson/config.hpp
 nobase_libujson_HEADERS += ujson/multimap_list.hpp
 nobase_libujson_HEADERS += ujson/jvalue.hpp
+nobase_libujson_HEADERS += ujson/jpointer.hpp
 nobase_libujson_HEADERS += ujson/utils.hpp
-nobase_libujson_HEADERS += ujson/Json.hpp
-nobase_libujson_HEADERS += ujson/Schema.hpp
+nobase_libujson_HEADERS += ujson/jparser.hpp
 
 # Header files that is not to be installed
 noinst_HEADERS =

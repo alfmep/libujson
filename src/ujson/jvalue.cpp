@@ -19,6 +19,7 @@
 #include <utility>
 #include <sstream>
 #include <algorithm>
+#include <stdexcept>
 #include <regex>
 #include <iomanip>
 #include <ujson/jvalue.hpp>
@@ -30,7 +31,7 @@
 namespace ujson {
 
 
-    jvalue invalid_jvalue;
+    jvalue invalid_jvalue (j_invalid);
 
 
 #if UJSON_HAVE_GMPXX
@@ -78,6 +79,30 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    static json_object::iterator find_last_in_jobj (const std::string& key,
+                                                    json_object& jobj)
+    {
+        auto range = jobj.equal_range (key);
+        auto first = range.first;
+        auto last  = range.second;
+
+        if (last == first)
+            return jobj.send ();
+
+        --last;
+        while (!last->second.valid()) {
+            if (last == first) {
+                jobj.erase (last);
+                return jobj.send ();
+            }
+            jobj.erase (last--);
+        }
+        return last;
+    }
+
+
+    //--------------------------------------------------------------------------
     // Functor to compare a string with the key in a json_pair object
     // when searching for an entry in a json object.
     class json_pair_key_cmp_t {
@@ -89,6 +114,14 @@ namespace ujson {
     private:
         const std::string& key;
     };
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue ()
+        : jtype {j_null}
+    {
+    }
 
 
     //--------------------------------------------------------------------------
@@ -207,9 +240,24 @@ namespace ujson {
         : jtype {j_number}
     {
 #if UJSON_HAVE_GMPXX
-        v.jnum = new num_t (n);
+        std::stringstream ss;
+        ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << n;
+        v.jnum = new num_t (ss.str());
 #else
         v.jnum = n;
+#endif
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue::jvalue (const int n)
+        : jtype {j_number}
+    {
+#if UJSON_HAVE_GMPXX
+        v.jnum = new num_t (n);
+#else
+        v.jnum = static_cast<num_t> (n);
 #endif
     }
 
@@ -392,13 +440,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     json_object& jvalue::obj ()
     {
-        if (jtype == j_object) {
-            return *v.jobj;
-        }else{
-            static json_object invalid_obj;
-            invalid_obj.clear ();
-            return invalid_obj;
-        }
+        if (jtype != j_object)
+            throw std::logic_error ("Not a JSON object");
+        return *v.jobj;
     }
 
 
@@ -424,13 +468,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     json_array& jvalue::array ()
     {
-        if (jtype == j_array) {
-            return *v.jarray;
-        }else{
-            static json_array invalid_array;
-            invalid_array.clear ();
-            return invalid_array;
-        }
+        if (jtype != j_array)
+            throw std::logic_error ("Not a JSON array");
+        return *v.jarray;
     }
 
 
@@ -454,15 +494,11 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    const std::string& jvalue::str () const
+    std::string& jvalue::str ()
     {
-        if (jtype == j_string) {
-            return *v.jstr;
-        }else{
-            static std::string invalid_str;
-            invalid_str = "";
-            return invalid_str;
-        }
+        if (jtype != j_string)
+            throw std::logic_error ("Not a JSON string");
+        return *v.jstr;
     }
 
 
@@ -487,14 +523,11 @@ namespace ujson {
 #if UJSON_HAVE_GMPXX
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    const mpf_class& jvalue::mpf () const
+    mpf_class& jvalue::mpf ()
     {
-        if (jtype == j_number) {
-            return *v.jnum;
-        }else{
-            static const num_t invalid_num = 0;
-            return invalid_num;
-        }
+        if (jtype != j_number)
+            throw std::logic_error ("Not a JSON number");
+        return *v.jnum;
     }
 #endif
 
@@ -503,10 +536,12 @@ namespace ujson {
     //--------------------------------------------------------------------------
     double jvalue::num () const
     {
+        if (jtype != j_number)
+            throw std::logic_error ("Not a JSON number");
 #if UJSON_HAVE_GMPXX
-        return jtype==j_number ? v.jnum->get_d() : 0.0;
+        return v.jnum->get_d();
 #else
-        return jtype==j_number ? v.jnum : 0.0;
+        return v.jnum;
 #endif
     }
 
@@ -541,7 +576,9 @@ namespace ujson {
     {
         type (j_number);
 #if UJSON_HAVE_GMPXX
-        *v.jnum = n;
+        std::stringstream ss;
+        ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << n;
+        *v.jnum = ss.str();
 #else
         v.jnum = n;
 #endif
@@ -565,7 +602,10 @@ namespace ujson {
     //--------------------------------------------------------------------------
     bool jvalue::boolean () const
     {
-        return (jtype==j_bool ? v.jbool : false);
+        if (jtype != j_bool)
+            throw std::logic_error ("Not a JSON boolean");
+
+        return v.jbool;
     }
 
 
@@ -587,13 +627,11 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
+    // Free resources and set JSON type to null
     //--------------------------------------------------------------------------
     void jvalue::reset ()
     {
         switch (jtype) {
-        case j_invalid:
-            break;
-
         case j_object:
             if (v.jobj) {
                 delete v.jobj;
@@ -615,26 +653,19 @@ namespace ujson {
             }
             break;
 
-        case j_number:
 #if UJSON_HAVE_GMPXX
+        case j_number:
             if (v.jnum) {
                 delete v.jnum;
                 v.jnum = nullptr;
             }
-#else
-            v.jnum = 0.0;
+            break;
 #endif
-            break;
-
-        case j_bool:
-            v.jbool = false;
-            break;
-
-        case j_null:
+        default:
             break;
         }
 
-        jtype = j_invalid;
+        jtype = j_null;
     }
 
 
@@ -664,12 +695,18 @@ namespace ujson {
         case j_string:
             v.jstr = new std::string;
             break;
-#if UJSON_HAVE_GMPXX
 
         case j_number:
+#if UJSON_HAVE_GMPXX
             v.jnum = new num_t (0);
-            break;
+#else
+            v.jnum = 0.0;
 #endif
+            break;
+
+        case j_bool:
+            v.jbool = false;
+            break;
 
         default:
             break;
@@ -687,7 +724,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvalue::have (const std::string& name) const
+    bool jvalue::has (const std::string& name) const
     {
         bool found = false;
         if (type() == j_object) {
@@ -705,14 +742,45 @@ namespace ujson {
     //--------------------------------------------------------------------------
     jvalue& jvalue::get (const std::string& name)
     {
-        if (type() == j_object) {
-            auto entry = find_last_in_jobj (name);
-            if (entry != v.jobj->send())
-                return entry->second;
+        if (type() != j_object) {
+            // This is not a json object
+            throw std::logic_error ("Not a JSON object");
         }
-        // Name not found or not a json object, return an invalid json value
-        invalid_jvalue.reset ();
+
+        auto entry = find_last_in_jobj (name, *v.jobj);
+        if (entry != v.jobj->send())
+            return entry->second;
+
+        // Name not found, return an invalid json value
+        invalid_jvalue.type (j_invalid);
         return invalid_jvalue;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue& jvalue::get_unique (const std::string& name)
+    {
+        if (type() != j_object) {
+            // This is not a json object
+            throw std::logic_error ("Not a JSON object");
+        }
+
+        auto items = v.jobj->equal_range (name);
+        if (items.first == items.second) {
+            // Name not found, return an invalid json value
+            invalid_jvalue.type (j_invalid);
+            return invalid_jvalue;
+        }
+
+        auto& value = items.first->second;
+
+        // Check if there are more attributes with the same name
+        ++items.first;
+        if (items.first != items.second)
+            throw std::logic_error ("JSON object member name not unique");
+
+        return value;
     }
 
 
@@ -720,19 +788,17 @@ namespace ujson {
     //--------------------------------------------------------------------------
     jvalue& jvalue::operator[] (const std::string& name)
     {
-        if (type() != j_object) {
-            // This is not a json object, return an invalid json value
-            invalid_jvalue.reset ();
-            return invalid_jvalue;
-        }
-        auto entry = find_last_in_jobj (name);
+        if (type() != j_object)
+            throw std::logic_error ("Not a JSON object");
+
+        auto entry = find_last_in_jobj (name, *v.jobj);
         if (entry != v.jobj->send()) {
             // Found a valid json value associated with 'name'
             return entry->second;
         }else{
-            // 'name' not found, create an invalid json value
-            // associated with 'name'.
-            return v.jobj->emplace_back (name, jvalue()).second;
+            // 'name' not found, create an null json
+            // value associated with 'name'.
+            return v.jobj->emplace_back (name, jvalue(j_null)).second;
         }
     }
 
@@ -741,14 +807,13 @@ namespace ujson {
     //--------------------------------------------------------------------------
     jvalue& jvalue::operator[] (const size_t index)
     {
-        if (type() == j_array) {
-            if (index < v.jarray->size())
-                return v.jarray->operator[] (index);
-        }
-        // Out of bounds, or this is not a json array,
-        // return an invalid json value
-        invalid_jvalue.reset ();
-        return invalid_jvalue;
+        if (type() != j_array)
+            throw std::logic_error ("Not a JSON array");
+
+        if (index >= v.jarray->size())
+            throw std::out_of_range ("Array index out of range");
+
+        return v.jarray->operator[] (index);
     }
 
 
@@ -771,12 +836,13 @@ namespace ujson {
                          const jvalue& value,
                          const bool overwrite)
     {
-        if (type()!=j_object || !value.valid()) {
-            invalid_jvalue.reset ();
-            return invalid_jvalue;
-        }
+        if (type() != j_object)
+            throw std::logic_error ("Not a JSON object");
 
-        auto entry = find_last_in_jobj (name);
+        if (!value.valid())
+            throw std::invalid_argument ("Invalid JSON value");
+
+        auto entry = find_last_in_jobj (name, *v.jobj);
         if (entry == v.jobj->send()) {
             return v.jobj->emplace_back(name, value).second;
         }else{
@@ -793,12 +859,13 @@ namespace ujson {
                          jvalue&& value,
                          const bool overwrite)
     {
-        if (type()!=j_object || !value.valid()) {
-            invalid_jvalue.reset ();
-            return invalid_jvalue;
-        }
+        if (type() != j_object)
+            throw std::logic_error ("Not a JSON object");
 
-        auto entry = find_last_in_jobj (name);
+        if (!value.valid())
+            throw std::invalid_argument ("Invalid JSON value");
+
+        auto entry = find_last_in_jobj (name, *v.jobj);
         if (entry == v.jobj->send()) {
             return v.jobj->emplace_back(name, std::forward<jvalue&&>(value)).second;
         }else{
@@ -811,24 +878,28 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue& jvalue::add (const jvalue& value)
+    jvalue& jvalue::append (const jvalue& value)
     {
-        if (type()!=j_array || !value.valid()) {
-            invalid_jvalue.reset ();
-            return invalid_jvalue;
-        }
+        if (type() != j_array)
+            throw std::logic_error ("Not a JSON array");
+
+        if (!value.valid())
+            throw std::invalid_argument ("Invalid JSON value");
+
         return v.jarray->emplace_back (value);
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue& jvalue::add (jvalue&& value)
+    jvalue& jvalue::append (jvalue&& value)
     {
-        if (type()!=j_array || !value.valid()) {
-            invalid_jvalue.reset ();
-            return invalid_jvalue;
-        }
+        if (type() != j_array)
+            throw std::logic_error ("Not a JSON array");
+
+        if (!value.valid())
+            throw std::invalid_argument ("Invalid JSON value");
+
         return v.jarray->emplace_back (std::forward<jvalue&&>(value));
     }
 
@@ -837,14 +908,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     bool jvalue::remove (const std::string& name)
     {
-        bool retval = false;
-        if (type() == j_object) {
-            if (v.jobj->find(name) != v.jobj->end()) {
-                v.jobj->erase (name);
-                retval = true;
-            }
-        }
-        return retval;
+        return type()==j_object && v.jobj->erase(name) > 0;
     }
 
 
@@ -952,41 +1016,16 @@ namespace ujson {
         case j_null:
             break;
         }
-        rval.jtype = j_invalid;
-    }
-
-
-    //--------------------------------------------------------------------------
-    // Assume jtype is j_object
-    //--------------------------------------------------------------------------
-    json_object::iterator jvalue::find_last_in_jobj (const std::string& key)
-    {
-        auto range = v.jobj->equal_range (key);
-        auto first = range.first;
-        auto last  = range.second;
-
-        if (last == first)
-            return v.jobj->send ();
-
-        --last;
-        while (!last->second.valid()) {
-            if (last == first) {
-                v.jobj->erase (last);
-                return v.jobj->send ();
-            }
-            v.jobj->erase (last--);
-        }
-        return last;
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     std::string jvalue::describe (bool pretty,
-                                  bool relaxed_mode,
                                   bool array_items_on_same_line,
-                                  bool escape_slash,
                                   bool sorted_properties,
+                                  bool escape_slash,
+                                  bool relaxed_mode,
                                   const std::string& indent) const
     {
         std::stringstream ss;
@@ -1039,7 +1078,7 @@ namespace ujson {
 
         case j_number:
 #if UJSON_HAVE_GMPXX
-            num_t_to_str (mpf(), ss);
+            num_t_to_str (const_cast<jvalue*>(this)->mpf(), ss);
 #else
             if (std::isinf(num()) || std::isnan(num()))
                 ss << "null";

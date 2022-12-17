@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -17,7 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-if ENABLE_UTILS_SET
+if ENABLE_TEST_SET
 
 AM_CPPFLAGS = -I$(srcdir)/../src
 AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
@@ -29,29 +29,13 @@ if HAVE_GMPXX
 endif
 
 
-bin_PROGRAMS =
+noinst_bindir =
+noinst_bin_PROGRAMS =
 
-bin_PROGRAMS += ujson-tool
-ujson_tool_SOURCES = ujson-tool.cpp
+#noinst_bin_PROGRAMS += ujson-parse-test
+#ujson_parse_test_SOURCES  = ujson-parse-test.cpp
 
-bin_PROGRAMS += ujson-verify
-ujson_verify_SOURCES = ujson-verify.cpp
-
-bin_PROGRAMS += ujson-print
-ujson_print_SOURCES = ujson-print.cpp
-
-bin_PROGRAMS += ujson-get
-ujson_get_SOURCES = ujson-get.cpp
-
-bin_PROGRAMS += ujson-patch
-ujson_patch_SOURCES = ujson-patch.cpp
-
-
-dist_man1_MANS =
-dist_man1_MANS += ujson-tool.1
-dist_man1_MANS += ujson-verify.1
-dist_man1_MANS += ujson-print.1
-dist_man1_MANS += ujson-get.1
-dist_man1_MANS += ujson-patch.1
+noinst_bin_PROGRAMS += ujson-patch-test
+ujson_patch_test_SOURCES  = ujson-patch-test.cpp
 
 endif

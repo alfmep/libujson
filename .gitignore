@@ -37,6 +37,8 @@ depcomp
 /src/location.hh
 /src/position.hh
 /src/stack.hh
+/utils/ujson-tool
+/utils/ujson-tool.1
 /utils/ujson-cmp
 /utils/ujson-cmp.1
 /utils/ujson-get

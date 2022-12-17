@@ -31,16 +31,18 @@ using namespace std;
 static constexpr const char* prog_name = "ujson-get";
 
 struct appargs_t {
+    string filename;
+    ujson::jpointer pointer;
+    ujson::jvalue_type jtype;
     bool compact;
     bool relaxed;
-    ujson::jvalue_type jtype;
-    string filename;
-    string pointer;
+    bool unescape;
 
     appargs_t () {
+        jtype = ujson::j_invalid;
         compact = false;
         relaxed = false;
-        jtype = ujson::j_invalid;
+        unescape = false;
     }
 };
 
@@ -63,6 +65,8 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -t, --type=TYPE  Require the value to be of a specific type." << endl;
     out << "                   TYPE is one of the following: boolean, number, string, null, object, or array." << endl;
     out << "                   If the value is of a different type, exit with code 1." << endl;
+    out << "  -u, --unescape   If the resulting value is a JSON string," << endl;
+    out << "                   print it as an unescaped string witout enclosing double quotes." << endl;
     out << "  -r, --relaxed    Parse the JSON document in relaxed mode." << endl;
     out << "  -v, --version    Print version and exit." << endl;
     out << "  -h, --help       Print this help message and exit." << endl;
@@ -76,14 +80,15 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "compact", no_argument,       0, 'c'},
-        { "type",    required_argument, 0, 't'},
-        { "relaxed", no_argument,       0, 'r'},
-        { "version", no_argument,       0, 'v'},
-        { "help",    no_argument,       0, 'h'},
+        { "compact",  no_argument,       0, 'c'},
+        { "type",     required_argument, 0, 't'},
+        { "unescape", no_argument,       0, 'u'},
+        { "relaxed",  no_argument,       0, 'r'},
+        { "version",  no_argument,       0, 'v'},
+        { "help",     no_argument,       0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "ct:rvh";
+    const char* arg_format = "ct:urvh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -100,6 +105,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
                 exit (1);
             }
             break;
+        case 'u':
+            args.unescape = true;
+            break;
         case 'r':
             args.relaxed = true;
             break;
@@ -115,14 +123,30 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         }
     }
+
+    // Get the argument for the JSON document
+    //
     if (optind < argc) {
         args.filename = argv[optind++];
     }else{
         cerr << "Too few arguments" << endl;
         exit (1);
     }
-    if (optind < argc)
-        args.pointer = argv[optind++];
+
+    // Get the argument for the JSON pointer
+    //
+    if (optind < argc) {
+        try {
+            args.pointer = argv[optind++];
+        }
+        catch (std::invalid_argument& ia) {
+            cerr << "Error: " << ia.what() << endl;
+            exit (1);
+        }
+    }
+
+    // Still more arguments ?
+    //
     if (optind < argc) {
         cerr << "Too many arguments" << endl;
         exit (1);
@@ -147,10 +171,10 @@ int main (int argc, char* argv[])
 
     // Parse json document
     //
-    ujson::Json j;
-    auto instance = j.parse_string (json_desc, !opt.relaxed);
+    ujson::jparser parser;
+    auto instance = parser.parse_string (json_desc, !opt.relaxed);
     if (!instance.valid()) {
-        cerr << "Parse error: " << j.error() << endl;
+        cerr << "Parse error: " << parser.error() << endl;
         exit (1);
     }
 
@@ -165,19 +189,23 @@ int main (int argc, char* argv[])
     if (opt.jtype != ujson::j_invalid  &&  value.type() != opt.jtype) {
         // The value is not of the type we required
         type_mismatch = true;
-        std::cerr << "Type mismatch, value at \"" << opt.pointer
+        std::cerr << "Type mismatch, value at \"" << (std::string)opt.pointer
                   << "\" is of type \"" << jtype_to_str(value.type())
                   << "\"" << std::endl;
-        value.reset ();
+        value.type (ujson::j_invalid);
     }
 
-    if (value.type() == ujson::j_invalid)
+    if (value.valid()) {
+        if (opt.unescape  &&  value.type() == ujson::j_string)
+            cout << value.str() << endl;
+        else
+            cout << value.describe(!opt.compact) << endl;
+    }else{
         retval = 1;
-    else
-        cout << value.describe(!opt.compact) << endl;
+    }
 
     if (retval && !type_mismatch)
-        std::cerr << "Value at location \"" << opt.pointer << "\" not found" << endl;
+        std::cerr << "Value at location \"" << (std::string)opt.pointer << "\" not found" << endl;
 
     return retval;
 }

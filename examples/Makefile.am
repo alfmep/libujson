@@ -35,4 +35,16 @@ noinst_bin_PROGRAMS =
 noinst_bin_PROGRAMS += find_jvalue
 find_jvalue_SOURCES  = find_jvalue.cpp
 
+noinst_bin_PROGRAMS += initialize-jvalue
+initialize_jvalue_SOURCES  = initialize-jvalue.cpp
+
+noinst_bin_PROGRAMS += json-object
+json_object_SOURCES  = json-object.cpp
+
+noinst_bin_PROGRAMS += json-array
+json_array_SOURCES  = json-array.cpp
+
+noinst_bin_PROGRAMS += json-number
+json_number_SOURCES  = json-number.cpp
+
 endif

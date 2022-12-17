@@ -70,7 +70,7 @@ NUMBER {INTEGER}|{DOUBLE}
 DBL_QUOTE [\"]
 WHITESPACE [\t\r ]+
 
-ASCII [\x00-\x21\x23-\x5b\x5d-\x7f]
+ASCII [\x20-\x21\x23-\x5b\x5d-\x7f]
 
 U     [\x80-\xbf]
 U2    [\xc2-\xdf]

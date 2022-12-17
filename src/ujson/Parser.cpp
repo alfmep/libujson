@@ -48,7 +48,7 @@ namespace ujson {
 
         use_strict_mode = strict_mode;
         allow_key_duplicates = allow_duplicates_in_obj;
-        root.reset ();
+        root.type (j_invalid);
         parse_error.clear ();
         file = f;
         ujlex_init (&yyscanner);
@@ -58,7 +58,7 @@ namespace ujson {
         if (!scan_begin()) {
             ujset_debug (trace_scanning, yyscanner);
             if (analyzer.parse())
-                root.reset ();
+                root.type (j_invalid);
             scan_end ();
             ujlex_destroy (yyscanner);
         }
@@ -90,7 +90,7 @@ namespace ujson {
 
         use_strict_mode = strict_mode;
         allow_key_duplicates = allow_duplicates_in_obj;
-        root.reset ();
+        root.type (j_invalid);
         parse_error.clear ();
         ujlex_init (&yyscanner);
         auto scan_buf = uj_scan_bytes (buf, length, yyscanner);
@@ -100,7 +100,7 @@ namespace ujson {
         analyzer.set_debug_level (trace_parsing);
         ujset_debug (trace_scanning, yyscanner);
         if (analyzer.parse())
-            root.reset ();
+            root.type (j_invalid);
 
         uj_delete_buffer (scan_buf, yyscanner);
         ujlex_destroy (yyscanner);
@@ -295,9 +295,21 @@ namespace ujson {
 #if UJSON_HAVE_GMPXX
             // Lazy way to adjust the precision to fit the number.
             // 4 bits per decimal digit in the number string,
+            // or 4 bits times the power of ten when the format is xEpow,
             // or mpf_get_default_prec(), whatever is higher.
-            auto precision = std::max (mpf_get_default_prec(),
-                                       mp_bitcnt_t(ujget_leng(yyscanner)*4));
+            std::string str (ujget_text(yyscanner), ujget_leng(yyscanner));
+            auto e_pos = str.find ("e");
+            if (e_pos == std::string::npos)
+                e_pos = str.find ("E");
+
+            size_t precision;
+            if (e_pos == std::string::npos) {
+                precision = std::max (mpf_get_default_prec(),
+                                      mp_bitcnt_t(ujget_leng(yyscanner)*4));
+            }else{
+                precision = std::max (mpf_get_default_prec(),
+                                      mp_bitcnt_t(std::abs(std::stod(str.substr(e_pos+1)))*4));
+            }
             jvalue::num_t num (ujget_text(yyscanner), precision);
 #else
             jvalue::num_t num = std::stod (ujget_text(yyscanner));
@@ -422,7 +434,7 @@ namespace ujson {
     {
         jvalue a (j_array);
         for (auto& v : elements)
-            a.add (std::move(v));
+            a.append (std::move(v));
         elements.clear ();
         values.emplace (std::move(a));
     }

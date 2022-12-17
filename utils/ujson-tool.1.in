@@ -1,0 +1,130 @@
+.\" Manpage for ujson-tool
+.\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
+.TH ujson-tool 1 "" "@PACKAGE_STRING@" "User Commands"
+
+
+.SH NAME
+ujson-tool \- View, inspect, and modify JSON documents.
+
+
+.SH SYNOPSIS
+.B ujson-tool
+<COMMAND> [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]
+
+
+.SH DESCRIPTION
+ujson-tool is a tool to view, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
+
+
+.SH COMMON OPTIONS
+.TP
+.B -r, --relaxed
+Relaxed parsing, don't use strict mode when parsing.
+.TP
+.B -p, --pointer=POINTER
+Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
+.TP
+.B -c, --compact
+Any Resulting JSON output is printed without whitespaces.
+.TP
+.B -s, --sort
+Any Resulting JSON output is printed with object members sorted by name.
+.TP
+.B -e, --escape-slash
+In any resulting JSON string output, forward slash characters("/") are escaped to "\\/".
+.TP
+.B -a, --array-lines
+In any resulting JSON output, print JSON array items on separate lines.
+.TP
+.B -v, --version
+Print version and exit.
+.TP
+.B -h, --help
+Print help and exit.
+
+.SH POINTER
+A JSON Pointer as described in RFC 6901.
+A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encoded as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
+
+
+.SH COMMANDS:
+
+.SH view
+Print the JSON instance to standard output.
+
+Options:
+.TP
+.B -t, --type=TYPE
+Require that the viewed instance is of a specific JSON type. If the resulting instance is of another type, an error message is printed to standard error and 1 is returned. Valid types are: object, array, string, number, boolean, and null.
+.TP
+.B -u, --unescape
+Only if the resulting instance is a JSON string: print the string value, unescaped witout enclosing double quotes.
+
+
+.SH verify
+Verify the syntax of the JSON document.
+Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
+Prints an error message to standard error and return 1 if the input is a not valid JSON document.
+Common option '--pointer=POINTER' is ignored by this command.
+
+Options:
+.TP
+.B -q, --quiet
+Print nothing, only return 0 on success, and 1 on error.
+
+
+.SH type
+Print or check the JSON type of the instance.
+Default is to write the JSON type of the instance to standard output. But if option '--type=TYPE' is used, the command will check if the JSON type of the instance is the same type as specified.
+
+Options:
+.TP
+.B -t, --type=TYPE
+Check if the JSON instance is of a specific JSON type.
+If it is, print 'Yes' to standard output and return 0.
+If not, print 'No' to standard output and return 1.
+Valid types are: object, array, string, number, boolean, and null.
+.TP
+.B -q, --quiet
+If option '--type' is used, don't print anything.
+
+
+.SH size
+Print the number of elements/members to standard output if the JSON instance
+is an array or object. If the JSON instance isn't an array or object,
+an error message is printed to standard error and 1 is returned.
+
+.B Note:
+It is not a recursive count. It is only the number of elements/members in the specified array/object,
+not including sub-items of the array/object.
+
+.SH members
+If the instance is a JSON object, print the object member names to standard output on separate lines.
+If not a JSON object, print an error message to standard error and return 1.
+Note that the member names are by default printed as unescaped string values, and a single
+member name can thus be printed on multiple lines if it contains one or more line breaks.
+
+Options:
+.TP
+.B -s, --sort
+Sort the member names.
+.TP
+.B -m, --escape-members
+Print the member names as JSON formatted strings.
+The names are printed JSON escaped, enclosed by double quotes.
+This will ensure that no member name is written on multiple
+lines since newline characters are escaped.
+This option is not needed is option '--json-array' is used.
+.TP
+.B -j, --json-array
+Print the member names as a JSON formatted array.
+Option '--escape-members' is implied by this option.
+
+
+
+.SH SEE ALSO
+ujson-print(1) ujson-verify(1) ujson-get(1) ujson-patch(1)
+
+
+.SH AUTHOR
+Dan Arrhenius (@PACKAGE_BUGREPORT@)

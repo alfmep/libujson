@@ -146,13 +146,13 @@ int main (int argc, char* argv[])
 
     // Parse json files
     //
-    ujson::Json j;
+    ujson::jparser parser;
     ujson::jvalue instance[2];
     for (auto i=0; i<2; ++i) {
-        instance[i] = j.parse_string (json_desc[i], !opt.relaxed);
+        instance[i] = parser.parse_string (json_desc[i], !opt.relaxed);
         if (!instance[i].valid()) {
             if (!opt.quiet)
-                cerr << "Error parsing " << opt.filename[i] << ": " << j.error() << endl;
+                cerr << "Error parsing " << opt.filename[i] << ": " << parser.error() << endl;
             exit (1);
         }
     }

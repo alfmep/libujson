@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017,2021 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2017,2021,2022 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -19,11 +19,19 @@
 ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS  = src
+
 if ENABLE_UTILS_SET
-SUBDIRS += utils
-endif
-if ENABLE_EXAMPLES_SET
-SUBDIRS += examples
+  SUBDIRS += utils
 endif
 
-SUBDIRS  += doc
+if ENABLE_TEST_SET
+  SUBDIRS += test
+endif
+
+if ENABLE_EXAMPLES_SET
+  SUBDIRS += examples
+endif
+
+if HAVE_DOXYGEN
+  SUBDIRS += doc
+endif

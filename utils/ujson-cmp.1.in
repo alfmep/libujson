@@ -1,4 +1,4 @@
-.\" Manpage for ujson-verify
+.\" Manpage for ujson-cmp
 .\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
 .TH ujson-cmp 1 "" "@PACKAGE_STRING@" "User Commands"
 

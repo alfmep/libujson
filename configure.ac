@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-AC_INIT([libujson], [3.0.0], [dan@ultramarin.se])
+AC_INIT([libujson], [4.0.0], [dan@ultramarin.se])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 subdir-objects])
 
 AC_PROG_CC
@@ -35,7 +35,7 @@ AC_CONFIG_HEADERS(src/ujson/config.hpp)
 AM_SILENT_RULES([yes])
 
 #
-# Release 3.0.0
+# Release 4.0.0
 #
 # Library interface version x:y:z
 #                           | | |
@@ -47,7 +47,7 @@ AM_SILENT_RULES([yes])
 #
 # Library version (CURRENT:REVISION:AGE)
 #
-LIBRARY_VERSION=3:0:0
+LIBRARY_VERSION=4:0:0
 AC_SUBST([LIBRARY_VERSION])
 
 #
@@ -143,7 +143,17 @@ AM_CONDITIONAL([ENABLE_UTILS_SET], [test "x$enable_utils" != "xno"])
 
 
 #
-# Give the user an option to not build example applications
+# Give the user an option to build test applications
+#
+AC_ARG_ENABLE([test],
+	[AS_HELP_STRING([--enable-test],
+	[build test applications, but they are not installed])],,
+	enable_test=no)
+AM_CONDITIONAL([ENABLE_TEST_SET], [test "x$enable_test" != "xno"])
+
+
+#
+# Give the user an option to build example applications
 #
 AC_ARG_ENABLE([examples],
 	[AS_HELP_STRING([--enable-examples],
@@ -161,12 +171,12 @@ AC_SUBST([PREDEFINED_IN_DOXYGEN])
 
 
 #
-# Give the user an option to build doxygen documentation
+# Give the user an option to disable doxygen documentation
 #
 AC_ARG_ENABLE([doxygen],
-	[AS_HELP_STRING([--enable-doxygen],
-	[build doxygen documentation, if possible])],,
-	enable_doxygen=no)
+	[AS_HELP_STRING([--disable-doxygen],
+	[disable doxygen documentation])],,
+	enable_doxygen=yes)
 AM_CONDITIONAL([ENABLE_DOXYGEN_SET], [test "x$enable_doxygen" != "xno"])
 
 
@@ -201,11 +211,13 @@ AC_CONFIG_FILES([
 	src/Makefile
 	src/ujson.pc
 	utils/Makefile
+	utils/ujson-tool.1
 	utils/ujson-cmp.1
 	utils/ujson-get.1
 	utils/ujson-patch.1
 	utils/ujson-print.1
 	utils/ujson-verify.1
+	test/Makefile
 	examples/Makefile
 	doc/Makefile
 ])
@@ -223,6 +235,10 @@ AM_COND_IF([HAVE_GMPXX],
 AM_COND_IF([ENABLE_UTILS_SET],
 	[AC_MSG_NOTICE([* Utilities            : enabled])],
 	[AC_MSG_NOTICE([* Utilities            : disabled])]
+)
+AM_COND_IF([ENABLE_TEST_SET],
+	[AC_MSG_NOTICE([* Test applications    : enabled (test applications are not installed)])],
+	[AC_MSG_NOTICE([* Test applications    : disabled])]
 )
 AM_COND_IF([ENABLE_EXAMPLES_SET],
 	[AC_MSG_NOTICE([* Examples             : enabled (exmples are not installed)])],

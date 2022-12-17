@@ -1,4 +1,4 @@
-.\" Manpage for ujson-verify
+.\" Manpage for ujson-patch
 .\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
 .TH ujson-patch 1 "" "@PACKAGE_STRING@" "User Commands"
 
@@ -13,8 +13,7 @@ ujson-patch \- Apply JSON patches to a JSON document.
 
 
 .SH DESCRIPTION
-ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output.
-If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application exits with code 1.
+ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output, except if the patch file only contains ‘test’ operations, then noting is written to standard output. If all patches are successful, the application exits with code 0. If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application exits with code 1.
 .PP
 Patch definitions are described in RFC 6902 - JavaScript Object Notation (JSON) Patch.
 .PP
@@ -40,7 +39,7 @@ Print version and exit.
 Print help and exit.
 
 .SH SEE ALSO
-ujson-print(1) ujson-get(1) ujson-verify(1) ujson-cmp(1)
+ujson-tool(1) ujson-print(1) ujson-get(1) ujson-verify(1)
 
 
 .SH AUTHOR

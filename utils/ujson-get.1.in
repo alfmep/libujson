@@ -1,4 +1,4 @@
-.\" Manpage for ujson-verify
+.\" Manpage for ujson-get
 .\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
 .TH ujson-get 1 "" "@PACKAGE_STRING@" "User Commands"
 
@@ -24,6 +24,9 @@ If the JSON value is an object or an array, print it without whitespace.
 .B -t, --type=TYPE
 Require the found value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the found value is of a different type, exit with code 1.
 .TP
+.B -u, --unescape
+If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
+.TP
 .B -r, --relaxed
 Parse the JSON document in relaxed mode.
 .TP
@@ -39,8 +42,7 @@ A JSON Pointer as described in RFC 6901.
 A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encoded as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
 
 .SH SEE ALSO
-ujson-print(1) ujson-verify(1) ujson-cmp(1) ujson-patch(1)
-https://datatracker.ietf.org/doc/html/rfc6901
+ujson-tool(1) ujson-print(1) ujson-verify(1) ujson-patch(1)
 
 
 .SH AUTHOR

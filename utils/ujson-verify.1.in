@@ -17,15 +17,14 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 
 .SH OPTIONS
-.TP
-.B -r, --relaxed
-Relaxed parsing, don't use strict mode when parsing.
-.TP
-.B -s, --schema=FILE
-Validate the JSON document with a schema file. This option can be used multiple times. The first schema will be used to validate the JSON document. All schemas added after the first are schemas that can be referenced by the first schema.
+
 .TP
 .B -q, --quiet
 Silent mode, don't write anything to standard output.
+
+.TP
+.B -r, --relaxed
+Relaxed parsing, don't use strict mode when parsing.
 .TP
 .B -v, --version
 Print version and exit.
@@ -80,7 +79,7 @@ Example of a JSON document that is allowed in relaxed mode:
 
 
 .SH SEE ALSO
-ujson-print(1) ujson-get(1) ujson-cmp(1) ujson-patch(1)
+ujson-tool(1) ujson-print(1) ujson-get(1) ujson-patch(1)
 
 
 .SH AUTHOR

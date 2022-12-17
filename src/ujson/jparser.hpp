@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UJSON_JSON_HPP
-#define UJSON_JSON_HPP
+#ifndef UJSON_JPARSER_HPP
+#define UJSON_JPARSER_HPP
 
 #include <string>
 #include <ujson/jvalue.hpp>
@@ -27,35 +27,39 @@ namespace ujson {
 
 
     /**
-     * Class used for parsing json files and strings.
+     * Class used for parsing JSON documents.
      */
-    class Json {
+    class jparser {
     public:
         /**
          * Default constructor.
          */
-        Json ();
+        jparser ();
 
         /**
          * Destructor.
          */
-        virtual ~Json ();
+        virtual ~jparser ();
 
         /**
          * Disabled copy constructor.
          */
-        Json (const Json& j) = delete;
+        jparser (const jparser& j) = delete;
 
         /**
          * Disabled assignment operator.
          */
-        Json& operator= (const Json& j) = delete;
+        jparser& operator= (const jparser& j) = delete;
 
         /**
-         * Parse a json file.
-         * @param f The name of the json file to parse.
+         * Parse a JSON file and return a jvalue instance.
+         * @param f The name of the JSON file to parse.
          * @param strict_mode if <code>true</code>, parsing is done strictly
-         *                    according to the json specification.
+         *                    according to the JSON specification (RFC 8259).
+         *                    <br/>
+         *                    If <code>false</code>, a more relaxed JSON
+         *                    format is used, where, among other things,
+         *                    C-style comments are allowed.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -63,22 +67,29 @@ namespace ujson {
          *                                name/value pair will be present in
          *                                the resulting parsed object.<br/>
          *                                Default is <code>true</code> since
-         *                                the json specification does not
+         *                                the JSON specification does not
          *                                prevent duplicate object member names.
-         * @return A shared pointer to a json value that is
-         *         either of type j_object or j_array.
-         *         If parsing failed a nullptr is returned.
+         * @return A jvalue representing the JSON document. If parsing fails,
+         *         the returned jvalue will be invalid (of type ujson::j_invalid).
          * @see ujson::jvalue
+         * @see ujson::jvalue::type()
+         * @see ujson::jvalue::valid()
+         * @see ujson::jvalue::invalid()
+         * @see error()
          */
         jvalue parse_file (const std::string& f,
                            bool strict_mode=true,
                            bool allow_duplicates_in_obj=true);
 
         /**
-         * Parse a string in json syntax.
+         * Parse a string in JSON syntax and return a jvalue instance.
          * @param str The string to parse.
          * @param strict_mode if <code>true</code>, parsing is done strictly
-         *                    according to the json specification.
+         *                    according to the JSON specification (RFC 8259).
+         *                    <br/>
+         *                    If <code>false</code>, a more relaxed JSON
+         *                    format is used, where, among other things,
+         *                    C-style comments are allowed.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -86,22 +97,30 @@ namespace ujson {
          *                                name/value pair will be present in
          *                                the resulting parsed object.<br/>
          *                                Default is <code>true</code> since
-         *                                the json specification does not
+         *                                the JSON specification does not
          *                                prevent duplicate object member names.
-         * @return A shared pointer to a json value that is
-         *         either of type j_object or j_array.
-         *         If parsing failed a nullptr is returned.
+         * @return A jvalue representing the JSON document. If parsing fails,
+         *         the returned jvalue will be invalid (of type ujson::j_invalid).
          * @see ujson::jvalue
+         * @see ujson::jvalue::type()
+         * @see ujson::jvalue::valid()
+         * @see ujson::jvalue::invalid()
+         * @see error()
          */
         jvalue parse_string (const std::string& str,
                              bool strict_mode=true,
                              bool allow_duplicates_in_obj=true);
 
         /**
-         * Parse a text buffer in json syntax.
+         * Parse a text buffer in JSON syntax and return a jvalue instance.
          * @param buf The text string to parse.
+         * @param length The length (in bytes) of the text in the buffer.
          * @param strict_mode if <code>true</code>, parsing is done strictly
-         *                    according to the json specification.
+         *                    according to the JSON specification (RFC 8259).
+         *                    <br/>
+         *                    If <code>false</code>, a more relaxed JSON
+         *                    format is used, where, among other things,
+         *                    C-style comments are allowed.
          * @param allow_duplicates_in_obj If <code>true</code>, duplicate
          *                                member names in objects are allowed.<br/>
          *                                If <code>false</code> and duplicate
@@ -109,13 +128,15 @@ namespace ujson {
          *                                name/value pair will be present in
          *                                the resulting parsed object.<br/>
          *                                Default is <code>true</code> since
-         *                                the json specification does not
+         *                                the JSON specification does not
          *                                prevent duplicate object member names.
-         * @param length The length of the text in the buffer.
-         * @return A shared pointer to a json value that is
-         *         either of type j_object or j_array.
-         *         If parsing failed a nullptr is returned.
+         * @return A jvalue representing the JSON document. If parsing fails,
+         *         the returned jvalue will be invalid (of type ujson::j_invalid).
          * @see ujson::jvalue
+         * @see ujson::jvalue::type()
+         * @see ujson::jvalue::valid()
+         * @see ujson::jvalue::invalid()
+         * @see error()
          */
         jvalue parse_buffer (const char* buf,
                              size_t length,

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <ujson/Json.hpp>
+#include <ujson/jparser.hpp>
 #include <ujson/Parser.hpp>
 
 
@@ -28,7 +28,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Json::Json ()
+    jparser::jparser ()
     {
         parse_context = new Parser;
     }
@@ -36,7 +36,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    Json::~Json ()
+    jparser::~jparser ()
     {
         delete CTX;
     }
@@ -44,7 +44,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_file (const std::string& f,
+    jvalue jparser::parse_file (const std::string& f,
                              bool strict_mode,
                              bool allow_duplicates_in_obj)
     {
@@ -54,7 +54,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_string (const std::string& str,
+    jvalue jparser::parse_string (const std::string& str,
                                bool strict_mode,
                                bool allow_duplicates_in_obj)
     {
@@ -64,7 +64,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    jvalue Json::parse_buffer (const char* buf,
+    jvalue jparser::parse_buffer (const char* buf,
                                size_t length,
                                bool strict_mode,
                                bool allow_duplicates_in_obj)
@@ -75,7 +75,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    const std::string& Json::error () const
+    const std::string& jparser::error () const
     {
         return CTX->error ();
     }
@@ -84,7 +84,7 @@ namespace ujson {
 #if (UJSON_PARSER_DEBUGGING)
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool Json::trace_parsing ()
+    bool jparser::trace_parsing ()
     {
         return CTX->trace_parse ();
     }
@@ -92,7 +92,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Json::trace_parsing (bool trace)
+    void jparser::trace_parsing (bool trace)
     {
         CTX->trace_parse (trace);
     }
@@ -100,7 +100,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool Json::trace_scanning ()
+    bool jparser::trace_scanning ()
     {
         return CTX->trace_scan ();
     }
@@ -108,7 +108,7 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    void Json::trace_scanning (bool trace)
+    void jparser::trace_scanning (bool trace)
     {
         CTX->trace_scan (trace);
     }

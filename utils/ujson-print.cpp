@@ -33,6 +33,7 @@ struct appargs_t {
     bool pretty;
     bool escape_slash;
     bool sorted;
+    bool array_items_on_same_line;
     bool parse_strict;
     bool print_relaxed;
     string filename;
@@ -40,6 +41,7 @@ struct appargs_t {
     appargs_t () {
         pretty = true;
         escape_slash = false;
+        array_items_on_same_line = true;
         sorted = false;
         parse_strict = false;
         print_relaxed = false;
@@ -62,6 +64,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -c, --compact         Compact output, no newlines or intendation." << endl;
     out << "  -e, --escape-slash    Forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
     out << "  -s, --sort            Object members are listed in sorted order, not in natural order." << endl;
+    out << "  -a, --array-lines     For JSON arrays, print each array item on a separate line." << endl;
     out << "  -r, --relaxed         Print the JSON document in relaxed form." << endl;
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
@@ -78,16 +81,17 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     struct option long_options[] = {
-        { "compact",      no_argument, 0, 'c'},
-        { "escape-slash", no_argument, 0, 'e'},
-        { "sort",         no_argument, 0, 's'},
-        { "relaxed",      no_argument, 0, 'r'},
-        { "parse-strict", no_argument, 0, 't'},
-        { "version",      no_argument, 0, 'v'},
-        { "help",         no_argument, 0, 'h'},
+        { "compact",          no_argument, 0, 'c'},
+        { "escape-slash",     no_argument, 0, 'e'},
+        { "sort",             no_argument, 0, 's'},
+        { "array-lines",      no_argument, 0, 'a'},
+        { "relaxed",          no_argument, 0, 'r'},
+        { "parse-strict",     no_argument, 0, 't'},
+        { "version",          no_argument, 0, 'v'},
+        { "help",             no_argument, 0, 'h'},
         { 0, 0, 0, 0}
     };
-    const char* arg_format = "cesrtvh";
+    const char* arg_format = "cesartvh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, nullptr);
@@ -102,6 +106,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.sorted = true;
+            break;
+        case 'a':
+            args.array_items_on_same_line = false;
             break;
         case 'r':
             args.print_relaxed = true;
@@ -147,20 +154,20 @@ int main (int argc, char* argv[])
 
     // Parse json file
     //
-    ujson::Json j;
-    auto instance = j.parse_string (json_desc, opt.parse_strict);
+    ujson::jparser parser;
+    auto instance = parser.parse_string (json_desc, opt.parse_strict);
     if (!instance.valid()) {
-        cerr << "Parse error: " << j.error() << endl;
+        cerr << "Parse error: " << parser.error() << endl;
         exit (1);
     }
 
     // Print the parsed json instance
     //
     cout << instance.describe (opt.pretty,
-                               opt.print_relaxed,
-                               true,
+                               opt.array_items_on_same_line,
+                               opt.sorted,
                                opt.escape_slash,
-                               opt.sorted)
+                               opt.print_relaxed)
          << endl;
 
     return 0;

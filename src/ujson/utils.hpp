@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2020,2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2020-2022 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -20,6 +20,7 @@
 #define UJSON_UTILS_HPP
 
 #include <ujson/jvalue.hpp>
+#include <ujson/jpointer.hpp>
 #include <string>
 
 
@@ -27,14 +28,45 @@ namespace ujson {
 
 
     /**
+     * The result of an individual JSON patch operation.
+     * @see ujson::patch
+     * @see <a href=https://datatracker.ietf.org/doc/html/rfc6902 rel="noopener noreferrer" target="_blank">RFC 6902 - JavaScript Object Notation (JSON) Patch</a>
+     */
+    enum jpatch_result {
+        patch_ok = 0,  /**< The patch operation was successful. */
+        patch_fail,    /**< The patch was a test operation that failed. */
+        patch_noent,   /**< A pointer in the patch doesn't point to a value in the instance to patch. */
+        patch_invalid  /**< The patch was not a valid patch definition. */
+    };
+
+
+    /**
      * Get the name of a JSON type.
+     * The following strings are returned for each jvalue_type:<br/>
+     * - ujson::j_invalid returns the string "invalid".
+     * - ujson::j_object returns the string "object".
+     * - ujson::j_array returns the string "array".
+     * - ujson::j_string returns the string "string".
+     * - ujson::j_number returns the string "number".
+     * - ujson::j_bool returns the string "boolean".
+     * - ujson::j_null returns the string "null".
+     *
      * @return The name of a specific ujson::jvalue_type.
      * @see str_to_jtype
      */
     std::string jtype_to_str (const jvalue_type jtype);
 
     /**
-     * Get the name of the type of JSON instance.
+     * Get the name of the JSON type an ujson::jvalue instance represents.
+     * The following strings are returned for each jvalue_type:<br/>
+     * - ujson::j_invalid returns the string "invalid".
+     * - ujson::j_object returns the string "object".
+     * - ujson::j_array returns the string "array".
+     * - ujson::j_string returns the string "string".
+     * - ujson::j_number returns the string "number".
+     * - ujson::j_bool returns the string "boolean".
+     * - ujson::j_null returns the string "null".
+     *
      * @return The name of a specific ujson::jvalue_type.
      * @see str_to_jtype
      */
@@ -51,25 +83,26 @@ namespace ujson {
      *  - object
      *  - null
      *
-     * Any other name will result in ujson::j_invalid.
-     * @param name The name of the <code>jvalue_type</code>.
+     * Any other name will return ujson::j_invalid.
+     * @param name The string representation of a <code>jvalue_type</code>.
      * @return A ujson::jvalue_type depending on the name.
      * @see ujson::jvalue_type
      */
     jvalue_type str_to_jtype (const std::string& name);
 
     /**
-     * Get a reference to a specific value in a JSON instance.
+     * Get a reference to a specific value in a
+     * JSON instance using a JSON pointer.
      * @param instance A JSON instance.
      * @param pointer A JSON pointer.<br/>
      *                JSON pointers are described in RFC 6901.
-     * @return A reference to a jvalue in the instance.<br/>
+     * @return A reference to a ujson::jvalue in the JSON instance
+     *         if the value was found by the JSON pointer.<br/>
      *         If the value can't be found, a reference
      *         to a static invalid jvalue is returned
      *         (a jvalue of type ujson::j_invalid). Do not
      *         modify this value since it will be reset to
-     *         an invalid state at any time by the library.
-     * @see <a href=https://datatracker.ietf.org/doc/html/rfc6901 rel="noopener noreferrer" target="_blank">RFC 6901 - JavaScript Object Notation (JSON) Pointer</a>
+     *         an invalid state at any time by libujson.
      * \par Exampe:
      * \code
      * auto& item = ujson::find_jvalue (instance, "/pointer/to/value");
@@ -78,8 +111,9 @@ namespace ujson {
      * else
      *     std::cout << "Item not found" << std::endl;
      * \endcode
+     * @see <a href=https://datatracker.ietf.org/doc/html/rfc6901 rel="noopener noreferrer" target="_blank">RFC 6901 - JavaScript Object Notation (JSON) Pointer</a>
      */
-    jvalue& find_jvalue (jvalue& instance, const std::string& pointer);
+    jvalue& find_jvalue (jvalue& instance, const jpointer& pointer);
 
     /**
      * Convert a string to a JSON escaped string.
@@ -123,24 +157,79 @@ namespace ujson {
      * @return An unescaped string. All escape sequences that
      *         are found incorrect will be excluded from the result.
      */
-    static inline std::string unescape (const std::string& in) {
+    inline std::string unescape (const std::string& in) {
         bool ignore_ok_param;
         return unescape (in, ignore_ok_param);
     }
 
+
+    /**
+     * Parse a JSON pointer and return a list of reference tokens.
+     */
+    std::list<std::string> parse_pointer (const std::string& json_pointer);
+
+
+    /**
+     * Convert a string to a JSON pointer token.
+     * A JSON pointer contains one or more reference tokens
+     * separated by '/'. In such tokens, the characters '~'
+     * and '/' are encoded as '~0' and '~1'. This function
+     * converts each '~' to '~0', and each '/' to '~1'.
+     * @param token The string to convert to a JSON pointer.
+     * @return A string where each '~' is replaced by '~0',
+     *         and each '/' is replaced by '~1'.
+     */
+    std::string escape_pointer_token (const std::string& token);
+
+
+    /**
+     * Convert a JSON ponter token to an unescaped string.
+     * A JSON pointer contains one or more reference tokens
+     * separated by '/'. In such tokens, the characters '~'
+     * and '/' are encoded as '~0' and '~1'. This function
+     * converts each '~0' to '~', and each '~1' to '/'.
+     * @param token The JSON pointer token to unescape.
+     * @return A string where each '~0' is replaced by '~',
+     *         and each '~1' is replaced by '/'.
+     */
+    std::string unescape_pointer_token (const std::string& token);
+
+
     /**
      * Patch a JSON instance.
-     * @param instance A JSON instance to patch.
-     * @param patch A JSON patch definition as described in RFC 6902.
-     * @return The number of successful patch operations.<br/>
-     *         A patch operation of type 'test' which fails the test is considered an unsuccessful operation,
-     *         but <code>errno</code> is not set to an error code for a failed test operation.<br/>
-     *         On error, <code>errno</code> is set:
-     *          - EINVAL is set if a patch is not a valid patch, or the instance isn't a valid JSON value.<br/>
-     *          - ENOENT is set if one or more object paths in the patch is invalid.<br/>
+     * @param instance The original JSON instance to patch.
+     * @param result_instance The resulting JSON instance after the patch.
+     * @param json_patch A JSON patch definition as described in RFC 6902.
+     * @return A pair where the first entry is a boolean that is
+     *         <code>true</code> if <em>all</em> patches where
+     *         successfully applied. And the second entry is a
+     *         vector with a result for each individual patch in
+     *         the patch definition.
+     * @throw std::invalid_argument If any parameter is an invalid JSON value
+     *                              (of type ujson::j_invalid).
      * @see <a href=https://datatracker.ietf.org/doc/html/rfc6902 rel="noopener noreferrer" target="_blank">RFC 6902 - JavaScript Object Notation (JSON) Patch</a>
      */
-    int patch (jvalue& instance, jvalue& patch);
+    std::pair<bool, std::vector<jpatch_result>> patch (jvalue& instance,
+                                                       jvalue& result_instance,
+                                                       jvalue& json_patch);
+
+
+    /**
+     * Patch a JSON instance in place.
+     * @param instance A JSON instance to patch.
+     * @param json_patch A JSON patch definition as described in RFC 6902.
+     * @return A pair where the first entry is a boolean that is
+     *         <code>true</code> if <em>all</em> patches where
+     *         successfully applied. And the second entry is a
+     *         vector with a result for each individual patch in
+     *         the patch definition.
+     * @throw std::invalid_argument If any parameter is an invalid JSON value
+     *                              (of type ujson::j_invalid).
+     * @see <a href=https://datatracker.ietf.org/doc/html/rfc6902 rel="noopener noreferrer" target="_blank">RFC 6902 - JavaScript Object Notation (JSON) Patch</a>
+     */
+    std::pair<bool, std::vector<jpatch_result>> patch (jvalue& instance,
+                                                       jvalue& json_patch);
+
 
 }
 
