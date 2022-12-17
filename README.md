@@ -70,6 +70,7 @@ Unless configured with parameter `--disable-utils`, the following utilities are 
 - **ujson-print** - Print a JSON document to standard output in a few different ways.
 - **ujson-get** - Get a specific value from a JSON document using a JSON pointer. JSON pointers are described in RFC 6901.
 - **ujson-patch** - Patch JSON documents. JSON patches are described in RFC 6902.
+- **ujson-tool** - A utility with several sub-commands to handle JSON documents in a variety of ways.
 
 ## ujson-verify
 ujson-verify is a utility used for verifying that JSON documents are syntactically correct. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
