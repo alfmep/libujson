@@ -76,42 +76,65 @@ Unless configured with parameter `--disable-utils`, the following utilities are 
 ujson-verify is a utility used for verifying that JSON documents are syntactically correct. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
 
 **Synopsis:**
+
 **ujson-verify [OPTIONS] [FILE ...]**
 
 **Options:**
+
 **-q, --quiet**		Silent mode, don't write anything to standard output.
+
 **-r, --relaxed**	Relaxed parsing, don't use strict mode when parsing.
+
 **-v, --version**	Print version and exit.
+
 **-h, --help**			Print help and exit.
+
 
 ## ujson-print
 ujson-print parses a JSON document and prints it to standard output. By default, ujson-print parses the JSON document in relaxed mode and prints it in strict mode. The document is also by default printed in a readable format. This tool can be used to convert JSON documents in relaxed form to strict form, to sort object members, and to make a JSON document more compact or more readable.
 
 **Synopsis:**
+
 **ujson-print [OPTIONS] [FILE]**
 
 **Options:**
+
 **-c, --compact** Compact output, print the JSON document without whitespaces.
+
 **-e, --escape-slash** When printing JSON strings, forward slash characters("/") are escaped to "\\/".
+
 **-s, --sort** Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
+
 **-a, --array-lines** For JSON arrays, print each array item on a separate line.
+
 **-r, --relaxed** Print the JSON document in relaxed form. Object member names are printed without enclosing them in double quotes("") when the object member names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*. The exceptions are the object member names "true", "false", and "null". Those object member names are always enclosed by double quotes("").
+
 **-t, --parse-strict** Parse the JSON document in strict mode. This is the only utility that parses in relaxed mode by default.
+
 **-v, --version** Print version and exit.
+
 **-h, --help** Print help and exit.
+
 
 ## ujson-get
 ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value (in JSON format) and exits with code 0. If not found, or on parse error, an error message is printed to standard error and the exit code is 1.
 
 **Synopsis:**
+
 **ujson-get [OPTIONS] [FILE] [POINTER]**
 
 **Options:**
+
 **-c, --compact** If the JSON value is an object or an array, print it without whitespace.
+
 **-t, --type=TYPE** Require the found value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the found value is of a different type, exit with code 1.
+
 **-u, --unescape** If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
+
 **-r, --relaxed** Parse the JSON document in relaxed mode.
+
 **-v, --version** Print version and exit.
+
 **-h, --help** Print help and exit.
 
 
@@ -120,13 +143,19 @@ ujson-patch applies JSON patches as described by RFC 6902 and prints the resulti
 If not patch file is given, the JSON patch definition is read from standard input.
 
 **Synopsis:**
+
 **ujson-patch [OPTIONS] JSON_FILE [JSON_PATCH_FILE]**
 
 **Options:**
+
 **-c, --compact** Print the resulting JSON document without whitespaces.
+
 **-r, --relaxed** Parse JSON input files in relaxed mode.
+
 **-q, --quiet** No errors are written to standard error. On errors, of failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
+
 **-v, --version** Print version and exit.
+
 **-h, --help** Print help and exit.
 
 
@@ -134,100 +163,132 @@ If not patch file is given, the JSON patch definition is read from standard inpu
 ujson-tool is a tool to view, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
 
 **Synopsis:**
+
 **ujson-tool [COMMAND] [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]**
 
 **Common options:**
+
 **-r, --relaxed** Relaxed parsing, don't use strict mode when parsing.
+
 **-p, --pointer=POINTER** Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
+
 **-c, --compact** Any Resulting JSON output is printed without whitespaces.
+
 **-s, --sort** Any Resulting JSON output is printed with object members sorted by name.
+
 **-e, --escape-slash** In any resulting JSON string output, forward slash characters("/") are escaped to "\\/".
+
 **-a, --array-lines** In any resulting JSON output, print JSON array items on separate lines.
+
 **-v, --version** Print version and exit.
+
 **-h, --help** Print help and exit.
+
 
 **Commands:**
 
-**view**
-: Print the JSON instance to standard output.
+### view
+Print the JSON instance to standard output.
 
-: **Options:**
+**Options:**
+
 **-t, --type=TYPE** Require that the viewed instance is of a specific JSON type. If the resulting instance is of another type, an error message is printed to standard error and 1 is returned. Valid types are: object, array, string, number, boolean, and null.
+
 **-u, --unescape** Only if the resulting instance is a JSON string: print the string value, unescaped witout enclosing double quotes.
 
-: *Example - View a JSON document in a compact form without whitespaces:*
+*Example - View a JSON document in a compact form without whitespaces:*
+
 `ujson-tool view --compact document.json`
 
-: *Example - View a specific item in a JSON document using a JSON pointer:*
+*Example - View a specific item in a JSON document using a JSON pointer:*
+
 `ujson-tool view --pointer=/members/42/name document.json`
 
-: *Example - Sort object members when viewing a JSON document:*
+*Example - Sort object members when viewing a JSON document:*
+
 `ujson-tool view --sort document.json`
 
-**verify**
-: Verify the syntax of the JSON document.
+
+### verify
+Verify the syntax of the JSON document.
+
 Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
 Prints an error message to standard error and return 1 if the input is a not valid JSON document.
 Common option `--pointer=POINTER` is ignored by this command.
 
-: **Options:**
+**Options:**
+
 **-q, --quiet** Print nothing, only return 0 on success, and 1 on error.
 
-: *Example - Verify that a file is indeed a JSON document:*
+*Example - Verify that a file is indeed a JSON document:*
+
 `ujson-tool verify document.json`
 
-**type**
-: Print or check the JSON type of the instance.
+
+### type
+Print or check the JSON type of the instance.
 Default is to write the JSON type of the instance to standard output. But if option `--type=TYPE` is used, the command will check if the JSON type of the instance is the same type as specified.
 
-: **Options:**
+**Options:**
+
 **-t, --type=TYPE** Check if the JSON instance is of a specific JSON type.
 If it is, print 'Yes' to standard output and return 0.
 If not, print 'No' to standard output and return 1.
 Valid types are: object, array, string, number, boolean, and null.
+
 **-q, --quiet** Only if option `--type=TYPE` is used: don't print anything, only return 0 on success and 1 on failure.
 
-: *Example - Print the name of the JSON type of the value at index 42 in a JSON document containing an array;*
+*Example - Print the name of the JSON type of the value at index 42 in a JSON document containing an array;*
+
 `ujson-tool type --pointer=/42 items.json`
 
-: *Example - Check that a JSON documents is a JSON object:*
+*Example - Check that a JSON documents is a JSON object:*
 ```
     if ujson-tool type -t object -q document.json; then
         echo "The document is a JSON object"
     fi
 ```
 
-**size**
-: Print the number of elements/members to standard output if the JSON instance is an *array* or *object*.
+### size
+Print the number of elements/members to standard output if the JSON instance is an *array* or *object*.
 If the JSON instance isn't an array or object, an error message is printed to standard error and 1 is returned.
+
 *Note:* It is not a recursive count. It is only the number of elements/members in the specified array/object, not including sub-items of the array/object.
 
-: *Example - Print the number of members in a JSON document containing an object:*
+*Example - Print the number of members in a JSON document containing an object:*
+
 `ujson-tool size document.json`
 
-: *Example - Print the number of items in an array at a specific location in a JSON document:*
+*Example - Print the number of items in an array at a specific location in a JSON document:*
+
 `ujson-tool size --pointer=/drawer/boxes document.json`
 
 
-**members**
-: If the instance is a JSON *object*, print the object member names to standard output on separate lines.
+### members
+If the instance is a JSON *object*, print the object member names to standard output on separate lines.
 If not a JSON object, print an error message to standard error and return 1.
 Note that the member names are by default printed as unescaped string values, and a single member name can thus be printed on multiple lines if it contains one or more line breaks.
 
-: **Options:**
+**Options:**
+
 **-s, --sort** Sort the member names.
+
 **-m, --escape-members** Print the member names as JSON formatted strings.
 The names are printed JSON escaped, enclosed by double quotes. This will ensure that no member name is written on multiple lines since newline characters are escaped.
-This option is not needed is option `--json-array` is used.
+This option is not needed if option `--json-array` is used.
+
 **-j, --json-array** Print the member names as a JSON formatted array. Option `--escape-members` is implied by this option.
 
-: *Example - Print the object member names in a JSON document (that is a JSON object):*
+*Example - Print the object member names in a JSON document (that is a JSON object):*
+
 `ujson-tool members document.json`
 
-: *Example - Print the object member names of a JSON object at a specific location in a JSON document:*
+*Example - Print the object member names of a JSON object at a specific location in a JSON document:*
+
 `ujson-tool members --pointer=/drawer/boxes/42 document.json`
 
-: *Example - Create a JSON array containing the member names of a JSON document in sorted order:*
+*Example - Create a JSON array containing the member names of a JSON document in sorted order:*
+
 `ujson-tool members --json-array --sort document.json >member-names.json`
 
 
