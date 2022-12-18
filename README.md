@@ -117,7 +117,7 @@ ujson-print parses a JSON document and prints it to standard output. By default,
 
 
 ## ujson-get
-ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value (in JSON format) and exits with code 0. If not found, or on parse error, an error message is printed to standard error and the exit code is 1.
+ujson-get prints value in a JSON document pointed to by a JSON pointer. If the JSON document is parsed correctly and the value specified by the pointer is found, ujson-get prints the value (in JSON format) and exits with code 0. If not found, or on parse error, an error message is printed to standard error and the exit code is 1.
 
 **Synopsis:**
 
@@ -127,7 +127,7 @@ ujson-get prints a specific value in a JSON document. If the JSON document is co
 
 **-c, --compact** If the JSON value is an object or an array, print it without whitespace.
 
-**-t, --type=TYPE** Require the found value to be of a specific type. TYPE is one of the following: boolean, number, string, null, object, or array. If the found value is of a different type, exit with code 1.
+**-t, --type=TYPE** Require the found value to be of a specific type. TYPE can be one of the following: boolean, number, string, null, object, or array. If the found value is of a different type, exit with code 1.
 
 **-u, --unescape** If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
 
@@ -139,8 +139,8 @@ ujson-get prints a specific value in a JSON document. If the JSON document is co
 
 
 ## ujson-patch
-ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output, except if the patch file only contains 'test' operations, then noting is written to standard output. If all patches are successful, the application exits with code 0. If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application exits with code 1.
-If not patch file is given, the JSON patch definition is read from standard input.
+ujson-patch applies JSON patches as described by RFC 6902 and prints the resulting JSON document to standard output. If all patches are successful, the application exits with code 0. If any patch is unsuccessful, an error for each unsuccessful patch is written to standard error and the application exits with code 1.
+If no patch file is given, the JSON patch definition is read from standard input.
 
 **Synopsis:**
 
@@ -152,7 +152,7 @@ If not patch file is given, the JSON patch definition is read from standard inpu
 
 **-r, --relaxed** Parse JSON input files in relaxed mode.
 
-**-q, --quiet** No errors are written to standard error. On errors, of failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
+**-q, --quiet** No errors are written to standard error. On errors, or failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 
 **-v, --version** Print version and exit.
 
@@ -160,11 +160,11 @@ If not patch file is given, the JSON patch definition is read from standard inpu
 
 
 ## ujson-tool
-ujson-tool is a tool to view, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
+ujson-tool is a utility with several sub-commands to handle JSON documents in a variety of ways.
 
 **Synopsis:**
 
-**ujson-tool [COMMAND] [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]**
+**ujson-tool COMMAND [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]**
 
 **Common options:**
 
@@ -210,10 +210,10 @@ Print the JSON instance to standard output.
 
 
 ### verify
-Verify the syntax of the JSON document.
+Verify the syntax of a JSON document.
 
 Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
-Prints an error message to standard error and return 1 if the input is a not valid JSON document.
+Prints an error message to standard error and return 1 if the input isn't valid JSON document.
 Common option `--pointer=POINTER` is ignored by this command.
 
 **Options:**
@@ -227,18 +227,18 @@ Common option `--pointer=POINTER` is ignored by this command.
 
 ### type
 Print or check the JSON type of the instance.
-Default is to write the JSON type of the instance to standard output. But if option `--type=TYPE` is used, the command will check if the JSON type of the instance is the same type as specified.
+Default is to write the JSON type of the instance to standard output. But if option `--type=TYPE` is used, the command will check if the type of JSON instance matches the specified JSON type, and return 0 on succes and 1 on failure.
 
 **Options:**
 
 **-t, --type=TYPE** Check if the JSON instance is of a specific JSON type.
-If it is, print 'Yes' to standard output and return 0.
+If so, print 'Yes' to standard output and return 0.
 If not, print 'No' to standard output and return 1.
-Valid types are: object, array, string, number, boolean, and null.
+Valid JSON types are: object, array, string, number, boolean, and null.
 
 **-q, --quiet** Only if option `--type=TYPE` is used: don't print anything, only return 0 on success and 1 on failure.
 
-*Example - Print the name of the JSON type of the value at index 42 in a JSON document containing an array;*
+*Example - Print the name of the JSON type at index 42 in a JSON document containing an array;*
 
 `ujson-tool type --pointer=/42 items.json`
 
@@ -279,7 +279,7 @@ This option is not needed if option `--json-array` is used.
 
 **-j, --json-array** Print the member names as a JSON formatted array. Option `--escape-members` is implied by this option.
 
-*Example - Print the object member names in a JSON document (that is a JSON object):*
+*Example - Print the object member names in a JSON document:*
 
 `ujson-tool members document.json`
 
@@ -296,17 +296,20 @@ This option is not needed if option `--json-array` is used.
 # C++ API
 *(This section is a work in progress.)*
 
-This section contains tutorial examples of how to use the libujson C++ API.
+This section contains some tutorial examples of how to use the libujson C++ API.
 For a full reference of the API, see the doxygen documentation generated when building libujson. 
 
 ### Include file and namespace
-When using libujson, only the file ujson.hpp needs to be included:
+When using libujson, only the header file ujson.hpp needs to be included:
+
 `#include <ujson.hpp>`
+
 All types, classes, and functions in libujson are defined within namespace `ujson`.
 
 ## Parsing JSON documents
 To parse JSON documents, use class `ujson::jparser`.
-Example of parsing a file, here named document,json:
+
+Example of parsing a file, here named document.json:
 ```
 ujson::jparser p;
 ujson::jvalue v = p.parse_file ("document.json");
@@ -315,7 +318,7 @@ or, to parse a string containing a JSON document:
 ```
 ujson::jvalue v = p.parse_string (str);
 ```
-If the parsing is successful, a valid JSON instance is returned. If there was an error, an invalid JSON instance is returned and an error description can be obtained with the `jparser::error()` method:
+If the parsing was successful, a valid JSON instance is returned. If there was an error, an invalid JSON instance is returned and an error description can be obtained with the `jparser::error()` method:
 ```
 if (v.valid() == false) {
     std::cerr << "Parse failed: " << p.error() << std::endl;
@@ -326,7 +329,7 @@ if (v.valid() == false) {
 The class `ujson::jvalue` represents a JSON instance and is the central class in libujson.
 
 #### JSON types
-The class `ujson::jvalue` represents a JSON value that can be of one of the six JSON types: number, string, boolean, object, array, and null. To see what type it represents, use method `jvalue::type()`, it returns an enum (`ujson::jvalue_type`) with the following values:
+The class `ujson::jvalue` represents a JSON value that can be of one of the six JSON types: number, string, boolean, object, array, and null. To see what type it currently represents, use method `jvalue::type()`, it returns an enum (`ujson::jvalue_type`) with one of the following values:
 |value|description|
 |---|---|
 |`ujson::j_invalid`|An invalid JSON type. This indicates an error, for example when parsing a JSON document.|
@@ -351,7 +354,7 @@ The method `jvalue::describe()` will always return the JSON instance as a string
 
 
 ### Assigning values to a ujson::jvalue
-When assigning a value to ujson::jvalue, it may change the type of JSON value it represents. If, for instance, a ujson::jvalue represents a JSON string and is assigned a number, it then represents a JSON number instead of a JSON string.
+When assigning a value to an instance of class `ujson::jvalue`, it may change the type of JSON value it represents. If, for example, an instance of ujson::jvalue represents a JSON string and is assigned a number, it then represents a JSON number instead of a JSON string.
 
 
 
@@ -404,12 +407,14 @@ val = "A string";   // val is now a JSON string
 val.str ("Hello!"); // Method str() can be used instead of a direct assignment
 ```
 **Getting the value of a JSON string**
+
 To get the string value, use the `str()` method without parameter:
 ```
 std::string& s = val.str ();
 s = "Hello World!";  // The string value can be manipulated directly with the reference 's'
 ```
 **Making sure an instance of ujson::jvalue represents a JSON string**
+
 Use method `type()` to see if the ujson::jvalue instance represents a JSON string:
 ```
 if (val.type() == ujson::j_string) {
@@ -428,18 +433,18 @@ catch (std::logic_error& le) {
 }
 ```
 ### Escaping/unescaping string values
-When parsing a JSON document, the parser will unescape any escape sequence in the string before assigning the string value to the ujson::jvalue instance. All methods in class ujson::jvalue that operates of strings will assume the strings to be unescaped, and will neither escape nor unescape them. The only exception is method `describe()` that will print strings escaped when needed and enclosed by double quotes, since that method always returns a valid JSON document.
+When parsing a JSON document, the parser will unescape any escape sequence in the string before assigning the string value to the ujson::jvalue instance. All methods in class ujson::jvalue that operates on strings will assume the strings to be unescaped, and will neither escape nor unescape them. The only exception is method `describe()` that will print strings escaped when needed and enclosed by double quotes, since that method always returns a valid JSON document.
 
 #### Utility functions to escape/unescape strings
 Most of the times there is no need to escape or unescape JSON strings since the parser and method jvalue::describe() takes care of it for us. But there are utility functions used to escape and unescape strings if the need arises:
 ```
 // A string that has a newline character that will be JSON escaped in the returned string
-std::string escped_str = ujson::escape("Line One\nLine two.");
+std::string escaped_str = ujson::escape("Line One\nLine two.");
 ```
 and:
 ```
 // A string with a JSON escaped newline that will be unescaped in the returned string:
-std::string unescped_str = ujson::unescape("Line One\\nLine two.");
+std::string unescaped_str = ujson::unescape("Line One\\nLine two.");
 ```
 
 
@@ -460,12 +465,13 @@ val = 42;           // val is now a JSON number
 val.num (3.1415);   // Method num() can be used instead of a direct assignment
 ```
 **Getting the value of a JSON number**
+
 To get the number value, use method `num()` without parameter:
 ```
 double n = val.num ();
 ```
 ### Numbers with arbitrary precision
-When build with support for arbitrary number precision (requires gmpxx), then method `num()` will still return a `double` and may loose precision. To keep precision, use method `mpf()`. This method returns a reference to an object of type `mpf_class` that can be used to calculate with arbitrary precision. Documentation of how to use `mpf_class` is out of scope for this documentation. See https://gmplib.org/manual/index for more info.
+When build with support for arbitrary number precision (requires gmpxx), then method `num()` will still return a `double` and may loose precision. To keep precision, use method `mpf()`. This method returns a reference to an object of type `mpf_class` that can be used to calculate with arbitrary precision. Documentation on how to use `mpf_class` is out of scope for this documentation. See https://gmplib.org/manual/index for more info.
 
 For more examples of how to use JSON numbers, see file examples/json-number.cpp
 
@@ -485,6 +491,7 @@ val = true;          // val is now a JSON boolean
 val.boolean (false); // Method boolean() can be used instead of a direct assignment
 ```
 **Getting the value of a JSON boolean**
+
 To get the boolean value, use the `boolean()` method without parameter:
 ```
 bool b = val.boolean ();
@@ -512,6 +519,7 @@ val = ujson::json_array{0,1,2};        // val is now a JSON array
 val.array (ujson::json_array{0,1,2});  // Method array() can be used instead of a direct assignment
 ```
 **Modifying a JSON array**
+
 Access an individual element in the array:
 ```
 val[1] = "A string value";  // Item at index 1 in the array is now a JSON string
@@ -539,7 +547,7 @@ For more examples of how to use JSON arrays, see file examples/json-array.cpp
 
 
 ## Working with JSON objects
-A JSON object is by class `ujson::jvalue` internally represented by class `ujson::json_object`, an alias for class `ujson::multimap_list`. This is a combination of a std::list and std::multimap so attributes in the object can be accessed fast, have multiple attributes with the same name, and keep the natural attribute order when using iterators.
+A JSON object is by class `ujson::jvalue` internally represented by class `ujson::json_object`, an alias for class `ujson::multimap_list`. This is a combination of a std::list and std::multimap so that attributes in the object can be accessed fast, have multiple attributes with the same name, and keep the natural attribute order when using iterators.
 
 **Construct a JSON object:**
 ```
@@ -558,6 +566,7 @@ val = {{"name":"Bob"},{"age":42}};       // val is now a JSON object
 val.obj ({{"name":"Alice"},{"age":42}}); // Method obj() can be used instead of a direct assignment
 ```
 **Accessing/modifying attributes in a JSON object**
+
 Check if the JSON object has a specific attribute:
 ```
 if (val.has("attribute_name")) {
@@ -579,16 +588,19 @@ if (num.valid() == false) {
     std::cerr << "Attribute 'num' doesn't exist in the object" << std::endl;
 }
 ```
-**Note:** The method `get()` only returns a value of type `ujson::j_invalid` if the attribute doesn't exists in the JSON object. In this case the return value is a reference to a static ujson::jvalue that will be reset at any time and shouldn't be modified. So always check the return value of method `get()`.
+**Note:** The method `get()` only returns a reterence to an instance with type `ujson::j_invalid` if the attribute doesn't exists in the JSON object. In this case the return value is a reference to a static ujson::jvalue that will be reset by libujson at any time and shouldn't be modified. So always check the return value of method `get()`.
 
 **Using operator[] on a JSON object**
+
 The operator [] can be used to both access and add attributes to a JSON object. If the accessed attributes doesn't exist, it will be created with the default constructor (a JSON null value).
+
 Accessing an attribute, creating it if it doesn't exist:
 ```
 val["name"] = "Bob";  // Set attribute "name" to the value "Bob", or create it if it doesnt exist
 ```
 
 **Iterate on attributes**
+
 Use method `obj()` to get a reference to the underlying `ujson::j_object` instance. With it, standard STL operations can be used on the JSON object.
 ```
 ujson::json_object& o = val.obj ();
@@ -614,7 +626,9 @@ For more examples of how to use JSON objects, see file examples/json-object.cpp
 ## Using JSON pointers
 JSON pointers are used to access elements in a JSON documents using a string syntax as described in RFC 6901 (https://datatracker.ietf.org/doc/html/rfc6901).
 To find an element in a JSON document, the utility function `ujson::find_jvalue()` is used. It takes a JSON instance and a JSON pointer as arguments and returns a reference to the JSON value inside the JSON instance. If the pointer doesn't point to a value inside the JSON instance, a reference to an invalid ujson::jvalue is returned.
+
 **Note:** The function `ujson::find_jvalue()` only returns a value with JSON type `ujson::j_invalid` if a value can't be found using the JSON pointer. This static invalid JSON value should not be modified and will be reset by libujson at any time. So always check the return value.
+
 An example of using `ujson::find_jvalue()`:
 ```
 ujson::jvalue doc = ujson::jparser().parse_file ("document.json");
@@ -630,6 +644,7 @@ if (name.valid()) {
 ## Using JSON patches
 JSON patches are used to modify JSON instances using one or more operations as described in RFC 6902 (https://datatracker.ietf.org/doc/html/rfc6902).
 To use JSON patches to modify a JSON instance, the utility function `ujson::patch()` is used. It takes a JSON instance and a JSON patch definition as arguments and comes in two variants. One that patches the JSON instance in place, and one that supplies a resulting JSON instance and keeps the original intact. The function returns an `std::pair` with `first` being a boolean that is true if all patches were successfully applied, and `second` being a vector with each individual patch result.
+
 An example of using `ujson::patch()`:
 ```
 ujson::jparser parser;
@@ -662,7 +677,8 @@ if (result.first) {
 ```
 
 ### Testing JSON patch support in libujson
-If libujson was configured with parameter `--enable-test`, then a test application (`ujson-patch-test`) is built in directory test that can be used to test the JSON patch support in libujson. There is also a script named `run-ujson-patch-test.sh` to automate fetching test cases and run the test.
+If libujson was configured with parameter `--enable-test`, then a test application (`ujson-patch-test`) is built in directory `test` that can be used to test the JSON patch support in libujson. There is also a script named `run-ujson-patch-test.sh` to automate fetching test cases and run the test.
+
 To download the test cases from https://github.com/json-patch/json-patch-tests and run all tests, do the following:
 ```
 cd test
