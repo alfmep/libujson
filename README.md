@@ -168,7 +168,9 @@ ujson-tool is a utility with several sub-commands to handle JSON documents in a 
 
 **Synopsis:**
 
-**ujson-tool COMMAND [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]**
+**ujson-tool COMMAND [OPTIONS] [COMMAND_ARGUMENTS ...]**
+
+All commands, except 'patch', reads a JSON document from standard input if no file is supplied.
 
 **Common options:**
 
@@ -191,7 +193,7 @@ ujson-tool is a utility with several sub-commands to handle JSON documents in a 
 
 **Commands:**
 
-### view
+### view [OPTIONS] [JSON_DOCUMENT]
 Print the JSON instance to standard output.
 
 **Options:**
@@ -213,7 +215,7 @@ Print the JSON instance to standard output.
 `ujson-tool view --sort document.json`
 
 
-### verify
+### verify [OPTIONS] [JSON_DOCUMENT]
 Verify the syntax of a JSON document.
 
 Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
@@ -229,7 +231,7 @@ Common option `--pointer=POINTER` is ignored by this command.
 `ujson-tool verify document.json`
 
 
-### type
+### type [OPTIONS] [JSON_DOCUMENT]
 Print or check the JSON type of the instance.
 Default is to write the JSON type of the instance to standard output. But if option `--type=TYPE` is used, the command will check if the type of JSON instance matches the specified JSON type, and return 0 on succes and 1 on failure.
 
@@ -253,7 +255,7 @@ Valid JSON types are: object, array, string, number, boolean, and null.
     fi
 ```
 
-### size
+### size [OPTIONS] [JSON_DOCUMENT]
 Print the number of elements/members to standard output if the JSON instance is an *array* or *object*.
 If the JSON instance isn't an array or object, an error message is printed to standard error and 1 is returned.
 
@@ -268,7 +270,7 @@ If the JSON instance isn't an array or object, an error message is printed to st
 `ujson-tool size --pointer=/drawer/boxes document.json`
 
 
-### members
+### members [OPTIONS] [JSON_DOCUMENT]
 If the instance is a JSON *object*, print the object member names to standard output on separate lines.
 If not a JSON object, print an error message to standard error and return 1.
 Note that the member names are by default printed as unescaped string values, and a single member name can thus be printed on multiple lines if it contains one or more line breaks.
@@ -294,6 +296,23 @@ This option is not needed if option `--json-array` is used.
 *Example - Create a JSON array containing the member names of a JSON document in sorted order:*
 
 `ujson-tool members --json-array --sort document.json >member-names.json`
+
+
+### patch [OPTIONS] JSON_DOCUMENT [JSON_PATCH_FILE]
+Patch a JSON instance and print the result to standard output.
+If option `--pointer=...` is used, the patch definition uses this position in
+the input JSON document as the instance to patch, and the resulting output will
+also be from this position. If no patch file is supplied, the patch definition
+is read from standard input. Errors and failed patch operations are printed to
+standard error. Returns 0 if all patches are successfully aplied, and 1 if not.
+
+**Options:**
+
+**-q, --quiet** Don't print failed patch operations to standard error,
+only return 1. Also, if all patch operations are of type 'test', don't
+print the resulting JSON document to standard output.
+
+
 
 
 
