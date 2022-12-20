@@ -73,7 +73,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "View, inspect, and modify JSON documents." << endl;
     out << endl;
-    out << "Usage: " << prog_name << " <COMMAND> [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]" << endl;
+    out << "Usage: " << prog_name << " <COMMAND> [OPTIONS] [COMMAND_ARGUMENTS ...]" << endl;
     out << endl;
     out << "Common options:" << endl;
     out << "  -r, --relaxed          Relaxed parsing, don't use strict mode when parsing." << endl;
@@ -87,8 +87,10 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -v, --version          Print version and exit." << endl;
     out << "  -h, --help             Print this help message and exit." << endl;
     out << endl;
+    out << "All commands, except 'patch', reads a JSON document from standard input if no file is supplied." << endl;
+    out << endl;
     out << "Commands:" << endl;
-    out << "  view" << endl;
+    out << "  view [OPTIONS] [JSON_DOCUMENT]" << endl;
     out << "    Print the JSON instance to standard output." << endl;
     out << "    Options:" << endl;
     out << "      -t, --type=TYPE    Require that the viewed instance is of a specific JSON type." << endl;
@@ -98,7 +100,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "      -u, --unescape     Only if the resulting instance is a JSON string:" << endl;
     out << "                         print the string value, unescaped witout enclosing double quotes." << endl;
     out << endl;
-    out << "  verify" << endl;
+    out << "  verify [OPTIONS] [JSON_DOCUMENT]" << endl;
     out << "    Verify the syntax of the JSON document." << endl;
     out << "    Prints \"Ok\" to standard output and return 0 if the input is a valid JSON document." << endl;
     out << "    Prints an error message to standard error and return 1 if the input is a not valid JSON document." << endl;
@@ -106,7 +108,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "    Options:" << endl;
     out << "      -q, --quiet    Print nothing, only return 0 on success, and 1 on error." << endl;
     out << endl;
-    out << "  type" << endl;
+    out << "  type [OPTIONS] [JSON_DOCUMENT]" << endl;
     out << "    Print or check the JSON type of the instance." << endl;
     out << "    Default is to write the JSON type of the instance to standard output." << endl;
     out << "    But if option '--type=TYPE' is used, the command will check if the JSON type of" << endl;
@@ -118,14 +120,14 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                         Valid types are: object, array, string, number, boolean, and null." << endl;
     out << "      -q, --quiet        If option '--type' is used, don't print anything." << endl;
     out << endl;
-    out << "  size" << endl;
+    out << "  size [OPTIONS] [JSON_DOCUMENT]" << endl;
     out << "    Print the number of elements/members to standard output if the JSON instance" << endl;
     out << "    is an array or object. If the JSON instance isn't an array or object," << endl;
     out << "    an error message is printed to standard error and 1 is returned." << endl;
     out << "    Note: It is not a recursive count. It is only the number of elements/members" << endl;
     out << "          in the specified array/object, not including sub-items of the array/object." << endl;
     out << endl;
-    out << "  members" << endl;
+    out << "  members [OPTIONS] [JSON_DOCUMENT]" << endl;
     out << "    If the instance is a JSON object, print the object member names to standard" << endl;
     out << "    output on separate lines. If not a JSON object, print an error message to" << endl;
     out << "    standard error and return 1." << endl;
@@ -142,11 +144,19 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "      -j, --json-array      Print the member names as a JSON formatted array." << endl;
     out << "                            Option '--escape-members' is implied by this option." << endl;
     out << endl;
-    /*
-    out << "  patch <JSON_PATCH_FILE>" << endl;
-    out << "    Patch the JSON instance with the supplied JSON patch file." << endl;
+    out << "  patch [OPTIONS] <JSON_DOCUMENT> [JSON_PATCH_FILE]" << endl;
+    out << "    Patch a JSON instance and print the result to standard output." << endl;
+    out << "    If option '--pointer=...' is used, the patch definition uses this position in" << endl;
+    out << "    the input JSON document as the instance to patch, and the resulting output will" << endl;
+    out << "    also be from this position. If no patch file is supplied, the patch definition" << endl;
+    out << "    is read from standard input. Errors and failed patch operations are printed to" << endl;
+    out << "    standard error. Returns 0 if all patches are successfully aplied, and 1 if not." << endl;
+    out << "    JSON patches are described in RFC 6902." << endl;
+    out << "    Options:" << endl;
+    out << "      -q, --quiet  Don't print failed patch operations to standard error, only return 1." << endl;
+    out << "                   Also, if all patch operations are of type 'test', don't print the" << endl;
+    out << "                   resulting JSON document to standard output." << endl;
     out << endl;
-    */
     exit (exit_code);
 }
 
@@ -429,27 +439,17 @@ static int cmd_members (appargs_t& opt)
     ujson::json_object& jobj = instance.obj ();
     ujson::jvalue result_array (ujson::j_array);
 
-    if (opt.print_sorted) {
-        for (auto attrib=jobj.sbegin(); attrib!=jobj.send(); ++attrib) {
-            if (opt.members_as_json_array) {
-                result_array.append (attrib->first);
-            }else{
-                if (opt.members_escape)
-                    cout << "\"" << ujson::escape(attrib->first) << "\"" << endl;
-                else
-                    cout << attrib->first << endl;
-            }
-        }
-    }else{
-        for (auto attrib=jobj.begin(); attrib!=jobj.end(); ++attrib) {
-            if (opt.members_as_json_array) {
-                result_array.append (attrib->first);
-            }else{
-                if (opt.members_escape)
-                    cout << "\"" << ujson::escape(attrib->first) << "\"" << endl;
-                else
-                    cout << attrib->first << endl;
-            }
+    for (auto attrib = opt.print_sorted ? jobj.sbegin() : jobj.begin();
+         attrib != (opt.print_sorted ? jobj.send() : jobj.end());
+         ++attrib)
+    {
+        if (opt.members_as_json_array) {
+            result_array.append (attrib->first);
+        }else{
+            if (opt.members_escape)
+                cout << "\"" << ujson::escape(attrib->first) << "\"" << endl;
+            else
+                cout << attrib->first << endl;
         }
     }
 
@@ -467,12 +467,86 @@ static int cmd_members (appargs_t& opt)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-/*
 static int cmd_patch (appargs_t& opt)
 {
-    return 0;
+    if (opt.args.empty()) {
+        cerr << "Error: Missing input file" << endl;
+        return 1;
+    }
+    auto instance = get_instance (opt.args[0],
+                                  opt.strict_parsing,
+                                  opt.ptr);
+    if (instance.invalid())
+        return 1;
+
+    // Read and parse patch file
+    //
+    if (opt.args.size() < 2)
+        opt.args.emplace_back ("");
+    ujson::jparser parser;
+    ujson::jvalue patch = parser.parse_file (opt.args[1], opt.strict_parsing);
+    if (patch.invalid()) {
+        cerr << "Patch definition parse error: " << parser.error() << endl;
+        return 1;
+    }
+
+    // Patch the instance
+    //
+    auto result = ujson::patch (instance, patch);
+
+    bool only_test_ops = false;
+    if (opt.quiet != true) {
+        auto num_patches = result.second.size ();
+        for (unsigned i=0; i<num_patches; ++i) {
+            if (result.second[i] == ujson::patch_ok)
+                continue;
+            cerr << "Patch " << (i+1) << " of " << num_patches << " - ";
+            switch (result.second[i]) {
+            case ujson::patch_fail:
+                cerr << "Test operation failed" << endl;
+                break;
+            case ujson::patch_invalid:
+                cerr << "Error: Invalid patch definition" << endl;
+                break;
+            case ujson::patch_noent:
+                cerr << "Error: JSON pointer mismatch" << endl;
+                break;
+            default:
+                cerr << "Unknown error" << endl;
+                break;
+            }
+        }
+    }else{
+        only_test_ops = true;
+        if (patch.is_array()) {
+            // Array of patches
+            for (auto& p : patch.array()) {
+                auto& op = p.get ("op");
+                if (op.type()==ujson::j_string && op.str()!="test") {
+                    only_test_ops = false;
+                    break;
+                }
+            }
+        }else{
+            // Single patch
+            auto& op = patch.get ("op");
+            if (op.type()==ujson::j_string && op.str()!="test")
+                only_test_ops = false;
+        }
+    }
+
+    // Print the patched json instance
+    //
+    if (!opt.quiet || !only_test_ops) {
+        cout << instance.describe(opt.print_pretty,
+                                  opt.print_array_items_on_same_line,
+                                  opt.print_sorted,
+                                  opt.print_escape_slash)
+             << endl;
+    }
+
+    return result.first ? 0 : 1;
 }
-*/
 
 
 //------------------------------------------------------------------------------
@@ -481,7 +555,7 @@ int main (int argc, char* argv[])
 {
     static const map<const string, int(*const)(appargs_t&)> commands = {
         {"members", cmd_members},
-        //{"patch",   cmd_patch},
+        {"patch",   cmd_patch},
         {"size",    cmd_size},
         {"type",    cmd_type},
         {"verify",  cmd_verify},
@@ -491,13 +565,12 @@ int main (int argc, char* argv[])
     appargs_t opt;
     parse_args (argc, argv, opt);
 
-    int retval = 0;
+    int retval = 1;
     auto cmd = commands.find (opt.cmd);
-    if (cmd == commands.end()) {
+    if (cmd == commands.end())
         cerr << "Error: unknown command (-h for help)" << endl;
-        retval = 1;
-    }else{
+    else
         retval = cmd->second (opt);
-    }
+
     return retval;
 }

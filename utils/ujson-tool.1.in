@@ -9,11 +9,13 @@ ujson-tool \- View, inspect, and modify JSON documents.
 
 .SH SYNOPSIS
 .B ujson-tool
-<COMMAND> [OPTIONS] [JSON_DOCUMENT] [COMMAND_ARGUMENTS ...]
+COMMAND [OPTIONS] [COMMAND_ARGUMENTS ...]
 
 
 .SH DESCRIPTION
 ujson-tool is a tool to view, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
+
+All commands, except 'patch', reads a JSON document from standard input if no file is supplied.
 
 
 .SH COMMON OPTIONS
@@ -49,7 +51,7 @@ A pointer specifies a specific value in a JSON document. Is is a string containi
 
 .SH COMMANDS:
 
-.SH view
+.SH view [OPTIONS] [JSON_DOCUMENT]
 Print the JSON instance to standard output.
 
 Options:
@@ -61,7 +63,7 @@ Require that the viewed instance is of a specific JSON type. If the resulting in
 Only if the resulting instance is a JSON string: print the string value, unescaped witout enclosing double quotes.
 
 
-.SH verify
+.SH verify [OPTIONS] [JSON_DOCUMENT]
 Verify the syntax of the JSON document.
 Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
 Prints an error message to standard error and return 1 if the input is a not valid JSON document.
@@ -73,7 +75,7 @@ Options:
 Print nothing, only return 0 on success, and 1 on error.
 
 
-.SH type
+.SH type [OPTIONS] [JSON_DOCUMENT]
 Print or check the JSON type of the instance.
 Default is to write the JSON type of the instance to standard output. But if option '--type=TYPE' is used, the command will check if the JSON type of the instance is the same type as specified.
 
@@ -89,7 +91,7 @@ Valid types are: object, array, string, number, boolean, and null.
 If option '--type' is used, don't print anything.
 
 
-.SH size
+.SH size [OPTIONS] [JSON_DOCUMENT]
 Print the number of elements/members to standard output if the JSON instance
 is an array or object. If the JSON instance isn't an array or object,
 an error message is printed to standard error and 1 is returned.
@@ -98,7 +100,7 @@ an error message is printed to standard error and 1 is returned.
 It is not a recursive count. It is only the number of elements/members in the specified array/object,
 not including sub-items of the array/object.
 
-.SH members
+.SH members [OPTIONS] [JSON_DOCUMENT]
 If the instance is a JSON object, print the object member names to standard output on separate lines.
 If not a JSON object, print an error message to standard error and return 1.
 Note that the member names are by default printed as unescaped string values, and a single
@@ -120,6 +122,23 @@ This option is not needed is option '--json-array' is used.
 Print the member names as a JSON formatted array.
 Option '--escape-members' is implied by this option.
 
+
+.SH patch [OPTIONS] JSON_DOCUMENT [JSON_PATCH_FILE]
+Patch a JSON instance and print the result to standard output.
+If option '--pointer=...' is used, the patch definition uses this position in
+the input JSON document as the instance to patch, and the resulting output will
+also be from this position. If no patch file is supplied, the patch definition
+is read from standard input. Errors and failed patch operations are printed to
+standard error. Returns 0 if all patches are successfully aplied, and 1 if not.
+
+JSON patches are described in RFC 6902.
+
+Options:
+.TP
+.B -q, --quiet
+Don't print failed patch operations to standard error, only return 1.
+Also, if all patch operations are of type 'test', don't print the
+resulting JSON document to standard output.
 
 
 .SH SEE ALSO
