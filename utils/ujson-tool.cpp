@@ -306,7 +306,7 @@ static int cmd_view (appargs_t& opt)
         return 1;
     }
 
-    if (instance.type()==ujson::j_string && opt.print_unescaped_string) {
+    if (instance.is_string() && opt.print_unescaped_string) {
         cout << instance.str() << endl;
     }else{
         cout << instance.describe(opt.print_pretty,
@@ -421,7 +421,7 @@ static int cmd_members (appargs_t& opt)
     if (instance.invalid())
         return 1;
 
-    if (instance.type() != ujson::j_object ) {
+    if (instance.is_object() == false) {
         cerr << "Error: Instance is not a JSON object" << endl;
         return 1;
     }

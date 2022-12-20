@@ -521,6 +521,13 @@ namespace ujson {
         bool operator!= (const jvalue& rval) const { return !(operator==(rval)); }
 
         /**
+         * Check if this a JSON object.
+         * @return <code>true</code> if this value
+         *         is of type ujson::j_object.
+         */
+        bool is_object () const {return jtype==j_object;}
+
+        /**
          * Get a reference to the ujson::json_object instance used by
          * this jvalue instance to represent a JSON object.
          * @return A reference to a ujson::json_object.
@@ -551,6 +558,13 @@ namespace ujson {
         void obj (json_object&& o);
 
         /**
+         * Check if this a JSON array.
+         * @return <code>true</code> if this value
+         *         is of type ujson::j_array.
+         */
+        bool is_array () const {return jtype==j_array;}
+
+        /**
          * Get a reference to the ujson::json_array instance used by
          * this jvalue instance to represent a JSON array.
          * @return A reference to a ujson::json_array.
@@ -579,6 +593,13 @@ namespace ujson {
          * @param a A json_array to be moved.
          */
         void array (json_array&& a);
+
+        /**
+         * Check if this a JSON string.
+         * @return <code>true</code> if this value
+         *         is of type ujson::j_string.
+         */
+        bool is_string () const {return jtype==j_string;}
 
         /**
          * Get a reference to the string value if this is a JSON string.
@@ -620,6 +641,14 @@ namespace ujson {
          * @see ujson::unescape
          */
         void str (std::string&& s);
+
+        /**
+         * Check if this a JSON number.
+         * @return <code>true</code> if this value
+         *         is of type ujson::j_number.
+         */
+        bool is_number () const {return jtype==j_number;}
+
 
 #if UJSON_HAVE_GMPXX
         /**
@@ -696,6 +725,13 @@ namespace ujson {
          * @param number The number value.
          */
         void num (const long number);
+
+        /**
+         * Check if this a JSON boolean.
+         * @return <code>true</code> if this value
+         *         is of type ujson::j_bool.
+         */
+        bool is_boolean () const {return jtype==j_bool;}
 
         /**
          * Return the JSON boolean value.

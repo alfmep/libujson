@@ -200,12 +200,7 @@ int main (int argc, char* argv[])
     }else{
         only_test_ops = true;
         // Check if the patch contains only test operations
-        if (patch.type() != ujson::j_array) {
-            // Single patch
-            auto& op = patch.get ("op");
-            if (op.type()==ujson::j_string && op.str()!="test")
-                only_test_ops = false;
-        }else{
+        if (patch.is_array()) {
             // Array of patches
             for (auto& entry : patch.array()) {
                 auto& op = entry.get ("op");
@@ -214,6 +209,11 @@ int main (int argc, char* argv[])
                     break;
                 }
             }
+        }else{
+            // Single patch
+            auto& op = patch.get ("op");
+            if (op.type()==ujson::j_string && op.str()!="test")
+                only_test_ops = false;
         }
     }
 

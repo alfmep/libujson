@@ -196,7 +196,7 @@ int main (int argc, char* argv[])
     }
 
     if (value.valid()) {
-        if (opt.unescape  &&  value.type() == ujson::j_string)
+        if (opt.unescape && value.is_string())
             cout << value.str() << endl;
         else
             cout << value.describe(!opt.compact) << endl;
