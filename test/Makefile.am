@@ -32,8 +32,8 @@ endif
 noinst_bindir =
 noinst_bin_PROGRAMS =
 
-#noinst_bin_PROGRAMS += ujson-parse-test
-#ujson_parse_test_SOURCES  = ujson-parse-test.cpp
+noinst_bin_PROGRAMS += ujson-parse-test
+ujson_parse_test_SOURCES  = ujson-parse-test.cpp
 
 noinst_bin_PROGRAMS += ujson-patch-test
 ujson_patch_test_SOURCES  = ujson-patch-test.cpp

@@ -1,3 +1,5 @@
 test-data
 result-patch-test
+result-parse-test
 ujson-patch-test
+ujson-parse-test

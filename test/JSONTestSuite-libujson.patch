@@ -1,0 +1,42 @@
+diff --git a/libujson-only.json b/libujson-only.json
+new file mode 100644
+index 0000000..7fcb2e3
+--- /dev/null
++++ b/libujson-only.json
+@@ -0,0 +1 @@
++["libujson"]
+diff --git a/parsers/test_libujson.sh b/parsers/test_libujson.sh
+new file mode 100755
+index 0000000..8497558
+--- /dev/null
++++ b/parsers/test_libujson.sh
+@@ -0,0 +1,2 @@
++#!/bin/sh
++../../ujson-parse-test $*
+diff --git a/run_tests.py b/run_tests.py
+index 3312d8c..a7d467f 100755
+--- a/run_tests.py
++++ b/run_tests.py
+@@ -21,6 +21,11 @@ INVALID_BINARY_FORMAT = 8
+ BAD_CPU_TYPE = 86
+ 
+ programs = {
++    "libujson":
++        {
++            "url":"",
++            "commands":[os.path.join(PARSERS_DIR, "test_libujson.sh")],
++        },
+     "Bash JSON.sh 2016-08-12":
+         {
+             "url":"https://github.com/dominictarr/JSON.sh",
+@@ -905,8 +910,8 @@ def generate_report(report_path, keep_only_first_result_in_set = False):
+ 
+         </HTML>
+         """)
+-    if os.path.exists('/usr/bin/open'):
+-        os.system('/usr/bin/open "%s"' % report_path)
++    #if os.path.exists('/usr/bin/open'):
++    #    os.system('/usr/bin/open "%s"' % report_path)
+ 
+ ###
+ 
