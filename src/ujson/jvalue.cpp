@@ -38,8 +38,15 @@ namespace ujson {
     static void num_t_to_str (const mpf_class& n, std::stringstream& ss)
     {
         mp_exp_t e;
-        std::string s = n.get_str (e);
-        auto slen = s.length ();
+        std::string str = n.get_str (e);
+        long slen = str.length ();
+        const char* s = str.c_str ();
+
+        if (slen>0 && s[0]=='-') {
+            ss << '-';
+            ++s;
+            --slen;
+        }
 
         if (slen == 0) {
             ss << "0";
@@ -48,29 +55,36 @@ namespace ujson {
             ss << "0." << s;
         }
         else if (e >= (ssize_t)slen) {
-            if (e > 7) {
+            if (e > 16) {
                 if (slen==1) {
                     ss << s << "e+" << e-1;
                 }else{
-                    ss << s[0] << '.' << (s.c_str()+1) << "e+" << e-1;
+                    ss << s[0] << '.' << (s+1) << "e+" << e-1;
                 }
             }else{
-                ss << s << std::string(e - slen, '0');
+                ss << s;
+                for (long i=0; i<(e-slen); ++i)
+                    ss << '0';
             }
         }
         else /* if (e < (ssize_t)slen) */ {
-            if (e < -2) {
+            if (e < -3) {
                 if (slen==1) {
                     ss << s << 'e' << e-1;
                 }else{
-                    ss << s[0] << '.' << (s.c_str()+1) << 'e' << e-1;
+                    ss << s[0] << '.' << (s+1) << 'e' << e-1;
                 }
             }else{
                 if (e > 0) {
-                    s.insert (e, 1, '.');
-                    ss << s;
+                    for (long i=0; i<e; ++i)
+                        ss << s[i];
+                    ss << '.';
+                    ss << (s+e);
                 }else{
-                    ss << "0." << std::string(std::abs(e), '0') << s;
+                    ss << "0.";
+                    for (long i=0; i>e; --i)
+                        ss << '0';
+                    ss << s;
                 }
             }
         }
