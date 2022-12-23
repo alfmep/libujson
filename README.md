@@ -84,7 +84,7 @@ If the configure script finds doxygen, the generated API documentation can be vi
 
 To enable example applications, configure with parameter `--enable-examples`. Example applications are *not* installed when running `make install`.
 
-To enable test applications, configure with parameter `--enable-test`. Test applications are *not* installed when running `make install`. Currently the only test application is an application to test JSON patches using the test cases defined at https://github.com/json-patch/json-patch-tests, and a script to automate downloading and running the tests. Work is in progress to make a script to automate testing the JSON parser using the test framework at https://github.com/nst/JSONTestSuite.
+To enable applications and scripts to test JSON parsing and JSON patches, configure with parameter `--enable-test`. Test applications are *not* installed when running `make install`. 
 
 If the precision of `double` is just fine for numbers and there's no need for arbitrary precision, but speed is more important; parsing JSON documents will be more efficient if configured without support for gmpxx (`--disable-gmpxx`).
 
