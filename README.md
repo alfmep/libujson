@@ -406,13 +406,16 @@ For using the libujson API, the header file `ujson.hpp` needs to be included:
 All types, classes, and functions in libujson are defined within namespace `ujson`.
 
 ### Linking
+
 **Automatically link dependent libraries**
+
 Use `pkg-config` to automatically get the linker flags used to link applications using libujson:
-*Example:*
 ```bash
 g++ -Wall -O2 -o application application.cpp `pkg-config --libs ujson`
 ```
+
 **Manually link dependent libraries**
+
 If libujson is configured *with* support for numbers with arbitrary precision (default if gmpxx is found by the configure script), applications using libujson will need to link libraries libujson, libgmpxx, and libgmp:
 ```bash
 g++ -Wall -O2 -o application application.cpp -lujson -lgmpxx -lgmp
