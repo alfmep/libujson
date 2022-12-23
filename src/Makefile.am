@@ -66,6 +66,7 @@ nobase_libujson_HEADERS =
 nobase_libujson_HEADERS += ujson.hpp
 nobase_libujson_HEADERS += ujson/config.hpp
 nobase_libujson_HEADERS += ujson/multimap_list.hpp
+nobase_libujson_HEADERS += ujson/json_type_error.hpp
 nobase_libujson_HEADERS += ujson/jvalue.hpp
 nobase_libujson_HEADERS += ujson/jpointer.hpp
 nobase_libujson_HEADERS += ujson/utils.hpp

@@ -137,8 +137,8 @@ int main (int argc, char* argv[])
         number["name"] = "A number";
         cout << "number: " << number.describe() << endl;
     }
-    catch (std::logic_error& le) {
-        cout << "Error accessing object attribute 'name': " << le.what() << endl;
+    catch (ujson::json_type_error& jte) {
+        cout << "Error accessing object attribute 'name': " << jte.what() << endl;
     }
 
     // The type of JSON value a jvalue represents can easily be checked:

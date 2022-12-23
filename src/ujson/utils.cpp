@@ -675,7 +675,7 @@ namespace ujson {
                 retval = patch_invalid;
             }
         }
-        catch (std::logic_error& le) {
+        catch (json_type_error& jte) {
             retval = patch_invalid;
         }
         catch (...) {

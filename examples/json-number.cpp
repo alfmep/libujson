@@ -71,8 +71,8 @@ int main (int argc, char* argv[])
         cout << "Try calling num() on a JSON " << ujson::jtype_to_str(jval2) << endl;
         cout << jval2.num() << endl;
     }
-    catch (std::logic_error& le) {
-        cout << "Error using num(): " << le.what() << endl << endl;
+    catch (ujson::json_type_error& jte) {
+        cout << "Error using num(): " << jte.what() << endl << endl;
     }
 
 

@@ -26,6 +26,7 @@
 #include <memory>
 #include <cstdio>
 #include <ujson/multimap_list.hpp>
+#include <ujson/json_type_error.hpp>
 #include <ujson/config.hpp>
 #if UJSON_HAVE_GMPXX
 #  include <gmpxx.h>
@@ -531,7 +532,7 @@ namespace ujson {
          * Get a reference to the ujson::json_object instance used by
          * this jvalue instance to represent a JSON object.
          * @return A reference to a ujson::json_object.
-         * @throw std::logic_error If this is not a JSON object.
+         * @throw ujson::json_type_error If this is not a JSON object.
          *        The type of JSON value can be checked using method jvalue::type().
          * @note The jvalue instance uses an instance of a ujson::json_object
          *       to represent a JSON object. If any method is called on this
@@ -568,7 +569,7 @@ namespace ujson {
          * Get a reference to the ujson::json_array instance used by
          * this jvalue instance to represent a JSON array.
          * @return A reference to a ujson::json_array.
-         * @throw std::logic_error If this is not a JSON array.
+         * @throw ujson::json_type_error If this is not a JSON array.
          *        The type of JSON value can be checked using method jvalue::type().
          * @note The jvalue instance uses an instance of a ujson::json_array
          *       to represent a JSON array. If any method is called on this
@@ -604,7 +605,7 @@ namespace ujson {
         /**
          * Get a reference to the string value if this is a JSON string.
          * @return A reference to a std::string.
-         * @throw std::logic_error If this is not a JSON string.
+         * @throw ujson::json_type_error If this is not a JSON string.
          *        The type of JSON value can be checked using method jvalue::type().
          * @note The jvalue instance uses an instance of a std::string
          *       to represent a JSON string. If any method is called on this
@@ -659,7 +660,7 @@ namespace ujson {
          *       jvalue instance that changes the JSON type from an object
          *       into some other JSON type, the reference returned by this
          *       method will be invalid and should not be used.
-         * @throw std::logic_error If this is not a JSON number.
+         * @throw ujson::json_type_error If this is not a JSON number.
          *        The type of JSON value can be checked using
          *        method jvalue::type().
          * @see <a href=https://gmplib.org/manual/index
@@ -675,7 +676,7 @@ namespace ujson {
          *       a <code>double</code> and possibly lose precision.<br/>
          *       To keep precision, use <code>jvalue::mpf()</code>.
          * @return The json number value.
-         * @throw std::logic_error If this is not a JSON number.
+         * @throw ujson::json_type_error If this is not a JSON number.
          *        The type of JSON value can be checked using
          *        method jvalue::type().
          * @see jvalue::mpf()
@@ -684,7 +685,7 @@ namespace ujson {
         /**
          * Return the JSON number value.
          * @return The JSON number value.
-         * @throw std::logic_error If this is not a JSON number.
+         * @throw ujson::json_type_error If this is not a JSON number.
          *        The type of JSON value can be checked using
          *        method jvalue::type().
          */
@@ -736,7 +737,7 @@ namespace ujson {
         /**
          * Return the JSON boolean value.
          * @return The JSON boolean value.
-         * @throw std::logic_error If this is not a JSON boolean.
+         * @throw ujson::json_type_error If this is not a JSON boolean.
          *        The type of JSON value can be checked using
          *        method jvalue::type().
          */
@@ -821,7 +822,7 @@ namespace ujson {
          * @param name The name of the object attribute we want.
          * @return A reference to the value mapped to the given name.
          *         Or a reference to a static invalid jvalue if not found.
-         * @throw std::logic_error If this is not a JSON object.
+         * @throw ujson::json_type_error If this is not a JSON object.
          *        The type of JSON value can be checked using method jvalue::type().
          * @note The JSON specification allows multiple object attributes
          *       with the same name. If a JSON object contains more than
@@ -848,10 +849,10 @@ namespace ujson {
          * @param name The name of the object attribute we want.
          * @return A reference to the value mapped to the given name.
          *         Or a reference to a static invalid jvalue if not found.
+         * @throw ujson::json_type_error
+         *         - If this is not a JSON object.
          * @throw std::logic_error
          *         - If there are multiple attributes with the same name.
-         *         - If this is not a JSON object.
-         *           The type of JSON value can be checked using method jvalue::type().
          */
         jvalue& get_unique (const std::string& name);
 
@@ -862,7 +863,7 @@ namespace ujson {
          * be of type <code>ujson::j_null</code>.
          * @param name A name of a JSON object attribute.
          * @return A reference to a jvalue mapped to the given name.
-         * @throw std::logic_error If this is not a JSON object.
+         * @throw ujson::json_type_error If this is not a JSON object.
          *        The type of JSON value can be checked using method jvalue::type().
          * @note The JSON specification allows multiple object attributes
          *       with the same name. If a JSON object contains more than
@@ -876,7 +877,7 @@ namespace ujson {
          * Returns a reference to the n'th value in the JSON array.
          * @param n The index of the object in the array we want to access.
          * @return A reference to a jvalue in the JSON array.
-         * @throw std::logic_error If this is not a JSON array.
+         * @throw ujson::json_type_error If this is not a JSON array.
          *        The type of JSON value can be checked using method jvalue::type().
          * @throw std::out_of_range If the index is out of range.
          */
@@ -914,7 +915,7 @@ namespace ujson {
          *                  keep its current value.
          * @return A reference to the attribute value in the JSON
          *         object that was created, modified, or untouched.
-         * @throw std::logic_error If this is not a JSON object
+         * @throw ujson::json_type_error If this is not a JSON object
          *        (not of type ujson::j_object).
          * @throw std::invalid_argument If parameter <code>value</code>
          *        is an invalid JSON value (of type ujson::j_invalid).
@@ -936,7 +937,7 @@ namespace ujson {
          *                  keep its current value.
          * @return A reference to the attribute value in the JSON
          *         object that was created, modified, or untouched.
-         * @throw std::logic_error If this is not a JSON object
+         * @throw ujson::json_type_error If this is not a JSON object
          *        (not of type ujson::j_object).
          * @throw std::invalid_argument If parameter <code>value</code>
          *        is an invalid JSON value (of type ujson::j_invalid).
@@ -950,7 +951,7 @@ namespace ujson {
          * the supplied value will be copied to the end of the array.
          * @param value The value to append.
          * @return A reference to the jvalue appeded to the array.
-         * @throw std::logic_error If this is not a JSON array
+         * @throw ujson::json_type_error If this is not a JSON array
          *        (not of type ujson::j_array).
          * @throw std::invalid_argument If parameter <code>value</code>
          *        is an invalid JSON value (of type ujson::j_invalid).
@@ -963,7 +964,7 @@ namespace ujson {
          * the supplied value will be moved to the end of the array.
          * @param value The jvalue to move.
          * @return A reference to the jvalue appeded to the array.
-         * @throw std::logic_error If this is not a JSON array
+         * @throw ujson::json_type_error If this is not a JSON array
          *        (not of type ujson::j_array).
          * @throw std::invalid_argument If parameter <code>value</code>
          *        is an invalid JSON value (of type ujson::j_invalid).

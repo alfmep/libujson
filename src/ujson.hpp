@@ -25,6 +25,7 @@
 namespace ujson {}
 
 #include <ujson/multimap_list.hpp>
+#include <ujson/json_type_error.hpp>
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>

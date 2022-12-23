@@ -455,7 +455,7 @@ namespace ujson {
     json_object& jvalue::obj ()
     {
         if (jtype != j_object)
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
         return *v.jobj;
     }
 
@@ -483,7 +483,7 @@ namespace ujson {
     json_array& jvalue::array ()
     {
         if (jtype != j_array)
-            throw std::logic_error ("Not a JSON array");
+            throw ujson::json_type_error ("Not a JSON array");
         return *v.jarray;
     }
 
@@ -511,7 +511,7 @@ namespace ujson {
     std::string& jvalue::str ()
     {
         if (jtype != j_string)
-            throw std::logic_error ("Not a JSON string");
+            throw ujson::json_type_error ("Not a JSON string");
         return *v.jstr;
     }
 
@@ -540,7 +540,7 @@ namespace ujson {
     mpf_class& jvalue::mpf ()
     {
         if (jtype != j_number)
-            throw std::logic_error ("Not a JSON number");
+            throw ujson::json_type_error ("Not a JSON number");
         return *v.jnum;
     }
 #endif
@@ -551,7 +551,7 @@ namespace ujson {
     double jvalue::num () const
     {
         if (jtype != j_number)
-            throw std::logic_error ("Not a JSON number");
+            throw ujson::json_type_error ("Not a JSON number");
 #if UJSON_HAVE_GMPXX
         return v.jnum->get_d();
 #else
@@ -617,7 +617,7 @@ namespace ujson {
     bool jvalue::boolean () const
     {
         if (jtype != j_bool)
-            throw std::logic_error ("Not a JSON boolean");
+            throw ujson::json_type_error ("Not a JSON boolean");
 
         return v.jbool;
     }
@@ -758,7 +758,7 @@ namespace ujson {
     {
         if (type() != j_object) {
             // This is not a json object
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
         }
 
         auto entry = find_last_in_jobj (name, *v.jobj);
@@ -777,7 +777,7 @@ namespace ujson {
     {
         if (type() != j_object) {
             // This is not a json object
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
         }
 
         auto items = v.jobj->equal_range (name);
@@ -803,7 +803,7 @@ namespace ujson {
     jvalue& jvalue::operator[] (const std::string& name)
     {
         if (type() != j_object)
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
 
         auto entry = find_last_in_jobj (name, *v.jobj);
         if (entry != v.jobj->send()) {
@@ -822,7 +822,7 @@ namespace ujson {
     jvalue& jvalue::operator[] (const size_t index)
     {
         if (type() != j_array)
-            throw std::logic_error ("Not a JSON array");
+            throw ujson::json_type_error ("Not a JSON array");
 
         if (index >= v.jarray->size())
             throw std::out_of_range ("Array index out of range");
@@ -851,7 +851,7 @@ namespace ujson {
                          const bool overwrite)
     {
         if (type() != j_object)
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
 
         if (!value.valid())
             throw std::invalid_argument ("Invalid JSON value");
@@ -874,7 +874,7 @@ namespace ujson {
                          const bool overwrite)
     {
         if (type() != j_object)
-            throw std::logic_error ("Not a JSON object");
+            throw ujson::json_type_error ("Not a JSON object");
 
         if (!value.valid())
             throw std::invalid_argument ("Invalid JSON value");
@@ -895,7 +895,7 @@ namespace ujson {
     jvalue& jvalue::append (const jvalue& value)
     {
         if (type() != j_array)
-            throw std::logic_error ("Not a JSON array");
+            throw ujson::json_type_error ("Not a JSON array");
 
         if (!value.valid())
             throw std::invalid_argument ("Invalid JSON value");
@@ -909,7 +909,7 @@ namespace ujson {
     jvalue& jvalue::append (jvalue&& value)
     {
         if (type() != j_array)
-            throw std::logic_error ("Not a JSON array");
+            throw ujson::json_type_error ("Not a JSON array");
 
         if (!value.valid())
             throw std::invalid_argument ("Invalid JSON value");
