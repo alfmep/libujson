@@ -12,15 +12,15 @@ fi
 TEST_RESULT_DIR=${BASE_DIR}result-parse-test
 TEST_DATA_BASE_DIR=${BASE_DIR}test-data
 TEST_DATA_DIR=$TEST_DATA_BASE_DIR/json-parse-test
-TEST_ALL_PARSERS=no
+TEST_ALL_PARSERS=yes
 
 CLONE_URL=https://github.com/nst/JSONTestSuite.git
 
 #
 # Option '--clean' will erase test data and exit
 #
-if [ "$1" = "--all" ]; then
-    TEST_ALL_PARSERS=yes
+if [ "$1" = "--only-libujson" ]; then
+    TEST_ALL_PARSERS=no
 elif [ "$1" = "--clean" ]; then
     echo "# "
     echo "# Removing patch test data (directory $TEST_DATA_DIR)"
@@ -40,9 +40,9 @@ elif [ "$1" = "--help" ]; then
     echo "    Parse result files are stored in directory '$TEST_RESULT_DIR'"
     echo ""
     echo "    Options:"
-    echo "        --all      Run parsing test for all parsers in JSONTestSuite, not just libujson"
-    echo "        --clean    Erase test data directory and test output files"
-    echo "        --help     Print this help and exit"
+    echo "        --only-libujson  Only parsing test for libujson"
+    echo "        --clean          Erase test data directory and test output files"
+    echo "        --help           Print this help and exit"
     echo ""
     exit 0
 fi
