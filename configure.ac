@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-AC_INIT([libujson], [4.0.0], [dan@ultramarin.se])
+AC_INIT([libujson], [4.1.0], [dan@ultramarin.se])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 subdir-objects])
 
 AC_PROG_CC
@@ -35,7 +35,7 @@ AC_CONFIG_HEADERS(src/ujson/config.hpp)
 AM_SILENT_RULES([yes])
 
 #
-# Release 4.0.0
+# Release 4.1.0
 #
 # Library interface version x:y:z
 #                           | | |
@@ -47,7 +47,7 @@ AM_SILENT_RULES([yes])
 #
 # Library version (CURRENT:REVISION:AGE)
 #
-LIBRARY_VERSION=4:0:0
+LIBRARY_VERSION=5:0:1
 AC_SUBST([LIBRARY_VERSION])
 
 #
