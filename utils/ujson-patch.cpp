@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -105,7 +105,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.quiet = true;
             break;
         case 'v':
-            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
             break;
         case 'h':

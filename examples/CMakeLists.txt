@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -16,26 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-
-if ENABLE_TEST_SET
-
-AM_CPPFLAGS = -I$(srcdir)/../src
-AM_CXXFLAGS = -Wall -pipe -O2 -g -std=c++17
-AM_LDFLAGS = -L../src -lujson
-
-if HAVE_GMPXX
-  AM_CXXFLAGS += $(gmpxx_CFLAGS)
-  AM_LDFLAGS += $(gmpxx_LIBS)
-endif
+cmake_minimum_required (VERSION 3.22)
 
 
-noinst_bindir =
-noinst_bin_PROGRAMS =
+link_libraries (ujson)
 
-noinst_bin_PROGRAMS += ujson-parse-test
-ujson_parse_test_SOURCES  = ujson-parse-test.cpp
 
-noinst_bin_PROGRAMS += ujson-patch-test
-ujson_patch_test_SOURCES  = ujson-patch-test.cpp
-
-endif
+add_executable (find_jvalue find_jvalue.cpp)
+add_executable (initialize-jvalue initialize-jvalue.cpp)
+add_executable (json-object json-object.cpp)
+add_executable (json-array json-array.cpp)
+add_executable (json-number json-number.cpp)

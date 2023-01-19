@@ -1,6 +1,6 @@
 %{
 //
-// Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+// Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
 //
 // This file is part of ujson.
 //
@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <string>
 #include <ujson/Parser.hpp>
-#include <ujson/Analyzer.hpp>
+#include <Analyzer.hpp>
 
 #define YYSTYPE std::string
 
@@ -34,8 +34,8 @@
 
 
 %option prefix="uj"
-%option outfile="lex.yy.c"
-%option header-file="Lexer.hh"
+%option outfile="Lexer.cpp"
+%option header-file="Lexer.hpp"
 %option noyywrap
 %option 8bit
 %option batch

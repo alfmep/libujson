@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -22,10 +22,10 @@
 #include <algorithm>
 #include <regex>
 #include <ujson/Parser.hpp>
-#include <ujson/Analyzer.hpp>
+#include <Analyzer.hpp>
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
-#include <Lexer.hh>
+#include <Lexer.hpp>
 
 namespace ujson {
 

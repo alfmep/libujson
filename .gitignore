@@ -29,7 +29,6 @@ depcomp
 /ylwrap
 /src/ujson/stamp-h1
 /src/ujson/config.hpp
-/src/ujson/config.hpp.in
 /src/ujson/Analyzer.hpp
 /src/ujson/Analyzer.cpp
 /src/ujson/Lexer.cpp
