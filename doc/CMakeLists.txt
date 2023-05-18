@@ -38,8 +38,14 @@ configure_file (
 add_custom_command (OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.cfg
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.cfg.in
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/*.hpp
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/*.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson.hpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/../src/ujson/config.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/multimap_list.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/json_type_error.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jvalue.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jpointer.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/utils.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jparser.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating API documentation"
     VERBATIM
