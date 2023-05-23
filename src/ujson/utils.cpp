@@ -278,9 +278,24 @@ namespace ujson {
     std::string unescape (const std::string& in, bool& ok)
     {
         std::string result;
+        try {
+            result = unescape (in);
+            ok = true;
+        }
+        catch (...) {
+            ok = false;
+        }
+        return result;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string unescape (const std::string& in)
+    {
+        std::string result;
         std::u16string u16_str;
 
-        ok = true;
         auto pos = std::find (in.begin(), in.end(), '\\');
         if (pos == in.end())
             return in;
@@ -289,7 +304,7 @@ namespace ujson {
 
         // Check if string ends with a '\\'
         if (pos++ != in.end()  &&  pos == in.end())
-            ok = false;
+            throw std::invalid_argument ("Invalid JSON escape sequence");
 
         while (pos != in.end()) {
             switch (*pos) {
@@ -349,7 +364,7 @@ namespace ujson {
                     if (num_digits >= 4) {
                         u16_str.push_back (u16);
                     }else{
-                        ok = false;
+                        throw std::invalid_argument ("Invalid JSON escape sequence");
                     }
                     if (pos!=in.end()  &&  *pos == '\\') {
                         auto next = pos + 1;
@@ -360,12 +375,12 @@ namespace ujson {
                 try {
                     result.append (utf16_to_utf8(u16_str));
                 }catch (...) {
-                    ok = false;
+                    throw std::invalid_argument ("Invalid JSON escape sequence");
                 }
                 break;
 
             default:
-                ok = false;
+                throw std::invalid_argument ("Invalid JSON escape sequence");
                 break;
             }
 
@@ -378,7 +393,7 @@ namespace ujson {
             pos = next;
             // Check if string ends with a '\\'
             if (pos++ != in.end()  &&  pos == in.end())
-                ok = false;
+                throw std::invalid_argument ("Invalid JSON escape sequence");
         }
         return result;
     }

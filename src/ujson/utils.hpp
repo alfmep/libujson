@@ -149,6 +149,18 @@ namespace ujson {
     /**
      * Convert a JSON escaped string to an unescaped string.
      * @param in An escaped string.
+     * @return An unescaped string. All escape sequences that
+     *         are found incorrect will be excluded from the result.
+     * @throws std::invalid_argument If the input string contains
+     *                               invalid escape sequences.
+     */
+    std::string unescape (const std::string& in);
+
+    /**
+     * @deprecated Use unescape(const std::string&) instead,
+     *             this function will be removed in future versions.
+     * Convert a JSON escaped string to an unescaped string.
+     * @param in An escaped string.
      * @param ok This will be set to <code>false</code>
      *           if the input string is formatted in an
      *           uncorrect way. Otherwise it is set to
@@ -158,19 +170,8 @@ namespace ujson {
      *         result and <code>ok</code> will be set to
      *         <code>false</code> if errors are found.
      */
+    [[deprecated("Use ujson::unescape(const std::string&) instead, this function will be removed in future versions.")]]
     std::string unescape (const std::string& in, bool& ok);
-
-    /**
-     * Convert a JSON escaped string to an unescaped string, ignoring errors.
-     * @param in An escaped string.
-     * @return An unescaped string. All escape sequences that
-     *         are found incorrect will be excluded from the result.
-     */
-    inline std::string unescape (const std::string& in) {
-        bool ignore_ok_param;
-        return unescape (in, ignore_ok_param);
-    }
-
 
     /**
      * Parse a JSON pointer and return a list of reference tokens.

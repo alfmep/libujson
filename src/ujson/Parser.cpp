@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <regex>
 #include <cstdio>
+#include <stdexcept>
 #include <ujson/Parser.hpp>
 #include <Analyzer.hpp>
 #include <ujson/utils.hpp>
@@ -284,8 +285,16 @@ namespace ujson {
     //--------------------------------------------------------------------------
     Analyzer::symbol_type Parser::on_lex_string ()
     {
-        std::string str (ujget_text(yyscanner)+1, ujget_leng(yyscanner)-2);
-        return Analyzer::make_STRING (unescape(str), loc());
+        try {
+            std::string str (ujget_text(yyscanner)+1, ujget_leng(yyscanner)-2);
+            return Analyzer::make_STRING (unescape(str), loc());
+        }
+        catch (std::invalid_argument& ia) {
+            throw Analyzer::syntax_error (loc(), "syntax error, invalid JSON escape sequence in string");
+        }
+        catch (...) {
+            throw Analyzer::syntax_error (loc(), "syntax error, invalid JSON string");
+        }
     }
 
 
