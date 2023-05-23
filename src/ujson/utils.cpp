@@ -18,8 +18,6 @@
  */
 #include <ujson/internal.hpp>
 #include <algorithm>
-#include <codecvt>
-#include <locale>
 #include <string>
 #include <sstream>
 #include <stdexcept>
@@ -31,6 +29,60 @@
 
 
 namespace ujson {
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string utf16_to_utf8 (const std::u16string u16_str)
+    {
+        std::string result;
+
+        for (auto u16=u16_str.begin(); u16!=u16_str.end(); ++u16) {
+            if (*u16 <= 0x7F) {
+                result.push_back ((char)*u16);
+            }
+            else if (*u16 <= 0x07FF) {
+                result.push_back (0xC0 | (char)(*u16 >> 6));
+                result.push_back (0x80 | (char)(*u16 & 0x3F));
+            }
+            else {
+                char32_t code_point = 0;
+
+                // Convert from UTF-16 to code point
+                //
+                if (*u16 <= 0xD7FF  ||  (*u16 >= 0xE000  &&  *u16 <= 0xFFFF)) {
+                    code_point = (char32_t) *u16;
+                }
+                else if (*u16 <= 0xDBFF) {
+                    code_point = (*u16 - 0xD800) << 10;
+                    ++u16;
+                    if (u16 == u16_str.end()  ||  *u16 < 0xDC00  ||  *u16 > 0xDFFF) {
+                        throw std::invalid_argument ("Invalid UTF-16");
+                    }
+                    code_point += *u16 - 0xDC00;
+                    code_point += 0x10000;
+                }
+                else {
+                    throw std::invalid_argument ("Invalid UTF-16");
+                }
+
+                // Convert from code point to UTF-8
+                //
+                if (code_point <= 0xFFFF) {
+                    result.push_back (0xE0 | (char)(code_point  >> 12));
+                    result.push_back (0x80 | (char)((code_point >>  6) & 0x3F));
+                    result.push_back (0x80 | (char)(code_point         & 0x3F));
+                }
+                else /* if (code_point <= 0x10FFFF) */ {
+                    result.push_back (0xF0 | (char)(code_point  >> 18));
+                    result.push_back (0x80 | (char)((code_point >> 12) & 0x3F));
+                    result.push_back (0x80 | (char)((code_point >>  6) & 0x3F));
+                    result.push_back (0x80 | (char)(code_point         & 0x3F));
+                }
+            }
+        }
+        return result;
+    }
 
 
     //--------------------------------------------------------------------------
@@ -175,34 +227,6 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    template<class Iter>
-    static std::string unescape_16bit_utf16 (Iter& pos, Iter end, bool& ok, bool to_utf16)
-    {
-        int num_chars;
-        wchar_t utf16_in = 0;
-
-        ok = true;
-        for (num_chars=0; num_chars<4 && pos!=end; ++num_chars, ++pos) {
-            utf16_in <<= 4;
-            unsigned char hex_val = ch_to_hex (*pos);
-            if (hex_val & 0xf0)
-                ok = false;
-            utf16_in |= hex_val;
-        }
-        if (!ok || num_chars<4)
-            return "";
-
-        try {
-            std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conversion;
-            return conversion.to_bytes (utf16_in);
-        }catch (...) {
-            return "";
-        };
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
     std::string escape (const std::string& in, bool escape_slash)
     {
         static const char* hex = "0123456789abcdef";
@@ -254,6 +278,7 @@ namespace ujson {
     std::string unescape (const std::string& in, bool& ok)
     {
         std::string result;
+        std::u16string u16_str;
 
         ok = true;
         auto pos = std::find (in.begin(), in.end(), '\\');
@@ -272,48 +297,78 @@ namespace ujson {
                 result.push_back ('"');
                 ++pos;
                 break;
+
             case '\\':
                 result.push_back ('\\');
                 ++pos;
                 break;
+
             case '/':
                 result.push_back ('/');
                 ++pos;
                 break;
+
             case 'b':
                 result.push_back ('\b');
                 ++pos;
                 break;
+
             case 'f':
                 result.push_back ('\f');
                 ++pos;
                 break;
+
             case 'n':
                 result.push_back ('\n');
                 ++pos;
                 break;
+
             case 'r':
                 result.push_back ('\r');
                 ++pos;
                 break;
+
             case 't':
                 result.push_back ('\t');
                 ++pos;
                 break;
+
             case 'u':
-                ++pos;
-                {
-                    bool utf16_ok;
-                    result.append (unescape_16bit_utf16(pos, in.end(),
-                                                        utf16_ok, false));
-                    if (!utf16_ok)
+                // Handle all consecutive \uxxxx as one UTF-16 string and convert it to UTF-8
+                //
+                u16_str.clear ();
+                while (pos!=in.end()  &&  *pos == 'u') {
+                    ++pos;
+                    char16_t u16 = 0;
+                    int num_digits;
+
+                    for (num_digits=0; num_digits<4 && pos!=in.end(); ++num_digits, ++pos) {
+                        u16 <<= 4;
+                        u16 |= ch_to_hex (*pos);
+                    }
+                    if (num_digits >= 4) {
+                        u16_str.push_back (u16);
+                    }else{
                         ok = false;
+                    }
+                    if (pos!=in.end()  &&  *pos == '\\') {
+                        auto next = pos + 1;
+                        if (*next == 'u')
+                            ++pos;
+                    }
+                }
+                try {
+                    result.append (utf16_to_utf8(u16_str));
+                }catch (...) {
+                    ok = false;
                 }
                 break;
+
             default:
                 ok = false;
                 break;
             }
+
             if (pos == in.end())
                 break;
             auto next = std::find (pos, in.end(), '\\');

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2020-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2020-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -39,6 +39,15 @@ namespace ujson {
         patch_invalid  /**< The patch was not a valid patch definition. */
     };
 
+
+    /**
+     * Convert an UTF-16 string to an UTF-8 string.
+     * @param u16 An UTF-16 encoded string.
+     * @return An UTF-8 encoded string.
+     * @throws std::invalid_argument If the input string contains
+     *                               invalid UTF-16 characters.
+     */
+    std::string utf16_to_utf8 (const std::u16string u16);
 
     /**
      * Get the name of a JSON type.
