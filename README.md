@@ -48,7 +48,7 @@
     For an example of a JSON document in relaxed form, see file 'example-document-in-relaxed-form.json'.
 
 ### JSON numbers with arbitrary precision
-When building with gmpxx (*default if gmpxx is found by cmake script*), libujson supports numbers with arbitrary precision in JSON documents.
+When building with gmpxx (*default if gmpxx is found by cmake*), libujson supports numbers with arbitrary precision in JSON documents.
 An example of a JSON document supported by libujson without losing precision:
 ```json
 {
