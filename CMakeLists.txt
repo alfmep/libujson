@@ -28,6 +28,10 @@ project (libujson
     HOMEPAGE_URL https://github.com/alfmep/libujson
     )
 
+# C++ standard
+#
+set (CMAKE_CXX_STANDARD 17)
+
 
 # Default GNU installation directories
 #

@@ -100,7 +100,7 @@ target_sources (ujson PRIVATE
     ujson/jparser.cpp
     ${FLEX_Lexer_OUTPUTS}
     ${BISON_Analyzer_OUTPUTS}
-)
+    )
 
 
 #
@@ -118,10 +118,23 @@ set (PUBLIC_HEADER_FILES
     ujson/utils.hpp
     ujson/jparser.hpp
     )
-set (PRIVATE_HEADER_FILES
-    ujson/internal.hpp
-    ujson/Parser.hpp
-    )
+
+if (WIN32)
+    configure_file (
+        ${CMAKE_CURRENT_SOURCE_DIR}/unistd.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/unistd.h
+        )
+    set (PRIVATE_HEADER_FILES
+        ujson/internal.hpp
+        ujson/Parser.hpp
+        ujson/unistd.h
+        )
+else()
+    set (PRIVATE_HEADER_FILES
+        ujson/internal.hpp
+        ujson/Parser.hpp
+        )
+endif()
 
 
 #

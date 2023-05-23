@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <unistd.h>
-#include <getopt.h>
+#include "option-parser.hpp"
 
 
 using namespace std;
@@ -80,21 +80,17 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "compact", no_argument, 0, 'c'},
-        { "relaxed", no_argument, 0, 'r'},
-        { "quiet",   no_argument, 0, 'q'},
-        { "version", no_argument, 0, 'v'},
-        { "help",    no_argument, 0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        {'c', "compact",  opt_t::none, 0},
+        {'r', "relaxed",  opt_t::none, 0},
+        {'q', "quiet",    opt_t::none, 0},
+        {'v', "version",  opt_t::none, 0},
+        {'h', "help",     opt_t::none, 0},
     };
-    const char* arg_format = "crqvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'c':
             args.compact = true;
             break;
@@ -112,20 +108,30 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             print_usage_and_exit (std::cout, 0);
             break;
         default:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
             exit (1);
             break;
         }
     }
-    if (optind < argc) {
-        args.document_filename = argv[optind++];
-    }else{
+
+    auto& arguments = opt.arguments ();
+    switch (arguments.size()) {
+    case 0:
         if (!args.quiet)
             cerr << "Missing argument" << endl;
         exit (1);
-    }
-    if (optind < argc)
-        args.patch_filename = argv[optind++];
-    if (optind < argc) {
+        break;
+
+    case 1:
+        args.document_filename = arguments[0];
+        break;
+
+    case 2:
+        args.document_filename = arguments[0];
+        args.patch_filename = arguments[1];
+        break;
+
+    default:
         if (!args.quiet)
             cerr << "Too many arguments" << endl;
         exit (1);

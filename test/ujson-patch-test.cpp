@@ -23,7 +23,7 @@
 #include <ujson.hpp>
 #include <cstdlib>
 #include <unistd.h>
-#include <getopt.h>
+#include "../utils/option-parser.hpp"
 
 
 using namespace std;
@@ -71,7 +71,7 @@ int main (int argc, char* argv[])
     // Parse the test file
     //
     uj::jparser parser;
-    app.test_suite = parser.parse_file (app.test_filename);
+    app.test_suite = parser.parse_file (app.test_filename.string());
     if (!app.test_suite.valid()) {
         cerr << "Error: Unable to parse test file: " << parser.error() << endl;
         return 1;
@@ -85,7 +85,7 @@ int main (int argc, char* argv[])
     // Initialize test results
     //
     app.results.type (uj::j_object);
-    app.results["passed"]       = uj::jvalue (uj::j_array);
+    app.results["passed"]   = uj::jvalue (uj::j_array);
     app.results["failed"]   = uj::jvalue (uj::j_array);
     app.results["disabled"] = uj::jvalue (uj::j_array);
     app.results["invalid"]  = uj::jvalue (uj::j_array);
@@ -174,7 +174,7 @@ static void run_test (appdata_t& app)
     uj::jvalue result (uj::j_object);
     stringstream ss;
     ss << '/' << app.index;
-    result["test_file"] = app.test_filename;
+    result["test_file"] = app.test_filename.string ();
     result["pointer_to_test"] = ss.str ();
 
     try {
@@ -318,42 +318,38 @@ static void print_usage_and_exit (ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appdata_t& app)
 {
-    static struct option long_options[] = {
-        { "allow-disabled",  no_argument,       0, 'a'},
-        { "passed-doc",      required_argument, 0, 's'},
-        { "failed-doc",      required_argument, 0, 'f'},
-        { "disabled-doc",    required_argument, 0, 'd'},
-        { "invalid-doc",     required_argument, 0, 'i'},
-        { "force-overwrite", no_argument,       0, 'o'},
-        { "version",         no_argument,       0, 'v'},
-        { "help",            no_argument,       0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        {'a', "allow-disabled",  opt_t::none,     0},
+        {'s', "passed-doc",      opt_t::required, 0},
+        {'f', "failed-doc",      opt_t::required, 0},
+        {'d', "disabled-doc",    opt_t::required, 0},
+        {'i', "invalid-doc",     opt_t::required, 0},
+        {'o', "force-overwrite", opt_t::none,     0},
+        {'v', "version",         opt_t::none,     0},
+        {'h', "help",            opt_t::none,     0},
     };
-    static const char* arg_format = "as:f:d:i:ovh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'a':
             app.allow_disabled = true;
             break;
 
         case 's':
-            app.passed_filename = optarg;
+            app.passed_filename = opt.optarg ();
             break;
 
         case 'f':
-            app.failed_filename = optarg;
+            app.failed_filename = opt.optarg ();
             break;
 
         case 'd':
-            app.disabled_filename = optarg;
+            app.disabled_filename = opt.optarg ();
             break;
 
         case 'i':
-            app.invalid_filename = optarg;
+            app.invalid_filename = opt.optarg ();
             break;
 
         case 'o':
@@ -369,21 +365,30 @@ static void parse_args (int argc, char* argv[], appdata_t& app)
             print_usage_and_exit (std::cout, 0);
             break;
 
-        default:
-            print_usage_and_exit (std::cerr, 1);
+        case -1:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+            exit (1);
+            break;
+
+        case -2:
+            cerr << "Missing argument to option '" << opt.opt() << "'" << endl;
+            exit (1);
             break;
         }
     }
 
     // Collect arguments that are not options
-    if (optind < argc)
-        app.test_filename = argv[optind++];
-    if (optind < argc) {
-        cerr << "Too many arguments (--help for help)" << endl;
-        exit (1);
-    }
-    if (app.test_filename.empty()) {
+    auto& arguments = opt.arguments ();
+    switch (arguments.size()) {
+    case 0:
         cerr << "Missing argument (--help for help)" << endl;
+        exit (1);
+        break;
+    case 1:
+        app.test_filename = arguments[0];
+        break;
+    default:
+        cerr << "Too many arguments (--help for help)" << endl;
         exit (1);
     }
 

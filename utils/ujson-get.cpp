@@ -23,7 +23,8 @@
 #include <string>
 #include <algorithm>
 #include <unistd.h>
-#include <getopt.h>
+#include "option-parser.hpp"
+
 
 
 using namespace std;
@@ -79,29 +80,25 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "compact",  no_argument,       0, 'c'},
-        { "type",     required_argument, 0, 't'},
-        { "unescape", no_argument,       0, 'u'},
-        { "relaxed",  no_argument,       0, 'r'},
-        { "version",  no_argument,       0, 'v'},
-        { "help",     no_argument,       0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        {'c', "compact",  opt_t::none,     0},
+        {'t', "type",     opt_t::required, 0},
+        {'u', "unescape", opt_t::none,     0},
+        {'r', "relaxed",  opt_t::none,     0},
+        {'v', "version",  opt_t::none,     0},
+        {'h', "help",     opt_t::none,     0},
     };
-    const char* arg_format = "ct:urvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'c':
             args.compact = true;
             break;
         case 't':
-            args.jtype = ujson::str_to_jtype (optarg);
+            args.jtype = ujson::str_to_jtype (opt.optarg());
             if (args.jtype == ujson::j_invalid) {
-                cerr << "Invalid json type: " << optarg << endl;
+                cerr << "Invalid json type: " << opt.optarg() << endl;
                 exit (1);
             }
             break;
@@ -118,36 +115,40 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'h':
             print_usage_and_exit (std::cout, 0);
             break;
-        default:
+        case -1:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+            exit (1);
+            break;
+        case -2:
+            cerr << "Missing argument to option '" << opt.opt() << "'" << endl;
             exit (1);
             break;
         }
     }
 
-    // Get the argument for the JSON document
-    //
-    if (optind < argc) {
-        args.filename = argv[optind++];
-    }else{
+    auto& arguments = opt.arguments ();
+    switch (arguments.size()) {
+    case 0:
         cerr << "Too few arguments" << endl;
         exit (1);
-    }
+        break;
 
-    // Get the argument for the JSON pointer
-    //
-    if (optind < argc) {
+    case 1:
+        args.filename = arguments[0];
+        break;
+
+    case 2:
         try {
-            args.pointer = argv[optind++];
+            args.filename = arguments[0];
+            args.pointer  = arguments[1];
         }
         catch (std::invalid_argument& ia) {
             cerr << "Error: " << ia.what() << endl;
             exit (1);
         }
-    }
+        break;
 
-    // Still more arguments ?
-    //
-    if (optind < argc) {
+    default:
         cerr << "Too many arguments" << endl;
         exit (1);
     }

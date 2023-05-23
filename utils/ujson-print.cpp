@@ -22,7 +22,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
-#include <getopt.h>
+#include "option-parser.hpp"
 
 
 using namespace std;
@@ -80,24 +80,20 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "compact",          no_argument, 0, 'c'},
-        { "escape-slash",     no_argument, 0, 'e'},
-        { "sort",             no_argument, 0, 's'},
-        { "array-lines",      no_argument, 0, 'a'},
-        { "relaxed",          no_argument, 0, 'r'},
-        { "parse-strict",     no_argument, 0, 't'},
-        { "version",          no_argument, 0, 'v'},
-        { "help",             no_argument, 0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        { 'c', "compact",      opt_t::none, 0},
+        { 'e', "escape-slash", opt_t::none, 0},
+        { 's', "sort",         opt_t::none, 0},
+        { 'a', "array-lines",  opt_t::none, 0},
+        { 'r', "relaxed",      opt_t::none, 0},
+        { 't', "parse-strict", opt_t::none, 0},
+        { 'v', "version",      opt_t::none, 0},
+        { 'h', "help",         opt_t::none, 0},
     };
-    const char* arg_format = "cesartvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, nullptr);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'c':
             args.pretty = false;
             break;
@@ -124,15 +120,19 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             print_usage_and_exit (std::cout, 0);
             break;
         default:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
             exit (1);
             break;
         }
     }
-    if (optind < argc)
-        args.filename = argv[optind++];
-    if (optind < argc) {
-        cerr << "Too many arguments" << endl;
-        exit (1);
+
+    auto& arguments = opt.arguments ();
+    if (!arguments.empty()) {
+        args.filename = arguments[0];
+        if (arguments.size() > 1) {
+            cerr << "Too many arguments" << endl;
+            exit (1);
+        }
     }
 }
 

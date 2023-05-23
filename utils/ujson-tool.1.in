@@ -116,7 +116,7 @@ Print the member names as JSON formatted strings.
 The names are printed JSON escaped, enclosed by double quotes.
 This will ensure that no member name is written on multiple
 lines since newline characters are escaped.
-This option is not needed is option '--json-array' is used.
+This option is not needed if option '--json-array' is used.
 .TP
 .B -j, --json-array
 Print the member names as a JSON formatted array.

@@ -33,6 +33,7 @@ set (PARSE_PATCH_DST "${CMAKE_CURRENT_BINARY_DIR}/JSONTestSuite-libujson.patch")
 
 add_executable (ujson-parse-test ujson-parse-test.cpp)
 
+
 add_custom_command (OUTPUT ${PARSE_TEST_SCRIPT_DST}
     COMMAND ${CMAKE_COMMAND} -E copy ${PARSE_TEST_SCRIPT_SRC} ${PARSE_TEST_SCRIPT_DST}
     DEPENDS ${PARSE_TEST_SCRIPT_SRC}
@@ -50,7 +51,7 @@ add_custom_target (parse-test-script ALL DEPENDS ${PARSE_TEST_SCRIPT_DST} ${PARS
 set (PATCH_TEST_SCRIPT_SRC "${CMAKE_CURRENT_SOURCE_DIR}/run-ujson-patch-test.sh")
 set (PATCH_TEST_SCRIPT_DST "${CMAKE_CURRENT_BINARY_DIR}/run-ujson-patch-test.sh")
 
-add_executable (ujson-patch-test ujson-patch-test.cpp)
+add_executable (ujson-patch-test ujson-patch-test.cpp ../utils/option-parser.cpp)
 
 add_custom_command (OUTPUT ${PATCH_TEST_SCRIPT_DST}
     COMMAND ${CMAKE_COMMAND} -E copy ${PATCH_TEST_SCRIPT_SRC} ${PATCH_TEST_SCRIPT_DST}
