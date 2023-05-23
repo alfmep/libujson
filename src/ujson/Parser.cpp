@@ -289,7 +289,7 @@ namespace ujson {
             std::string str (ujget_text(yyscanner)+1, ujget_leng(yyscanner)-2);
             return Analyzer::make_STRING (unescape(str), loc());
         }
-        catch (std::invalid_argument& ia) {
+        catch (std::invalid_argument&) {
             throw Analyzer::syntax_error (loc(), "syntax error, invalid JSON escape sequence in string");
         }
         catch (...) {
