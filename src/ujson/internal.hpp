@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021,2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -20,6 +20,7 @@
 #define UJSON_INTERNAL_HPP
 
 #include <ujson/jvalue.hpp>
+#include <unistd.h>
 
 namespace ujson {
     // Used to return references to invalid jvalues.

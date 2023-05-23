@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <ujson/internal.hpp>
 #include <ujson/jparser.hpp>
 #include <ujson/Parser.hpp>
 
@@ -45,8 +46,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue jparser::parse_file (const std::string& f,
-                             bool strict_mode,
-                             bool allow_duplicates_in_obj)
+                                bool strict_mode,
+                                bool allow_duplicates_in_obj)
     {
         return CTX->parse_file (f, strict_mode, allow_duplicates_in_obj);
     }
@@ -55,8 +56,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue jparser::parse_string (const std::string& str,
-                               bool strict_mode,
-                               bool allow_duplicates_in_obj)
+                                  bool strict_mode,
+                                  bool allow_duplicates_in_obj)
     {
         return CTX->parse_string (str, strict_mode, allow_duplicates_in_obj);
     }
@@ -65,9 +66,9 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue jparser::parse_buffer (const char* buf,
-                               size_t length,
-                               bool strict_mode,
-                               bool allow_duplicates_in_obj)
+                                  size_t length,
+                                  bool strict_mode,
+                                  bool allow_duplicates_in_obj)
     {
         return CTX->parse_buffer (buf, length, strict_mode, allow_duplicates_in_obj);
     }

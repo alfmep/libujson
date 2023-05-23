@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <ujson/internal.hpp>
 #include <ujson/jpointer.hpp>
 #include <ujson/utils.hpp>
 #include <stdexcept>

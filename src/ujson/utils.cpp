@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019,2021,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019,2021-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <ujson/internal.hpp>
 #include <algorithm>
 #include <string>
 #include <sstream>
@@ -23,7 +24,6 @@
 #include <regex>
 #include <cstdio>
 #include <ujson/utils.hpp>
-#include <ujson/internal.hpp>
 #include <ujson/jparser.hpp>
 #include <ujson/jpointer.hpp>
 
@@ -730,7 +730,7 @@ namespace ujson {
                 retval = patch_invalid;
             }
         }
-        catch (json_type_error& jte) {
+        catch (json_type_error&) {
             retval = patch_invalid;
         }
         catch (...) {

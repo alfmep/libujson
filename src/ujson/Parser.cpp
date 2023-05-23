@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,16 +16,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#include <ujson/internal.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
 #include <regex>
+#include <cstdio>
 #include <ujson/Parser.hpp>
-#include <ujson/Analyzer.hpp>
+#include <Analyzer.hpp>
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
-#include <Lexer.hh>
+#include <Lexer.hpp>
 
 namespace ujson {
 
@@ -93,7 +95,7 @@ namespace ujson {
         root.type (j_invalid);
         parse_error.clear ();
         ujlex_init (&yyscanner);
-        auto scan_buf = uj_scan_bytes (buf, length, yyscanner);
+        auto scan_buf = uj_scan_bytes (buf, (int)length, yyscanner);
         file = "";
 
         Analyzer analyzer (*this, yyscanner);
@@ -171,7 +173,7 @@ namespace ujson {
     //--------------------------------------------------------------------------
     int Parser::scan_begin ()
     {
-        FILE* f;
+        FILE* f = nullptr;
 
         if (file.empty()) {
             ujset_in (stdin, yyscanner);
@@ -316,10 +318,10 @@ namespace ujson {
 #endif
             return Analyzer::make_NUMBER (num, loc());
         }
-        catch (std::invalid_argument& ia) {
+        catch (std::invalid_argument&) {
             throw Analyzer::syntax_error (loc(), "syntax error, invalid number");
         }
-        catch (std::out_of_range& oor) {
+        catch (std::out_of_range&) {
             throw Analyzer::syntax_error (loc(), "number value error, number out of range");
         }
     }

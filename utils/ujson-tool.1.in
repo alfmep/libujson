@@ -1,6 +1,6 @@
 .\" Manpage for ujson-tool
-.\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
-.TH ujson-tool 1 "" "@PACKAGE_STRING@" "User Commands"
+.\" Contact https://github.com/alfmep to correct errors or types.
+.TH ujson-tool 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
 .SH NAME
@@ -116,7 +116,7 @@ Print the member names as JSON formatted strings.
 The names are printed JSON escaped, enclosed by double quotes.
 This will ensure that no member name is written on multiple
 lines since newline characters are escaped.
-This option is not needed is option '--json-array' is used.
+This option is not needed if option '--json-array' is used.
 .TP
 .B -j, --json-array
 Print the member names as a JSON formatted array.
@@ -146,4 +146,4 @@ ujson-print(1) ujson-verify(1) ujson-get(1) ujson-patch(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (@PACKAGE_BUGREPORT@)
+Dan Arrhenius (https://github.com/alfmep)

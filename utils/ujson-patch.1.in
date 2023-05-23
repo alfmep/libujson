@@ -1,6 +1,6 @@
 .\" Manpage for ujson-patch
-.\" Contact @PACKAGE_BUGREPORT@ to correct errors or types.
-.TH ujson-patch 1 "" "@PACKAGE_STRING@" "User Commands"
+.\" Contact https://github.com/alfmep to correct errors or types.
+.TH ujson-patch 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
 .SH NAME
@@ -43,4 +43,4 @@ ujson-tool(1) ujson-print(1) ujson-get(1) ujson-verify(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (@PACKAGE_BUGREPORT@)
+Dan Arrhenius (https://github.com/alfmep)

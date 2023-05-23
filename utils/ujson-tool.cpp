@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 #include <unistd.h>
-#include <getopt.h>
+#include "option-parser.hpp"
 
 
 using namespace std;
@@ -140,7 +140,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                            The names are printed JSON escaped, enclosed by double quotes." << endl;
     out << "                            This will ensure that no member name is written on multiple" << endl;
     out << "                            lines since newline characters are escaped." << endl;
-    out << "                            This option is not needed is option '--json-array' is used." << endl;
+    out << "                            This option is not needed if option '--json-array' is used." << endl;
     out << "      -j, --json-array      Print the member names as a JSON formatted array." << endl;
     out << "                            Option '--escape-members' is implied by this option." << endl;
     out << endl;
@@ -163,39 +163,35 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-static void parse_args (int argc, char* argv[], appargs_t& opt)
+static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "relaxed",        no_argument,       0, 'r'},
-        { "pointer",        required_argument, 0, 'p'},
-        { "compact",        no_argument,       0, 'c'},
-        { "sort",           no_argument,       0, 's'},
-        { "escape-slash",   no_argument,       0, 'e'},
-        { "escape-members", no_argument,       0, 'e'},
-        { "array-lines",    no_argument,       0, 'a'},
-        { "type",           required_argument, 0, 't'},
-        { "unescaped",      no_argument,       0, 'u'},
-        { "quiet",          no_argument,       0, 'q'},
-        { "escape-members", no_argument,       0, 'm'},
-        { "json-array",     no_argument,       0, 'j'},
-        { "version",        no_argument,       0, 'v'},
-        { "help",           no_argument,       0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        { 'r', "relaxed",        opt_t::none,     0},
+        { 'p', "pointer",        opt_t::required, 0},
+        { 'c', "compact",        opt_t::none,     0},
+        { 's', "sort",           opt_t::none,     0},
+        { 'e', "escape-slash",   opt_t::none,     0},
+        { 'e', "escape-members", opt_t::none,     0},
+        { 'a', "array-lines",    opt_t::none,     0},
+        { 't', "type",           opt_t::required, 0},
+        { 'u', "unescaped",      opt_t::none,     0},
+        { 'q', "quiet",          opt_t::none,     0},
+        { 'm', "escape-members", opt_t::none,     0},
+        { 'j', "json-array",     opt_t::none,     0},
+        { 'v', "version",        opt_t::none,     0},
+        { 'h', "help",           opt_t::none,     0},
     };
-    const char* arg_format = "rp:cseat:uqmjvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, nullptr);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'r':
-            opt.strict_parsing = false;
+            args.strict_parsing = false;
             break;
 
         case 'p':
             try {
-                opt.ptr = optarg;
+                args.ptr = opt.optarg ();
             }
             catch (...) {
                 cerr << "Error: Invalid JSON pointer" << endl;
@@ -204,47 +200,47 @@ static void parse_args (int argc, char* argv[], appargs_t& opt)
             break;
 
         case 'c':
-            opt.print_pretty = false;
+            args.print_pretty = false;
             break;
 
         case 's':
-            opt.print_sorted = true;
+            args.print_sorted = true;
             break;
 
         case 'e':
-            opt.print_escape_slash = true;
+            args.print_escape_slash = true;
             break;
 
         case 'a':
-            opt.print_array_items_on_same_line = false;
+            args.print_array_items_on_same_line = false;
             break;
 
         case 't':
-            opt.required_type = ujson::str_to_jtype (optarg);
-            if (opt.required_type == ujson::j_invalid) {
+            args.required_type = ujson::str_to_jtype (opt.optarg());
+            if (args.required_type == ujson::j_invalid) {
                 cerr << "Error: Invalid JSON type in option '--type=TYPE'" << endl;
                 exit (1);
             }
             break;
 
         case 'u':
-            opt.print_unescaped_string = true;
+            args.print_unescaped_string = true;
             break;
 
         case 'q':
-            opt.quiet = true;
+            args.quiet = true;
             break;
 
         case 'm':
-            opt.members_escape = true;
+            args.members_escape = true;
             break;
 
         case 'j':
-            opt.members_as_json_array = true;
+            args.members_as_json_array = true;
             break;
 
         case 'v':
-            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
             break;
 
@@ -252,21 +248,28 @@ static void parse_args (int argc, char* argv[], appargs_t& opt)
             print_usage_and_exit (std::cout, 0);
             break;
 
-        default:
+        case -2:
+            cerr << "Missing argument to option '" << opt.opt() << "'" << endl;
             exit (1);
             break;
+
+        default:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+            exit (1);
         }
     }
 
-    if (optind < argc) {
-        opt.cmd = argv[optind++];
-    }else{
+
+    auto& arguments = opt.arguments ();
+    auto arg_entry = arguments.begin ();
+    if (arg_entry == arguments.end()) {
         cerr << "Error: Missing command (-h for help)" << endl;
         exit (1);
     }
 
-    while (optind < argc)
-        opt.args.emplace_back (argv[optind++]);
+    args.cmd = *arg_entry;
+    while (++arg_entry != arguments.end())
+        args.args.emplace_back (*arg_entry);
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -24,7 +24,7 @@
 #include <cstring>
 #include <cerrno>
 #include <unistd.h>
-#include <getopt.h>
+#include "option-parser.hpp"
 
 
 using namespace std;
@@ -66,20 +66,16 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "relaxed", no_argument, 0, 'r'},
-        { "quiet",   no_argument, 0, 'q'},
-        { "version", no_argument, 0, 'v'},
-        { "help",    no_argument, 0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        {'r', "relaxed", opt_t::none, 0},
+        {'q', "quiet",   opt_t::none, 0},
+        {'v', "version", opt_t::none, 0},
+        {'h', "help",    opt_t::none, 0},
     };
-    const char* arg_format = "rqvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'r':
             args.relaxed = true;
             break;
@@ -87,30 +83,30 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.quiet = true;
             break;
         case 'v':
-            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
             break;
         default:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
             exit (1);
-            break;
         }
     }
-    if (optind < argc)
-        args.filename[0] = argv[optind++];
-    if (optind < argc)
-        args.filename[1] = argv[optind++];
 
-    if (args.filename[0].empty() || args.filename[1].empty()) {
-        if (!args.quiet)
-            cerr << "Missing filename(s)" << endl;
+    auto& arguments = opt.arguments ();
+    switch (arguments.size()) {
+    case 0:
+    case 1:
+        cerr << "Missing filename(s)" << endl;
         exit (1);
-    }
-    if (optind < argc) {
-        if (!args.quiet)
-            cerr << "Too many arguments" << endl;
+    case 2:
+        args.filename[0] = arguments[0];
+        args.filename[1] = arguments[1];
+        break;
+    default:
+        cerr << "Too many arguments" << endl;
         exit (1);
     }
 }

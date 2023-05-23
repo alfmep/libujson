@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -16,20 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UJSON_HPP
-#define UJSON_HPP
+#ifndef UJSON_CONFIG_HPP
+#define UJSON_CONFIG_HPP
 
-/**
- * Namespace for libujson.
- */
-namespace ujson {}
+#define UJSON_VERSION_MAJOR @libujson_VERSION_MAJOR@
+#define UJSON_VERSION_MINOR @libujson_VERSION_MINOR@
+#define UJSON_VERSION_PATCH @libujson_VERSION_PATCH@
 
-#include <ujson/config.hpp>
-#include <ujson/multimap_list.hpp>
-#include <ujson/json_type_error.hpp>
-#include <ujson/utils.hpp>
-#include <ujson/jvalue.hpp>
-#include <ujson/jpointer.hpp>
-#include <ujson/jparser.hpp>
+#define UJSON_VERSION_STRING "@libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@"
+#define UJSON_PACKAGE_STRING "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@"
+
+/* Define to 1 if libgmpxx is used */
+#define UJSON_HAVE_GMPXX @UJSON_HAVE_GMPXX@
 
 #endif

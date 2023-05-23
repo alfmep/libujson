@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -24,10 +24,10 @@
 #include <cstdlib>
 #include <cstdint>
 #include <unistd.h>
-#include <getopt.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "option-parser.hpp"
 
 using std::cout;
 using std::cerr;
@@ -72,20 +72,16 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
-    struct option long_options[] = {
-        { "relaxed", no_argument,       0, 'r'},
-        { "quiet",   no_argument,       0, 'q'},
-        { "version", no_argument,       0, 'v'},
-        { "help",    no_argument,       0, 'h'},
-        { 0, 0, 0, 0}
+    optlist_t options = {
+        { 'r', "relaxed", opt_t::none, 0},
+        { 'q', "quiet",   opt_t::none, 0},
+        { 'v', "version", opt_t::none, 0},
+        { 'h', "help",    opt_t::none, 0},
     };
-    const char* arg_format = "rqvh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
+    option_parser opt (argc, argv);
+    while (int id=opt(options)) {
+        switch (id) {
         case 'r':
             args.strict = false;
             break;
@@ -93,19 +89,20 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.quiet = true;
             break;
         case 'v':
-            std::cout << prog_name << ' ' << PACKAGE_VERSION << std::endl;
+            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
             break;
         default:
+            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
             exit (1);
             break;
         }
     }
-    while (optind < argc)
-        args.files.emplace_back (argv[optind++]);
+    for (auto& argument : opt.arguments())
+        args.files.emplace_back (argument);
 }
 
 

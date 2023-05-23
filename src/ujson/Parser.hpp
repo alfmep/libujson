@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -23,7 +23,7 @@
 #include <mutex>
 #include <stack>
 #include <list>
-#include <ujson/Analyzer.hpp>
+#include <Analyzer.hpp>
 #include <ujson/jvalue.hpp>
 
 

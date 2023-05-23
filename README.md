@@ -34,7 +34,8 @@
 - Simple to use C++ API to parse, create, access, and manage JSON documents and types.
 - Use JSON pointers (RFC6901) to access data in JSON documents.
 - Patch JSON documents with JSON patches as described in RFC6902.
-- Test application and script to run the JSON patch test cases defined at https://github.com/json-patch/json-patch-tests (if configured with --enable-test).
+- Test utility to run the JSON patch test cases defined at https://github.com/json-patch/json-patch-tests (if configured with `-DBUILD_TESTS=True`).
+- Test utility to run the JSON parsing test cases defined at https://github.com/nst/JSONTestSuite (if configured with `-DBUILD_TESTS=True`).
 - Doxygen generated API documentation.
 - Support for a "relaxed" format of JSON documents, but uses strict format (RFC8259) as default.
   In relaxed format, the following is allowed in JSON documents:
@@ -47,7 +48,7 @@
     For an example of a JSON document in relaxed form, see file 'example-document-in-relaxed-form.json'.
 
 ### JSON numbers with arbitrary precision
-When building with gmpxx (*default if gmpxx is found by the configure script*), libujson supports numbers with arbitrary precision in JSON documents.
+When building with gmpxx (*default if gmpxx is found by cmake script*), libujson supports numbers with arbitrary precision in JSON documents.
 An example of a JSON document supported by libujson without losing precision:
 ```json
 {
@@ -70,32 +71,30 @@ An example of a JSON document supported by libujson without losing precision:
 
 ## How to build and install
 
-In no configure script is present, first run:
+First run:
 ```
-./autogen.sh
+cmake [optional parameters]
 ```
 then:
 ```
-./configure
 make
 make install
 ```
-If the configure script finds doxygen, the generated API documentation can be viewed in a browser by opening file `[prefix]/share/doc/libujson/html/index.html`. To disable API documentation generation, use parameter `--disable-doxygen` when running the configure script.
+If cmake finds doxygen, the generated API documentation can be viewed in a browser by opening file `[prefix]/share/doc/libujson/html/index.html`. To disable API documentation generation, use parameter `-DBUILD_DOC=False` when running cmake.
 
-To enable example applications, configure with parameter `--enable-examples`. Example applications are *not* installed when running `make install`.
+To enable example applications, run cmake with parameter `-DBUILD_EXAMPLES=True`. Example applications are *not* installed when running `make install`.
 
-To enable applications and scripts to test JSON parsing and JSON patches, configure with parameter `--enable-test`. Test applications are *not* installed when running `make install`. 
+To enable applications and scripts to test JSON parsing and JSON patches, run cmake with parameter `-DBUILD_TESTS=True`. Test applications are *not* installed when running `make install`. 
 
-If the precision of `double` is just fine for numbers and there's no need for arbitrary precision, but speed is more important; parsing JSON documents will be more efficient if configured without support for gmpxx (`--disable-gmpxx`).
+If the precision of `double` is just fine for numbers and there's no need for arbitrary precision, but speed is more important; parsing JSON documents will be more efficient if configured without support for gmpxx (`-DDISABLE_GMPXX=True`).
 
-To see all configuration parameters, run:
-```
-./configure --help
-```
+To disable the utility applications and only build the library, run cmake with parameter `-DBUILD_UTILS=False`. The utility applications are built by default if not explicitly disabled.
+
+
 
 
 # Utility applications for handling JSON documents
-Unless configured with parameter `--disable-utils`, the following utilities are built and installed:
+Unless configured with parameter `-DBUILD_UTILS=False`, the following utilities are built and installed:
 
 - **ujson-verify** - Verify the syntax of one or more JSON documents.
 - **ujson-print** - Print a JSON document to standard output in a few different ways.
@@ -342,7 +341,7 @@ print the resulting JSON document to standard output.
 
 
 # Testing libujson
-If libujson is configured with option `--enable-test`, then test applications and test scripts are created to test JSON parsing and JSON patches using the test suites at https://github.com/nst/JSONTestSuite and  https://github.com/json-patch/json-patch-tests.
+If libujson is configured with option `-DBUILD_TESTS=True`, then test applications and test scripts are created to test JSON parsing and JSON patches using the test suites at https://github.com/nst/JSONTestSuite and  https://github.com/json-patch/json-patch-tests.
 
 ### Testing JSON parsing in libujson
 In directory `test`, there is a script named `run-ujson-parse-test.sh` that makes a clone of project https://github.com/nst/JSONTestSuite, applies a patch to include testing libujson, and runs the tests.
@@ -350,7 +349,7 @@ When the test script is finished, the result is found in directory `test/result-
 For all options, run `run-ujson-parse-test.sh --help`
 
 ### Testing JSON patch support in libujson
-If libujson was configured with parameter `--enable-test`, then a test application (`ujson-patch-test`) is built in directory `test` that can be used to test the JSON patch support in libujson. There is also a script named `run-ujson-patch-test.sh` to automate fetching test cases and run the test.
+If libujson was configured with parameter `-DBUILD_TESTS=True`, then a test application (`ujson-patch-test`) is built in directory `test` that can be used to test the JSON patch support in libujson. There is also a script named `run-ujson-patch-test.sh` to automate fetching test cases and run the test.
 
 To download the test cases from https://github.com/json-patch/json-patch-tests and run all tests, do the following:
 ```shell
@@ -420,7 +419,7 @@ If libujson is configured *with* support for numbers with arbitrary precision (d
 ```bash
 g++ -Wall -O2 -o application application.cpp -lujson -lgmpxx -lgmp
 ```
-If libujson is configured *without* support for numbers with arbitrary precision (`--disable-gmpxx`), applications using libujson will only need to link library libujson:
+If libujson is configured *without* support for numbers with arbitrary precision (`-DDISABLE_GMPXX=True`), applications using libujson will only need to link library libujson:
 ```bash
 g++ -Wall -O2 -o application application.cpp -lujson
 ```
