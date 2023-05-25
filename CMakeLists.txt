@@ -43,12 +43,18 @@ include (GNUInstallDirs)
 set (gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
 set (msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
 add_compile_options (
-    "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-pipe;-Wall;-O2>>"
+    "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-pipe;-Wall>>"
     "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
     )
-if (NOT CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
+if (CMAKE_BUILD_TYPE MATCHES "^$")
+    # If no build type is specified, add flag -O2 for GCC et al.
     add_compile_options (
-        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-g>>"
+        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-O2>>"
+        )
+elseif (CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
+    # If build type is debug, add flag -Og for GCC et al.
+    add_compile_options (
+        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Og>>"
         )
 endif()
 
@@ -143,6 +149,11 @@ endif()
 # Print summary
 #
 message (STATUS "Summary:")
+if (CMAKE_BUILD_TYPE MATCHES "^$")
+    message (STATUS "    Build type........................... [default]")
+else()
+    message (STATUS "    Build type........................... ${CMAKE_BUILD_TYPE}")
+endif()
 message (STATUS "    Installation prefix.................. ${CMAKE_INSTALL_PREFIX}")
 if (GMPXX_FOUND)
     message (STATUS "    Using gmpxx.......................... yes - numbers with arbitrary precision supported")
