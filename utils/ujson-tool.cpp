@@ -402,14 +402,12 @@ static int cmd_size (appargs_t& opt)
         cerr << "Error: Too many arguments" << endl;
         return 1;
     }
+
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
                                   opt.ptr);
-    if (instance.invalid())
-        return 1;
-
-    if (!instance.is_container()) {
-        cerr << "Error: Instance is not an array or an object" << endl;
+    if (instance.is_container() == false) {
+        cerr << "Error: Instance is not a JSON array or a JSON object" << endl;
         return 1;
     }
 
@@ -428,12 +426,10 @@ static int cmd_members (appargs_t& opt)
         cerr << "Error: Too many arguments" << endl;
         return 1;
     }
+
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
                                   opt.ptr);
-    if (instance.invalid())
-        return 1;
-
     if (instance.is_object() == false) {
         cerr << "Error: Instance is not a JSON object" << endl;
         return 1;
