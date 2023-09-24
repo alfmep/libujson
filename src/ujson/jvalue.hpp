@@ -909,7 +909,9 @@ namespace ujson {
          *         items in the array.<br/>
          *         It this is a JSON object, returns the number of
          *         attributes in the object.<br/>
-         *         Returns 0 if not an array or object.
+         * @throw ujson::json_type_error If this is not a JSON object or array.
+         * @see jvalue::is_container()
+         * @see jvalue::type()
          */
         size_t size () const;
 

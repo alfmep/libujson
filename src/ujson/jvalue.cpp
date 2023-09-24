@@ -850,7 +850,7 @@ namespace ujson {
         else if (jtype == j_array)
             return v.jarray->size ();
         else
-            return 0;
+            throw ujson::json_type_error ("Not a JSON object or array");
     }
 
 
