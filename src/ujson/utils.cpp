@@ -59,8 +59,7 @@ namespace ujson {
                     if (u16 == u16_str.end()  ||  *u16 < 0xDC00  ||  *u16 > 0xDFFF) {
                         throw std::invalid_argument ("Invalid UTF-16");
                     }
-                    code_point += *u16 - 0xDC00;
-                    code_point += 0x10000;
+                    code_point += *u16 + (0x10000 - 0xDC00);
                 }
                 else {
                     throw std::invalid_argument ("Invalid UTF-16");
