@@ -22,7 +22,7 @@ cmake_minimum_required (VERSION 3.22)
 # Project name and info
 #
 project (libujson
-    VERSION 4.1.1
+    VERSION 4.1.2
     LANGUAGES CXX
     DESCRIPTION "A JSON C++ library and utility applications for handling JSON documents."
     HOMEPAGE_URL https://github.com/alfmep/libujson
