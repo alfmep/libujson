@@ -18,7 +18,6 @@
  */
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <filesystem>
 #include <ujson.hpp>
 #include <cstdlib>
@@ -172,10 +171,9 @@ static void run_test (appdata_t& app)
 {
     // Initialize result
     uj::jvalue result (uj::j_object);
-    stringstream ss;
-    ss << '/' << app.index;
+
     result["test_file"] = app.test_filename.string ();
-    result["pointer_to_test"] = ss.str ();
+    result["pointer_to_test"] = std::string("/") + std::to_string(app.index);
 
     try {
         // Get the test case
@@ -283,7 +281,7 @@ static void run_test (appdata_t& app)
     }
     catch (std::exception& e) {
         // Patch test caused an exception - treat is as an invalid test case
-        cerr << "Exception: " << e.what() << endl;
+        cerr << "Exception at \"" << result["pointer_to_test"].str() << "\": " << e.what() << endl;
         app.results["invalid"].append (result);
     }
 }
