@@ -35,6 +35,18 @@
 
 namespace ujson {
 
+
+#if UJSON_HAVE_GMPXX
+    /**
+     * Utility function to convert a number of
+     * type <code>mpf_class</code> to a string.
+     * @param number The number to converto to a string.
+     * @return The number as a string.
+     */
+    std::string to_string (const mpf_class& number);
+#endif
+
+
     /**
      * Type of JSON value.
      * Instances of class ujson::jvalue represents

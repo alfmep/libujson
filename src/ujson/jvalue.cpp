@@ -89,6 +89,16 @@ namespace ujson {
             }
         }
     }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string to_string (const mpf_class& number)
+    {
+        std::stringstream ss;
+        num_t_to_str (number, ss);
+        return ss.str ();
+    }
 #endif
 
 
