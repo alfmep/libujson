@@ -46,12 +46,7 @@ add_compile_options (
     "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-pipe;-Wall>>"
     "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
     )
-if (CMAKE_BUILD_TYPE MATCHES "^$")
-    # If no build type is specified, add flag -O2 for GCC et al.
-    add_compile_options (
-        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-O2>>"
-        )
-elseif (CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
+if (CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
     # If build type is debug, add flag -Og for GCC et al.
     add_compile_options (
         "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Og>>"
