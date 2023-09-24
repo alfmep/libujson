@@ -111,7 +111,11 @@ static int handle_result (appdata_t& app)
 
     cout << "Passed tests   : " << passed.size() << endl;
     cout << "Failed tests   : " << failed.size() << endl;
-    cout << "Disabled tests : " << disabled.size() << endl;
+    cout << "Disabled tests : " << disabled.size();
+    if (app.allow_disabled == false)
+        cout << " (Use option -a to also run disabled tests)" << endl;
+    else
+        cout << endl;
     if (invalid.size())
         cout << "Invalid tests  : " << invalid.size() << endl;
 
