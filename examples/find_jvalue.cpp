@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -60,7 +60,7 @@ int main (int argc, char* argv[])
     auto instance = ujson::jparser().parse_string (document);
 
     cout << "JSON Document:" << endl;
-    cout << instance.describe(true) << endl;
+    cout << instance.describe(ujson::fmt_pretty) << endl;
     cout << endl;
 
     // Find item using JSON pointer: ""

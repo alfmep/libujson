@@ -35,13 +35,13 @@ struct appargs_t {
     string filename;
     ujson::jpointer pointer;
     ujson::jvalue_type jtype;
-    bool compact;
+    ujson::desc_format_t fmt;
     bool relaxed;
     bool unescape;
 
     appargs_t () {
         jtype = ujson::j_invalid;
-        compact = false;
+        fmt = ujson::fmt_pretty;
         relaxed = false;
         unescape = false;
     }
@@ -93,7 +93,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     while (int id=opt(options)) {
         switch (id) {
         case 'c':
-            args.compact = true;
+            args.fmt = ujson::fmt_none;
             break;
         case 't':
             args.jtype = ujson::str_to_jtype (opt.optarg());
@@ -200,7 +200,7 @@ int main (int argc, char* argv[])
         if (opt.unescape && value.is_string())
             cout << value.str() << endl;
         else
-            cout << value.describe(!opt.compact) << endl;
+            cout << value.describe(opt.fmt) << endl;
     }else{
         retval = 1;
     }

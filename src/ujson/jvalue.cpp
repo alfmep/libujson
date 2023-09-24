@@ -28,6 +28,42 @@
 #include <cstring>
 #include <cmath>
 
+
+#if (UJSON_HAS_CONSOLE_COLOR)
+#  define COLOR_NORMAL "\033[0m"
+#  define COLOR_BOLD "\033[1m"
+#  define COLOR_ITALIC "\033[3m"
+
+#  define COLOR_RED "\033[31m"
+#  define COLOR_GREEN "\033[32m"
+#  define COLOR_BLUE "\033[34m"
+#  define COLOR_MAGENTA "\033[35m"
+#  define COLOR_CYAN "\033[36m"
+#  define COLOR_GRAY "\033[90m"
+
+static constexpr const char* const color_normal = COLOR_NORMAL;
+static constexpr const char* const color_string = COLOR_RED;
+//static constexpr const char* const color_string = COLOR_GREEN;
+
+//static constexpr const char* const color_boolean = COLOR_GREEN COLOR_BOLD;
+static constexpr const char* const color_boolean = COLOR_CYAN COLOR_BOLD;
+static constexpr const char* const color_boolean_true = COLOR_GREEN COLOR_BOLD;
+static constexpr const char* const boolean_false_color = COLOR_RED COLOR_BOLD;
+
+static constexpr const char* const null_color = COLOR_MAGENTA COLOR_BOLD;
+static constexpr const char* const attribute_color = COLOR_BLUE;
+
+static constexpr const char* const object_color = ""; //COLOR_BOLD;
+static constexpr const char* const array_color = ""; //COLOR_BOLD;
+#endif
+
+#if (UJSON_HAS_CONSOLE_COLOR)
+#define HAS_COLOR true
+#else
+#define HAS_COLOR false
+#endif
+
+
 namespace ujson {
 
 
@@ -1045,6 +1081,17 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    std::string jvalue::describe (desc_format_t fmt,
+                                  unsigned starting_indent_depth) const
+    {
+        std::stringstream ss;
+        describe (ss, fmt, starting_indent_depth);
+        return ss.str ();
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     std::string jvalue::describe (bool pretty,
                                   bool array_items_on_same_line,
                                   bool sorted_properties,
@@ -1052,52 +1099,59 @@ namespace ujson {
                                   bool relaxed_mode,
                                   const std::string& indent) const
     {
-        std::stringstream ss;
-#if !(UJSON_HAVE_GMPXX)
-        ss << std::setprecision(std::numeric_limits<num_t>::digits10 + 1);
-#endif
-        describe (ss, pretty, relaxed_mode, array_items_on_same_line,
-                  escape_slash, sorted_properties, "", indent);
-        return ss.str ();
+        desc_format_t fmt;
+        if (pretty) {
+            fmt = fmt_pretty;
+            fmt |= array_items_on_same_line ? fmt_none : fmt_sep_elements;
+            fmt |= sorted_properties ? fmt_sorted : fmt_none;
+            fmt |= escape_slash ? fmt_escape_slash: fmt_none;
+            fmt |= relaxed_mode ? fmt_relaxed : fmt_none;
+        }else{
+            fmt = fmt_none;
+        }
+        return describe (fmt);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    inline static void put_indent (std::stringstream& ss,
+                                   desc_format_t fmt,
+                                   unsigned depth)
+    {
+        ss << std::endl;
+        for (unsigned n=0; n<depth; ++n) {
+            if (fmt & fmt_tabs)
+                ss << '\t';
+            else
+                ss << "    ";
+        }
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     void jvalue::describe (std::stringstream& ss,
-                           bool pretty,
-                           bool relaxed_mode,
-                           bool array_items_on_same_line,
-                           bool escape_slash,
-                           bool sorted_properties,
-                           const std::string& first_indent,
-                           const std::string& indent_step) const
+                           desc_format_t fmt,
+                           unsigned indent_depth) const
     {
         switch (type()) {
         case j_object:
-            describe_object (ss,
-                             pretty,
-                             relaxed_mode,
-                             array_items_on_same_line,
-                             escape_slash,
-                             sorted_properties,
-                             first_indent,
-                             indent_step);
+            describe_object (ss, fmt, indent_depth);
             break;
 
         case j_array:
-            describe_array (ss,
-                            pretty,
-                            relaxed_mode,
-                            array_items_on_same_line,
-                            escape_slash,
-                            sorted_properties,
-                            first_indent,
-                            indent_step);
+            describe_array (ss, fmt, indent_depth);
             break;
 
         case j_string:
-            ss << '"' << escape(*v.jstr, escape_slash) << '"';
+            if ((fmt & fmt_color) && HAS_COLOR) {
+                ss << '"';
+                ss << color_string << escape(*v.jstr, (fmt&fmt_escape_slash)) << color_normal;
+                ss << '"';
+            }else{
+                ss << '"' << escape(*v.jstr, fmt&fmt_escape_slash) << '"';
+            }
             break;
 
         case j_number:
@@ -1112,11 +1166,22 @@ namespace ujson {
             break;
 
         case j_bool:
-            ss << (boolean() ? "true" : "false");
+            if ((fmt & fmt_color) && HAS_COLOR) {
+                if (boolean())
+                    ss << color_boolean_true << "true" << color_normal;
+                else
+                    ss << boolean_false_color << "false" << color_normal;
+            }else{
+                ss << (boolean() ? "true" : "false");
+            }
             break;
 
         case j_null:
-            ss << "null";
+            if ((fmt & fmt_color) && HAS_COLOR)
+                ss << null_color << "null" << color_normal;
+            else
+                ss << "null";
+            break;
 
         case j_invalid:
         default:
@@ -1128,13 +1193,8 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     void jvalue::describe_object (std::stringstream& ss,
-                                  bool pretty,
-                                  bool relaxed_mode,
-                                  bool array_items_on_same_line,
-                                  bool escape_slash,
-                                  bool sorted_properties,
-                                  const std::string& first_indent,
-                                  const std::string& indent_step) const
+                                  desc_format_t fmt,
+                                  unsigned indent_depth) const
     {
         static const std::regex re_identifier ("[_a-zA-Z][_a-zA-Z0-9]*",
                                                std::regex::ECMAScript);
@@ -1144,22 +1204,26 @@ namespace ujson {
                                              std::regex::ECMAScript);
         std::cmatch re_match;
         bool first {true};
-        std::string indent;
-        if (pretty)
-            indent = first_indent + indent_step;
 
-        ss << '{';
+        if ((fmt & fmt_color) && HAS_COLOR)
+            ss << object_color << '{' << color_normal;
+        else
+            ss << '{';
+
         auto& members = *v.jobj;
+
+        bool one_liner = members.size()==1 && members.front().second.is_container()==false;
+
         if (!members.empty()) {
-            auto i = sorted_properties ? members.sbegin() : members.begin();
-            auto member_end = sorted_properties ? members.send() : members.end();
+            auto i = (fmt & fmt_sorted) ? members.sbegin() : members.begin();
+            auto member_end = (fmt & fmt_sorted) ? members.send() : members.end();
             for (; i!=member_end; ++i) {
                 if (! i->second.valid())
                     continue; // Skip invalid values
                 auto& name = i->first;
                 auto& value = i->second;
                 bool quoted_name = true;
-                if (relaxed_mode) {
+                if (fmt & fmt_relaxed) {
                     // In relaxed mode, if the member name is an 'identifier',
                     // print it without enclosing double quotes. Unless it
                     // is a reserved name.
@@ -1173,80 +1237,96 @@ namespace ujson {
                     first = false;
                 else
                     ss << ',';
-                if (pretty)
-                    ss << std::endl << indent;
+                if (fmt & fmt_pretty) {
+                    if (one_liner)
+                        ss << ' ';
+                    else
+                        put_indent (ss, fmt, indent_depth+1); //ss << std::endl << indent;
+                }
 
-                if (quoted_name)
-                    ss << '"' << escape(name, escape_slash) << '"';
-                else
-                    ss << name;
-                ss << (pretty ? ": " : ":");
-                value.describe (ss,
-                                pretty,
-                                relaxed_mode,
-                                array_items_on_same_line,
-                                escape_slash,
-                                sorted_properties,
-                                indent,
-                                indent_step);
+                if ((fmt & fmt_color) && HAS_COLOR) {
+                    if (quoted_name) {
+                        ss << '"' << attribute_color << escape(name, (fmt & fmt_escape_slash)) << color_normal << '"';
+                    }else{
+                        ss << attribute_color << name << color_normal;
+                    }
+                }else{
+                    if (quoted_name)
+                        ss << '"' << escape(name, (fmt & fmt_escape_slash)) << '"';
+                    else
+                        ss << name;
+                }
+
+                ss << ((fmt & fmt_pretty) ? ": " : ":");
+                value.describe (ss, fmt, indent_depth+1);
             }
         }
-        if (pretty && !first)
-            ss << std::endl << first_indent;
-        ss << '}';
+        if ((fmt & fmt_pretty) && !first) {
+            if (one_liner)
+                ss << ' ';
+            else
+                put_indent (ss, fmt, indent_depth); //ss << std::endl << indent;
+        }
+        if ((fmt & fmt_color) && HAS_COLOR)
+            ss << object_color << '}' << color_normal;
+        else
+            ss << '}';
     }
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     void jvalue::describe_array (std::stringstream& ss,
-                                 bool pretty,
-                                 bool relaxed_mode,
-                                 bool array_items_on_same_line,
-                                 bool escape_slash,
-                                 bool sorted_properties,
-                                 const std::string& first_indent,
-                                 const std::string& indent_step) const
+                                 desc_format_t fmt,
+                                 unsigned indent_depth) const
     {
-        std::string indent;
-        if (pretty)
-            indent = first_indent + indent_step;
-
         auto& elements = *v.jarray;
         if (elements.empty()) {
-            ss << "[]";
+            if ((fmt & fmt_color) && HAS_COLOR)
+                ss << array_color << "[]" << color_normal;
+            else
+                ss << "[]";
             return;
         }
 
-        ss << '[';
+        unsigned next_indent_depth = indent_depth;
+        if (fmt & fmt_sep_elements)
+            ++next_indent_depth;
+        /*
+        bool one_liner = elements.size()==1 && (!elements[0].is_container() ||  elements[0].size()<=1);
+        if (one_liner)
+            fmt |= fmt_same_line; //array_items_on_same_line = true;
+        */
+
+        if ((fmt & fmt_color) && HAS_COLOR)
+            ss << array_color << '[' << color_normal;
+        else
+            ss << '[';
 
         bool first {true};
-        for (auto& obj : elements) {
-            if (!obj.valid())
+        for (auto& e : elements) {
+            if (!e.valid())
                 continue; // Skip invalid values
             if (!first)
                 ss << ',';
-            if (pretty) {
-                if (array_items_on_same_line) {
+            if ((fmt & fmt_pretty)) {
+                if (fmt & fmt_sep_elements) {
+                    put_indent (ss, fmt, next_indent_depth);
+                }else{
                     if (!first)
                         ss << ' ';
-                }else{
-                    ss << std::endl << indent;
                 }
             }
             first = false;
-            obj.describe (ss,
-                          pretty,
-                          relaxed_mode,
-                          array_items_on_same_line,
-                          escape_slash,
-                          sorted_properties,
-                          indent,
-                          indent_step);
+            e.describe (ss, fmt, next_indent_depth);
         }
-        if (pretty & !array_items_on_same_line)
-            ss << std::endl << first_indent;
-        ss << ']';
+
+        if ((fmt & fmt_pretty) && (fmt & fmt_sep_elements))
+            put_indent (ss, fmt, indent_depth);
+        if ((fmt & fmt_color) && HAS_COLOR)
+            ss << array_color << ']' << color_normal;
+        else
+            ss << ']';
     }
 
 

@@ -29,4 +29,8 @@
 /* Define to 1 if libgmpxx is used */
 #define UJSON_HAVE_GMPXX @UJSON_HAVE_GMPXX@
 
+/* Define to 1 if console colors are supported */
+#define UJSON_HAS_CONSOLE_COLOR @UJSON_HAS_CONSOLE_COLOR@
+
+
 #endif

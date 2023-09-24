@@ -19,32 +19,25 @@
 #include <ujson.hpp>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
+#include <cstdio>
 #include <unistd.h>
 #include "option-parser.hpp"
 
 
 using namespace std;
+using fmt = ujson::desc_format_t;
 
 static constexpr const char* prog_name = "ujson-print";
 
 struct appargs_t {
-    bool pretty;
-    bool escape_slash;
-    bool sorted;
-    bool array_items_on_same_line;
+    ujson::desc_format_t fmt;
     bool parse_strict;
-    bool print_relaxed;
     string filename;
 
     appargs_t () {
-        pretty = true;
-        escape_slash = false;
-        array_items_on_same_line = true;
-        sorted = false;
+        fmt = fmt::fmt_pretty;
         parse_strict = false;
-        print_relaxed = false;
     }
 };
 
@@ -65,10 +58,16 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -e, --escape-slash    Forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
     out << "  -s, --sort            Object members are listed in sorted order, not in natural order." << endl;
     out << "  -a, --array-lines     For JSON arrays, print each array item on a separate line." << endl;
+    out << "                        Ignored if option '-c,--compact' is used." << endl;
+    out << "  -b, --tabs            Indent using tab characters instead of spaces." << endl;
+    out << "                        Ignored if option '-c,--compact' is used." << endl;
     out << "  -r, --relaxed         Print the JSON document in relaxed form." << endl;
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
     out << "  -t, --parse-strict    Parse the JSON document in strict mode." << endl;
+#if (UJSON_HAS_CONSOLE_COLOR)
+    out << "  -o, --color           Print in color if the output is to a tty." << endl;
+#endif
     out << "  -v, --version         Print version and exit." << endl;
     out << "  -h, --help            Print this help message and exit." << endl;
     out << endl;
@@ -85,8 +84,12 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'e', "escape-slash", opt_t::none, 0},
         { 's', "sort",         opt_t::none, 0},
         { 'a', "array-lines",  opt_t::none, 0},
+        { 'b', "tabs",         opt_t::none, 0},
         { 'r', "relaxed",      opt_t::none, 0},
         { 't', "parse-strict", opt_t::none, 0},
+#if (UJSON_HAS_CONSOLE_COLOR)
+        { 'o', "color",        opt_t::none, 0},
+#endif
         { 'v', "version",      opt_t::none, 0},
         { 'h', "help",         opt_t::none, 0},
     };
@@ -95,29 +98,41 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     while (int id=opt(options)) {
         switch (id) {
         case 'c':
-            args.pretty = false;
+            args.fmt ^= fmt::fmt_pretty;
             break;
         case 'e':
-            args.escape_slash = true;
+            args.fmt |= fmt::fmt_escape_slash;
             break;
         case 's':
-            args.sorted = true;
+            args.fmt |= fmt::fmt_sorted;
             break;
         case 'a':
-            args.array_items_on_same_line = false;
+            args.fmt |= fmt::fmt_sep_elements;
+            break;
+        case 'b':
+            args.fmt |= fmt::fmt_tabs;
             break;
         case 'r':
-            args.print_relaxed = true;
+            args.fmt |= fmt::fmt_relaxed;
             break;
         case 't':
             args.parse_strict = true;
             break;
+#if (UJSON_HAS_CONSOLE_COLOR)
+        case 'o':
+            args.fmt |= fmt::fmt_color;
+            break;
+#endif
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
+            break;
+        case -2:
+            cerr << "Missing argument to option '" << opt.opt() << "'" << endl;
+            exit (1);
             break;
         default:
             cerr << "Unknown option: '" << opt.opt() << "'" << endl;
@@ -163,12 +178,10 @@ int main (int argc, char* argv[])
 
     // Print the parsed json instance
     //
-    cout << instance.describe (opt.pretty,
-                               opt.array_items_on_same_line,
-                               opt.sorted,
-                               opt.escape_slash,
-                               opt.print_relaxed)
-         << endl;
-
+#if (UJSON_HAS_CONSOLE_COLOR)
+    if ((opt.fmt & fmt::fmt_color) && !isatty(fileno(stdout)))
+        opt.fmt ^= fmt::fmt_color;
+#endif
+    cout << instance.describe(opt.fmt) << endl;
     return 0;
 }

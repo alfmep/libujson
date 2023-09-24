@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -25,6 +25,7 @@
 #include <list>
 #include <memory>
 #include <cstdio>
+#include <cstdint>
 #include <ujson/multimap_list.hpp>
 #include <ujson/json_type_error.hpp>
 #include <ujson/config.hpp>
@@ -45,6 +46,101 @@ namespace ujson {
      */
     std::string to_string (const mpf_class& number);
 #endif
+
+
+    /**
+     * Flags used in method jvalue::describe() to
+     * format the output string.
+     */
+    enum desc_format_t : uint16_t {
+        /**
+         * If no flag is set, the output will be without any whitespace.
+         */
+        fmt_none         = 0x00,
+
+        /**
+         * If set, whitespaces (line brake and indentation) are used
+         * to make the description more readable.<br/>
+         * All flags below, except fmt_color,
+         * depends on this flag being set.
+         */
+        fmt_pretty       = 0x01,
+
+        /**
+         * If set, each array element is printed on a separate line.<br/>
+         * If not set, all array elements are printed on one line
+         * (any object in the array will still be printed
+         * with each attribute indented on a separate line).<br/>
+         */
+        fmt_sep_elements = 0x02,
+
+        /**
+         * If set, the properties of JSON objects will be
+         * printed sorted by name, and not in natural order
+         * (the order they were inserted).
+         */
+        fmt_sorted       = 0x04,
+
+        /**
+         * If set, the forward slash character "/" will
+         * be esacped to "\/" in JSON strings.
+         */
+        fmt_escape_slash = 0x08,
+
+        /**
+         * If set, indent using TAB instead of four
+         * space(' ') characters for each indentation depth.
+         */
+        fmt_tabs         = 0x10,
+
+#if (UJSON_HAS_CONSOLE_COLOR)
+        /**
+         * If set, print any object member name without
+         * enclosing double quotes if the object member
+         * name is in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+         */
+        fmt_color        = 0x20,
+#endif
+        /**
+         * If set, print any object member name without
+         * enclosing double quotes if the object member
+         * name is in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+         */
+        fmt_relaxed      = 0x40,
+
+        fmt_mask         = 0x7f,
+    };
+    /**  Bitwise OR (desc_format_t | desc_format_t). */
+    inline desc_format_t operator| (const desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t) ((const uint16_t)lhs | (const uint16_t)rhs);
+    }
+    /**  Bitwise OR assignment (desc_format_t lhs |= desc_format_t lhs). */
+    inline desc_format_t& operator|= (desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t&) ((uint16_t&)lhs |= (const uint16_t&)rhs);
+    }
+
+    /**  Bitwise AND (desc_format_t & desc_format_t). */
+    inline desc_format_t operator& (const desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t) ((const uint16_t)lhs & (const uint16_t)rhs);
+    }
+    /**  Bitwise AND assignment (desc_format_t lhs &= desc_format_t lhs). */
+    inline desc_format_t& operator&= (desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t&) ((uint16_t&)lhs &= (const uint16_t&)rhs);
+    }
+
+    /**  Bitwise XOR (desc_format_t ^ desc_format_t). */
+    inline desc_format_t operator^ (const desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t) ((const uint16_t)lhs ^ (const uint16_t)rhs);
+    }
+    /**  Bitwise XOR assignment (desc_format_t lhs ^= desc_format_t lhs). */
+    inline desc_format_t& operator^= (desc_format_t& lhs, const desc_format_t& rhs) {
+        return (desc_format_t&) ((uint16_t&)lhs ^= (const uint16_t&)rhs);
+    }
+
+    /**  Bitwise NOT (~desc_format_t). */
+    inline desc_format_t operator~ (const desc_format_t& a) {
+        return (desc_format_t) ~(const uint16_t&)a & fmt_mask;
+    }
 
 
     /**
@@ -1017,6 +1113,37 @@ namespace ujson {
 
         /**
          * Return a string representation of this JSON value.
+         * @param fmt Flags describing the format of the resulting
+         *            output string.
+         * @return A string in JSON format defining this JSON intance.
+         * @note If flag <code>fmt_color</code> is set, the resulting
+         *       string is <b>NOT</b> a valid JSON instance, since
+         *       is contains escape codes for colors.
+         * @see desc_format_t
+         */
+        inline std::string describe (desc_format_t fmt=fmt_none) const {
+            return describe (fmt, 0);
+        }
+
+        /**
+         * Return a string representation of this JSON value.
+         * @param fmt Flags describing the format of the resulting
+         *            output string.
+         * @param starting_indent_depth Only relevant if flag
+         *                              <code></code> is set.
+         *                              Start the output with
+         *                              this indentation level.
+         * @return A string in JSON format defining this JSON intance.
+         * @note If flag <code>fmt_color</code> is set, the resulting
+         *       string is <b>NOT</b> a valid JSON instance, since
+         *       is contains escape codes for colors.
+         * @see desc_format_t
+         */
+        std::string describe (desc_format_t fmt,
+                              unsigned starting_indent_depth) const;
+
+        /**
+         * Return a string representation of this JSON value.
          * All string output(object member names and string
          * values) will be json encoded using ujson::escape.
          * Any invalid JSON value (of type ujson::j_invalid)
@@ -1050,11 +1177,13 @@ namespace ujson {
          *               is <code>true</code>. Normally zero or more
          *               space characters.<br/>
          *               If anything other than whitespace, the returned
-         *               string will fail to be parsed as a valid JSON instance.
+         *               string will fail to be parsed as a valid JSON instance.<br/>
+         *               <b>NOTE!</b> This parameter is deprecated and no longer used.
          * @return A string in JSON format defining this JSON intance.
-         * @see ujson::escape
+         * @deprecated Use <code>describe(desc_format_t fmt)</code> instead.
          */
-        std::string describe (bool pretty=false,
+        [[deprecated("Use jvalue::describe(desc_format_t fmt) instead.")]]
+        std::string describe (bool pretty,//=false,
                               bool array_items_on_same_line=true,
                               bool sorted_properties=false,
                               bool escape_slash=false,
@@ -1088,30 +1217,16 @@ namespace ujson {
         void reset ();
         void copy (const jvalue& jvalue);
         void move (jvalue&& jvalue);
+
         void describe (std::stringstream& ss,
-                       bool pretty,
-                       bool relaxed_mode,
-                       bool array_items_on_same_line,
-                       bool escape_slash,
-                       bool sorted_properties,
-                       const std::string& first_indent,
-                       const std::string& indent_step) const;
+                       desc_format_t fmt,
+                       unsigned indent_depth) const;
         void describe_object (std::stringstream& ss,
-                              bool pretty,
-                              bool relaxed_mode,
-                              bool array_items_on_same_line,
-                              bool escape_slash,
-                              bool sorted_properties,
-                              const std::string& first_indent,
-                              const std::string& indent_step) const;
+                              desc_format_t fmt,
+                              unsigned indent_depth) const;
         void describe_array (std::stringstream& ss,
-                             bool pretty,
-                             bool relaxed_mode,
-                             bool array_items_on_same_line,
-                             bool escape_slash,
-                             bool sorted_properties,
-                             const std::string& first_indent,
-                             const std::string& indent_step) const;
+                             desc_format_t fmt,
+                             unsigned indent_depth) const;
     };
 
 

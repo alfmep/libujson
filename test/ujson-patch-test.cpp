@@ -123,7 +123,7 @@ static int handle_result (appdata_t& app)
     //
     if (!app.passed_filename.empty()) {
         ofstream out (app.passed_filename, ios_base::out|ios_base::trunc);
-        out << passed.describe(true, false) << endl;
+        out << passed.describe(ujson::fmt_pretty) << endl;
         if (out.fail()) {
             cerr << "Error writing file '" << app.passed_filename << "'" << endl;
             return 1;
@@ -134,7 +134,7 @@ static int handle_result (appdata_t& app)
     //
     if (!app.failed_filename.empty()) {
         ofstream out (app.failed_filename, ios_base::out|ios_base::trunc);
-        out << failed.describe(true, false) << endl;
+        out << failed.describe(ujson::fmt_pretty) << endl;
         if (out.fail()) {
             cerr << "Error writing file '" << app.failed_filename << "'" << endl;
             return 1;
@@ -145,7 +145,7 @@ static int handle_result (appdata_t& app)
     //
     if (!app.disabled_filename.empty()) {
         ofstream out (app.disabled_filename, ios_base::out|ios_base::trunc);
-        out << disabled.describe(true, false) << endl;
+        out << disabled.describe(ujson::fmt_pretty) << endl;
         if (out.fail()) {
             cerr << "Error writing file '" << app.disabled_filename << "'" << endl;
             return 1;
@@ -157,7 +157,7 @@ static int handle_result (appdata_t& app)
     if (invalid.size()) {
         if (!app.invalid_filename.empty()) {
             ofstream out (app.invalid_filename, ios_base::out|ios_base::trunc);
-            out << invalid.describe(true, false) << endl;
+            out << invalid.describe(ujson::fmt_pretty) << endl;
             if (out.fail()) {
                 cerr << "Error writing file '" << app.invalid_filename << "'" << endl;
                 return 1;

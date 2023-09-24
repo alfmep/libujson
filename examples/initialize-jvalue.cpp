@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -26,7 +26,7 @@ using namespace std;
 static void show_value (const ujson::jvalue& value)
 {
     cout << "JSON " << ujson::jtype_to_str(value) << ":"
-         << endl << value.describe(true) << endl << endl;
+         << endl << value.describe(ujson::fmt_pretty) << endl << endl;
 }
 
 

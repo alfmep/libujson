@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -30,7 +30,7 @@ int main (int argc, char* argv[])
     // Construct a jvalue representing an empty JSON object
     //
     ujson::jvalue val (ujson::j_object);
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Check the JSON type
@@ -43,31 +43,31 @@ int main (int argc, char* argv[])
     val["descr"]  = "Object name";
     val["answer"] = 42;
     val["on_off"] = true;
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Use method add() to create an attribute in the object
     //
     val.add ("newval", "Added with add()");
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Method add() will not add a duplicate but will
     // by default change an already added attribute
     val.add ("newval", "No duplicate but changed value");
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Method add() can be told to not
     // change an already added attribute (if one exist)
     val.add ("newval", "Don't change the value again", false);
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Use operator[] to change a value, and the type of JSON value, in the object
     //
     val["on_off"] = "button"; // The attribute was a JSON boolean, it is now a JSON string
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     //----------------------------------
     // Use operator[] to get a value in the object
@@ -82,7 +82,7 @@ int main (int argc, char* argv[])
     // This _creates_ an object attribute named 'noent' with JSON type null
     {
         auto& item = val["noent"];
-        cout << "Value of 'noent' using operator[](const string&): " << item.describe(true) << endl << endl;
+        cout << "Value of 'noent' using operator[](const string&): " << item.describe(ujson::fmt_pretty) << endl << endl;
     }
 
     //----------------------------------
@@ -90,7 +90,7 @@ int main (int argc, char* argv[])
     {
         auto& item = val.get ("answer");
         if (item.valid())
-            cout << "Value of 'answer' using method get(): " << item.describe(true) << endl << endl;
+            cout << "Value of 'answer' using method get(): " << item.describe(ujson::fmt_pretty) << endl << endl;
     }
 
     //----------------------------------
@@ -151,7 +151,7 @@ int main (int argc, char* argv[])
     // But the jvalue can of course be assigned a JSON object and turn from a j_number into a j_object:
     number = {{"desc", "number is now a JSON object and not a JSON number"},
               {"value", 64}};
-    cout << "number: " << number.describe(true) << endl;
+    cout << "number: " << number.describe(ujson::fmt_pretty) << endl;
     cout << "number is a JSON " << ujson::jtype_to_str(number.type()) << endl;
     cout << endl;
 
@@ -240,7 +240,7 @@ int main (int argc, char* argv[])
     // attributes with the same name, you can do the following:
     //
     val.obj().emplace_back ("descr", ujson::jvalue("Another object attribute with the same name"));
-    cout << val.describe(true) << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl;
     cout << endl;
 
     // When getting an attribute from an object, it will be the
@@ -282,18 +282,18 @@ int main (int argc, char* argv[])
     // then all (if more than one) attributes with the specified name are removed
     //
     cout << "Object before removing attribute 'descr':" << endl;
-    cout << val.describe(true) << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl;
     // Remove attribute 'descr'
     val.remove ("descr");
     //
     cout << "Object after removing attribute 'descr':" << endl;
-    cout << val.describe(true) << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl;
 
     // Accessing the ujson::json_object instance to remove all attributes
     val.obj().clear ();
     //
     cout << "Object after removing all attributes:" << endl;
-    cout << val.describe(true) << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl;
 
 
     cout << endl;

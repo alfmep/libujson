@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -45,7 +45,7 @@ int main (int argc, char* argv[])
     val.append ("str");   // Append a JSON string
     val.append (true);    // Append a JSON boolean
     val.append (nullptr); // Append a JSON null
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     // Append values to the array using STL
     {
@@ -54,13 +54,13 @@ int main (int argc, char* argv[])
         jarray.emplace_back ("hello");         // Append a JSON string
         jarray.emplace_back (ujson::j_object); // Append an empty JSON object
         jarray.emplace_back (false);           // Append a JSON boolean
-        cout << val.describe(true) << endl << endl;
+        cout << val.describe(ujson::fmt_pretty) << endl << endl;
     }
 
     // Remove element at index 2 from the array using method ujson::jvalue.remove()
     //
     val.remove (2);
-    cout << val.describe(true) << endl << endl;
+    cout << val.describe(ujson::fmt_pretty) << endl << endl;
 
     // Remove index 4 from the array using an STL iterator
     {
@@ -68,7 +68,7 @@ int main (int argc, char* argv[])
         auto i = jarray.begin ();
         i += 4;
         jarray.erase (i);
-        cout << val.describe(true) << endl << endl;
+        cout << val.describe(ujson::fmt_pretty) << endl << endl;
     }
 
     // Fill the array with random numbers between 10 and 99.
@@ -94,14 +94,14 @@ int main (int argc, char* argv[])
     // with 10 JSON null values.
     //
     ujson::jvalue a1 (ujson::json_array(10));
-    cout << a1.describe(true) << endl << endl;
+    cout << a1.describe(ujson::fmt_pretty) << endl << endl;
 
     // The elements in a JSON arrays doesn't have to be of the same type
     //
     a1[0] = 0;
     a1[1] = "A string";
     a1[2] = true;
-    cout << a1.describe(true) << endl << endl;
+    cout << a1.describe(ujson::fmt_pretty) << endl << endl;
 
 
     //----------------------------------
@@ -120,7 +120,7 @@ int main (int argc, char* argv[])
     // Create an array with 5 JSON strings initialized to "element".
     //
     ujson::jvalue a3 (ujson::json_array(5, ujson::jvalue("element")));
-    cout << a3.describe(true) << endl << endl;
+    cout << a3.describe(ujson::fmt_pretty) << endl << endl;
 
 
     // Append one JSON array to another
@@ -128,7 +128,7 @@ int main (int argc, char* argv[])
     a3.array().insert (a3.array().end(),
                        a2.array().begin(),
                        a2.array().end());
-    cout << a3.describe(true) << endl << endl;
+    cout << a3.describe(ujson::fmt_pretty) << endl << endl;
 
 
     // Calculate the mean value of all the numbers in an array
@@ -160,7 +160,7 @@ int main (int argc, char* argv[])
             false,
             {{{"one",1},{"two",2}}}
         });
-    cout << a4.describe(true, false) << endl << endl;
+    cout << a4.describe(ujson::fmt_pretty) << endl << endl;
 
 
     // Iterate over a JSON array

@@ -32,16 +32,16 @@ using namespace std;
 static constexpr const char* prog_name = "ujson-patch";
 
 struct appargs_t {
-    bool compact;
+    ujson::desc_format_t fmt;
     bool relaxed;
     bool quiet;
     std::string document_filename;
     std::string patch_filename;
 
     appargs_t () {
-        compact = false;
+        fmt = ujson::fmt_pretty;
         relaxed = false;
-        quiet   = false;
+        quiet = false;
     }
 };
 
@@ -92,7 +92,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     while (int id=opt(options)) {
         switch (id) {
         case 'c':
-            args.compact = true;
+            args.fmt = ujson::fmt_none;
             break;
         case 'r':
             args.relaxed = true;
@@ -227,7 +227,7 @@ int main (int argc, char* argv[])
     // Print the patched json instance
     //
     if (!opt.quiet || !only_test_ops)
-        cout << instance.describe(!opt.compact) << endl;
+        cout << instance.describe(opt.fmt) << endl;
 
     return result.first ? 0 : 1;
 }

@@ -28,40 +28,30 @@
 
 
 using namespace std;
+using fmt = ujson::desc_format_t;
 
 static constexpr const char* prog_name = "ujson-tool";
 
 struct appargs_t {
-    bool strict_parsing;
-
-    bool print_pretty;
-    bool print_sorted;
-    bool print_escape_slash;
-    bool print_array_items_on_same_line;
-    bool print_unescaped_string;
-
-    bool members_escape;
-    bool members_as_json_array;
-
-    bool quiet;
-
-    ujson::jpointer ptr;
-    ujson::jvalue_type required_type;
-
     string cmd;
     vector<string> args;
+    ujson::jpointer ptr;
+    ujson::jvalue_type required_type;
+    ujson::desc_format_t fmt;
+    bool strict_parsing;
+    bool print_unescaped_string;
+    bool members_escape;
+    bool members_as_json_array;
+    bool quiet;
 
     appargs_t () {
+        required_type = ujson::j_invalid;
+        fmt = fmt::fmt_pretty;
         strict_parsing = true;
-        print_pretty = true;
-        print_escape_slash = false;
-        print_array_items_on_same_line = true;
         print_unescaped_string = false;
-        print_sorted = false;
         members_escape = false;
         members_as_json_array = false;
         quiet = false;
-        required_type = ujson::j_invalid;
     }
 };
 
@@ -84,6 +74,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -e, --escape-slash     In any resulting JSON string output," << endl;
     out << "                         forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
     out << "  -a, --array-lines      In any resulting JSON output, print JSON array items on separate lines." << endl;
+#if (UJSON_HAS_CONSOLE_COLOR)
+    out << "  -o, --color            Print resulting JSON in color if the output is to a tty." << endl;
+#endif
     out << "  -v, --version          Print version and exit." << endl;
     out << "  -h, --help             Print this help message and exit." << endl;
     out << endl;
@@ -173,6 +166,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'e', "escape-slash",   opt_t::none,     0},
         { 'e', "escape-members", opt_t::none,     0},
         { 'a', "array-lines",    opt_t::none,     0},
+#if (UJSON_HAS_CONSOLE_COLOR)
+        { 'o', "color",          opt_t::none,     0},
+#endif
         { 't', "type",           opt_t::required, 0},
         { 'u', "unescaped",      opt_t::none,     0},
         { 'q', "quiet",          opt_t::none,     0},
@@ -200,21 +196,26 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
 
         case 'c':
-            args.print_pretty = false;
+            args.fmt ^= fmt::fmt_pretty;
             break;
 
         case 's':
-            args.print_sorted = true;
+            args.fmt |= fmt::fmt_sorted;
             break;
 
         case 'e':
-            args.print_escape_slash = true;
+            args.fmt |= fmt::fmt_escape_slash;
             break;
 
         case 'a':
-            args.print_array_items_on_same_line = false;
+            args.fmt |= fmt::fmt_sep_elements;
             break;
 
+#if (UJSON_HAS_CONSOLE_COLOR)
+        case 'o':
+            args.fmt |= fmt::fmt_color;
+            break;
+#endif
         case 't':
             args.required_type = ujson::str_to_jtype (opt.optarg());
             if (args.required_type == ujson::j_invalid) {
@@ -270,6 +271,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     args.cmd = *arg_entry;
     while (++arg_entry != arguments.end())
         args.args.emplace_back (*arg_entry);
+
+#if (UJSON_HAS_CONSOLE_COLOR)
+    if ((args.fmt & fmt::fmt_color) && !isatty(fileno(stdout)))
+        args.fmt ^= fmt::fmt_color;
+#endif
 }
 
 
@@ -319,15 +325,11 @@ static int cmd_view (appargs_t& opt)
         return 1;
     }
 
-    if (instance.is_string() && opt.print_unescaped_string) {
+    if (instance.is_string() && opt.print_unescaped_string)
         cout << instance.str() << endl;
-    }else{
-        cout << instance.describe(opt.print_pretty,
-                                  opt.print_array_items_on_same_line,
-                                  opt.print_sorted,
-                                  opt.print_escape_slash)
-             << endl;
-    }
+    else
+        cout << instance.describe(opt.fmt) << endl;
+
     return 0;
 }
 
@@ -438,10 +440,9 @@ static int cmd_members (appargs_t& opt)
     ujson::json_object& jobj = instance.obj ();
     ujson::jvalue result_array (ujson::j_array);
 
-    for (auto attrib = opt.print_sorted ? jobj.sbegin() : jobj.begin();
-         attrib != (opt.print_sorted ? jobj.send() : jobj.end());
-         ++attrib)
-    {
+    auto attrib     = (opt.fmt & fmt::fmt_sorted) ? jobj.sbegin() : jobj.begin();
+    auto attrib_end = (opt.fmt & fmt::fmt_sorted) ? jobj.send()   : jobj.end();
+    for (; attrib!=attrib_end; ++attrib) {
         if (opt.members_as_json_array) {
             result_array.append (attrib->first);
         }else{
@@ -452,13 +453,8 @@ static int cmd_members (appargs_t& opt)
         }
     }
 
-    if (opt.members_as_json_array) {
-        cout << result_array.describe(opt.print_pretty,
-                                      opt.print_array_items_on_same_line,
-                                      opt.print_sorted,
-                                      opt.print_escape_slash)
-             << endl;
-    }
+    if (opt.members_as_json_array)
+        cout << instance.describe(opt.fmt) << endl;
 
     return 0;
 }
@@ -536,13 +532,8 @@ static int cmd_patch (appargs_t& opt)
 
     // Print the patched json instance
     //
-    if (!opt.quiet || !only_test_ops) {
-        cout << instance.describe(opt.print_pretty,
-                                  opt.print_array_items_on_same_line,
-                                  opt.print_sorted,
-                                  opt.print_escape_slash)
-             << endl;
-    }
+    if (!opt.quiet || !only_test_ops)
+        cout << instance.describe(opt.fmt) << endl;
 
     return result.first ? 0 : 1;
 }

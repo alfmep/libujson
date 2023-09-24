@@ -64,6 +64,15 @@ option (BUILD_TESTS "Build test applications." OFF)
 option (BUILD_DOC "Generate documentation (if doxygen is found)." ON)
 
 
+# Support for console color codes
+#
+if (UNIX)
+    set (UJSON_HAS_CONSOLE_COLOR "1")
+else()
+    set (UJSON_HAS_CONSOLE_COLOR "0")
+endif()
+
+
 # Dependencies
 #
 if (DISABLE_GMPXX)

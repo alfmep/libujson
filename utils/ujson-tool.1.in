@@ -38,6 +38,9 @@ In any resulting JSON string output, forward slash characters("/") are escaped t
 .B -a, --array-lines
 In any resulting JSON output, print JSON array items on separate lines.
 .TP
+.B -o, --color
+Print resulting JSON in color if the output is to a tty.
+.TP
 .B -v, --version
 Print version and exit.
 .TP
