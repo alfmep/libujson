@@ -45,12 +45,12 @@ endif()
 
 # Installation
 #
-install (TARGETS ujson-print DESTINATION bin)
-install (TARGETS ujson-verify DESTINATION bin)
-install (TARGETS ujson-get DESTINATION bin)
-install (TARGETS ujson-patch DESTINATION bin)
-#install (TARGETS ujson-cmp DESTINATION bin)
-install (TARGETS ujson-tool DESTINATION bin)
+install (TARGETS ujson-print DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (TARGETS ujson-verify DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (TARGETS ujson-get DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (TARGETS ujson-patch DESTINATION ${CMAKE_INSTALL_BINDIR})
+#install (TARGETS ujson-cmp DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (TARGETS ujson-tool DESTINATION ${CMAKE_INSTALL_BINDIR})
 if (UNIX)
     install (
         FILES "${PROJECT_BINARY_DIR}/utils/ujson-print.1"

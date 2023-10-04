@@ -39,6 +39,7 @@ if (GMPXX_FOUND)
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        INTERFACE
         $<INSTALL_INTERFACE:include>
         ${GMPXX_INCLUDE_DIRS}
         ${GMP_INCLUDE_DIRS}
@@ -48,6 +49,7 @@ else()
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        INTERFACE
         $<INSTALL_INTERFACE:include>
         )
 endif()
@@ -81,7 +83,12 @@ ADD_FLEX_BISON_DEPENDENCY(Lexer Analyzer)
 # Link flags (libraries to link with)
 #
 if (GMPXX_FOUND)
-    target_link_libraries (ujson PUBLIC
+    target_link_libraries (ujson
+        PRIVATE
+        ${GMPXX_LIBRARIES}
+        ${GMP_LIBRARIES}
+        INTERFACE
+        ujson
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES}
         )
@@ -119,6 +126,7 @@ set (PUBLIC_HEADER_FILES
     ujson/jparser.hpp
     )
 
+
 if (WIN32)
     configure_file (
         ${CMAKE_CURRENT_SOURCE_DIR}/unistd.h.in
@@ -146,18 +154,21 @@ endif()
 install (
     TARGETS ujson
     EXPORT ujsonTargets
-    DESTINATION lib
-    )
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # Header files
 #
 install (
     FILES ${MAIN_PUBLIC_HEADER_FILE}
-    DESTINATION include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 install (
     FILES ${PUBLIC_HEADER_FILES}
-    DESTINATION include/ujson
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ujson
     )
 
 
@@ -167,25 +178,24 @@ if (UNIX)
     configure_file (ujson.pc.in ujson.pc @ONLY)
     install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/ujson.pc
-        DESTINATION lib/pkgconfig
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
         )
 endif()
 
 
 # Install CMake project files
 #
-install (EXPORT ujsonTargets
+install (
+    EXPORT ujsonTargets
     FILE ujsonTargets.cmake
-    DESTINATION lib/cmake/ujson
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ujson
     )
 
 include (CMakePackageConfigHelpers)
 # generate the config file that is includes the exports
 configure_package_config_file (${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/ujsonConfig.cmake"
-    INSTALL_DESTINATION "lib/cmake/example"
-    NO_SET_AND_CHECK_MACRO
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ujson"
     )
 write_basic_package_version_file (
     "${CMAKE_CURRENT_BINARY_DIR}/ujsonConfigVersion.cmake"
@@ -195,9 +205,10 @@ write_basic_package_version_file (
 install (FILES
     ${CMAKE_CURRENT_BINARY_DIR}/ujsonConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/ujsonConfigVersion.cmake
-    DESTINATION lib/cmake/ujson
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ujson
     )
 
-export (EXPORT ujsonTargets
+export (
+    EXPORT ujsonTargets
     FILE "${CMAKE_CURRENT_BINARY_DIR}/ujsonTargets.cmake"
     )
