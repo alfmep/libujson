@@ -90,10 +90,6 @@ else()
 endif()
 
 
-find_package(BISON REQUIRED)
-find_package(FLEX REQUIRED)
-
-
 # libujson
 #
 add_subdirectory (src)

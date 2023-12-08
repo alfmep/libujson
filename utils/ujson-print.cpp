@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include "option-parser.hpp"
+#include "parser-errors.hpp"
 
 
 using namespace std;
@@ -172,7 +173,9 @@ int main (int argc, char* argv[])
     ujson::jparser parser;
     auto instance = parser.parse_string (json_desc, opt.parse_strict);
     if (!instance.valid()) {
-        cerr << "Parse error: " << parser.error() << endl;
+        auto err = parser.get_error ();
+        cerr << "Parse error at " << (err.row+1) << ", " << err.col
+             << ": " << parser_err_to_str(err.code) << endl;
         exit (1);
     }
 

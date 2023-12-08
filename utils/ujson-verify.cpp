@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "option-parser.hpp"
+#include "parser-errors.hpp"
 
 using std::cout;
 using std::cerr;
@@ -135,8 +136,11 @@ static int verify_document (const std::string& filename,
     // Parse file and check result
     auto instance = parser.parse_file (filename, args.strict);
     if (!instance.valid()) {
-        if (!args.quiet)
-            cout << log_filename << ": Error: " << parser.error() << endl;
+        if (!args.quiet) {
+            auto err = parser.get_error ();
+            cout << log_filename << ": Error at " << err.row << ", " << err.col
+                 << ": " << parser_err_to_str(err.code) << endl;
+        }
         return 1;
     }
 
@@ -205,7 +209,9 @@ static bool load_schema (ujson::jparser& parser, ujson::jschema& schema, const a
     for (auto& schema_file : args.schema_files) {
         auto schema_def = parser.parse_file (schema_file, args.strict);
         if (schema_def.invalid()) {
-            cerr << "Error: Parse error in schema file '" << schema_file << "': " << parser.error() << endl;
+            auto err = parser.get_error ();
+            cerr << "Error: Parse error in schema file '" << schema_file << "' at "
+                 << err.row << ", " << err.col << ": " << parser_err_to_str(err.code) << endl;
             exit (1);
         }
         try {

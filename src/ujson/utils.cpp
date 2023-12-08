@@ -292,12 +292,20 @@ namespace ujson {
     //--------------------------------------------------------------------------
     std::string unescape (const std::string& in)
     {
+        return unescape (std::string_view(in.c_str(), in.size()));
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string unescape (const std::string_view& in)
+    {
         std::string result;
         std::u16string u16_str;
 
         auto pos = std::find (in.begin(), in.end(), '\\');
         if (pos == in.end())
-            return in;
+            return std::string (in);
 
         result.insert (result.end(), in.begin(), pos);
 

@@ -24,8 +24,8 @@ link_libraries (ujson)
 
 # Utilities
 #
-add_executable (ujson-print ujson-print.cpp option-parser.cpp)
-add_executable (ujson-verify ujson-verify.cpp option-parser.cpp)
+add_executable (ujson-print ujson-print.cpp option-parser.cpp parser-errors.cpp)
+add_executable (ujson-verify ujson-verify.cpp option-parser.cpp parser-errors.cpp)
 add_executable (ujson-get ujson-get.cpp option-parser.cpp)
 add_executable (ujson-patch ujson-patch.cpp option-parser.cpp)
 #add_executable (ujson-cmp ujson-cmp.cpp option-parser.cpp)

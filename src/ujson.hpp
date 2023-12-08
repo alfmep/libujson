@@ -30,6 +30,7 @@ namespace ujson {}
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>
+#include <ujson/jtokenizer.hpp>
 #include <ujson/jparser.hpp>
 #include <ujson/invalid_schema.hpp>
 #include <ujson/jschema.hpp>

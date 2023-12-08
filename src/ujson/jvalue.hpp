@@ -1190,17 +1190,17 @@ namespace ujson {
                               bool relaxed_mode=false,
                               const std::string& indent="    ") const;
 
-
-    private:
-        // The internal representation of a number
+        /**
+         * The internal representation of a number.
+         */
 #if UJSON_HAVE_GMPXX
         using num_t = mpf_class; // A number is represented by an instance of mpf_class
 #else
         using num_t = double; // A number is represented by a double
 #endif
-        friend class Analyzer; // Using type jvalue::num_t
-        friend class Parser;   // Using type jvalue::num_t
 
+
+    private:
         jvalue_type jtype;
         union {
             json_object* jobj;

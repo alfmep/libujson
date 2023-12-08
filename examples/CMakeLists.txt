@@ -27,3 +27,5 @@ add_executable (initialize-jvalue initialize-jvalue.cpp)
 add_executable (json-object json-object.cpp)
 add_executable (json-array json-array.cpp)
 add_executable (json-number json-number.cpp)
+
+add_executable (jtokens jtokens.cpp)

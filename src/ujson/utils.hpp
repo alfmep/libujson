@@ -22,6 +22,7 @@
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>
 #include <string>
+#include <string_view>
 
 
 namespace ujson {
@@ -155,6 +156,16 @@ namespace ujson {
      *                               invalid escape sequences.
      */
     std::string unescape (const std::string& in);
+
+    /**
+     * Convert a JSON escaped string to an unescaped string.
+     * @param in An escaped string.
+     * @return An unescaped string. All escape sequences that
+     *         are found incorrect will be excluded from the result.
+     * @throws std::invalid_argument If the input string contains
+     *                               invalid escape sequences.
+     */
+    std::string unescape (const std::string_view& in);
 
     /**
      * @deprecated Use unescape(const std::string&) instead,

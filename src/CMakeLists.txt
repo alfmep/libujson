@@ -68,16 +68,6 @@ configure_file (
     )
 
 
-BISON_TARGET(Analyzer
-             ujson/Analyzer.ypp
-             ${CMAKE_CURRENT_BINARY_DIR}/Analyzer.cpp)
-FLEX_TARGET(Lexer
-            ujson/Lexer.lpp
-            ${CMAKE_CURRENT_BINARY_DIR}/Lexer.cpp
-            DEFINES_FILE "${CMAKE_CURRENT_BINARY_DIR}/Lexer.hpp")
-ADD_FLEX_BISON_DEPENDENCY(Lexer Analyzer)
-
-
 
 
 # Link flags (libraries to link with)
@@ -100,10 +90,10 @@ endif()
 # Source files
 #
 target_sources (ujson PRIVATE
-    ujson/Parser.cpp
     ujson/jvalue.cpp
     ujson/jpointer.cpp
     ujson/utils.cpp
+    ujson/jtokenizer.cpp
     ujson/jparser.cpp
     ujson/jschema.cpp
     ujson/invalid_schema.cpp
@@ -113,8 +103,6 @@ target_sources (ujson PRIVATE
     ujson/schema/jvocabulary_applicator.cpp
     ujson/schema/jvocabulary_validation.cpp
     ujson/schema/jvocabulary_unevaluated.cpp
-    ${FLEX_Lexer_OUTPUTS}
-    ${BISON_Analyzer_OUTPUTS}
     )
 
 
@@ -131,6 +119,7 @@ set (PUBLIC_HEADER_FILES
     ujson/jvalue.hpp
     ujson/jpointer.hpp
     ujson/utils.hpp
+    ujson/jtokenizer.hpp
     ujson/jparser.hpp
     ujson/jschema.hpp
     ujson/invalid_schema.hpp
@@ -152,13 +141,11 @@ if (WIN32)
         )
     set (PRIVATE_HEADER_FILES
         ujson/internal.hpp
-        ujson/Parser.hpp
         ujson/unistd.h
         )
 else()
     set (PRIVATE_HEADER_FILES
         ujson/internal.hpp
-        ujson/Parser.hpp
         )
 endif()
 

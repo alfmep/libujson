@@ -45,6 +45,7 @@ add_custom_command (OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jvalue.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jpointer.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/utils.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jtokenizer.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jparser.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jschema.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/invalid_schema.hpp

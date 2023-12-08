@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -31,6 +31,44 @@ namespace ujson {
      */
     class jparser {
     public:
+        /**
+         * An error code generated when parsing a JSON document.
+         */
+        enum class err {
+            ok,                   /**< No error, all is ok. */
+            invalid_string,       /**< Invalid string. */
+            unterminated_string,  /**< Unterminated string. */
+            invalid_escape_code,  /**< Invalid escape code. */
+            invalid_utf8,         /**< Invalid UTF8 character. */
+            invalid_number,       /**< Invalid number. */
+            number_out_of_range,  /**< Number out of range. */
+            invalid_token,        /**< Invalid token. */
+            unexpected_character, /**< Unexpected character. */
+            eob,                  /**< Unexpected end of buffer/file. */
+            io,                   /**< Error reading input file. */
+            internal,             /**< Internal parser error. */
+
+            misplaced_right_curly_bracket,
+            misplaced_right_bracket,
+            misplaced_separator,
+            misplaced_colon,
+            expected_separator_or_right_bracket,
+            expected_separator_or_right_curly_bracket,
+            expected_obj_member_name,
+            expected_colon,
+            unterminated_array,
+            unterminated_object,
+        };
+
+        /**
+         * Parser error;
+         */
+        struct error_t {
+            jparser::err code; /**< The error code. @see jparser::err */
+            unsigned row;      /**< Line number of the error, starting at index 0. */
+            unsigned col;      /**< Column number of the error, starting at index 0. */
+        };
+
         /**
          * Default constructor.
          */
@@ -144,33 +182,19 @@ namespace ujson {
                              bool allow_duplicates_in_obj=true);
 
         /**
-         * Get the error if parsing has failed.
+         * Get an error code and position.
+         * @return An error code and the position in the file/buffer where
+         *         the error was found.
+         */
+        const error_t get_error () const;
+
+        /**
+         * Get an error message if parsing has failed.
          * @return An error string if the last parsing failed.
          *         On successfull parsing an empty string is returned.
          */
         const std::string& error () const;
 
-#if (UJSON_PARSER_DEBUGGING)
-        /**
-         * Check if parse debug trace is on.
-         */
-        bool trace_parsing ();
-
-        /**
-         * Set/unset parse debug trace.
-         */
-        void trace_parsing (bool trace);
-
-        /**
-         * Check if scan debug trace is on.
-         */
-        bool trace_scanning ();
-
-        /**
-         * Set/unset scan debug trace.
-         */
-        void trace_scanning (bool trace);
-#endif
 
     private:
         void* parse_context;
