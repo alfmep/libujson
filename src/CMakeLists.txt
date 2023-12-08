@@ -105,6 +105,14 @@ target_sources (ujson PRIVATE
     ujson/jpointer.cpp
     ujson/utils.cpp
     ujson/jparser.cpp
+    ujson/jschema.cpp
+    ujson/invalid_schema.cpp
+    ujson/schema/validation_context.cpp
+    ujson/schema/jvocabulary.cpp
+    ujson/schema/jvocabulary_core.cpp
+    ujson/schema/jvocabulary_applicator.cpp
+    ujson/schema/jvocabulary_validation.cpp
+    ujson/schema/jvocabulary_unevaluated.cpp
     ${FLEX_Lexer_OUTPUTS}
     ${BISON_Analyzer_OUTPUTS}
     )
@@ -124,6 +132,16 @@ set (PUBLIC_HEADER_FILES
     ujson/jpointer.hpp
     ujson/utils.hpp
     ujson/jparser.hpp
+    ujson/jschema.hpp
+    ujson/invalid_schema.hpp
+    )
+set (PUBLIC_HEADER_FILES_SCHEMA
+    ujson/schema/validation_context.hpp
+    ujson/schema/jvocabulary.hpp
+    ujson/schema/jvocabulary_core.hpp
+    ujson/schema/jvocabulary_applicator.hpp
+    ujson/schema/jvocabulary_validation.hpp
+    ujson/schema/jvocabulary_unevaluated.hpp
     )
 
 
@@ -169,6 +187,10 @@ install (
 install (
     FILES ${PUBLIC_HEADER_FILES}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ujson
+    )
+install (
+    FILES ${PUBLIC_HEADER_FILES_SCHEMA}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ujson/schema
     )
 
 

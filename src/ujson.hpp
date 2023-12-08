@@ -31,5 +31,13 @@ namespace ujson {}
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>
 #include <ujson/jparser.hpp>
+#include <ujson/invalid_schema.hpp>
+#include <ujson/jschema.hpp>
+#include <ujson/schema/validation_context.hpp>
+#include <ujson/schema/jvocabulary.hpp>
+#include <ujson/schema/jvocabulary_core.hpp>
+#include <ujson/schema/jvocabulary_applicator.hpp>
+#include <ujson/schema/jvocabulary_validation.hpp>
+#include <ujson/schema/jvocabulary_unevaluated.hpp>
 
 #endif

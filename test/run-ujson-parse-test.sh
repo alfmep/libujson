@@ -29,7 +29,7 @@ fi
 
 TEST_RESULT_DIR=${BASE_DIR}result-parse-test
 TEST_DATA_BASE_DIR=${BASE_DIR}test-data
-TEST_DATA_DIR=$TEST_DATA_BASE_DIR/json-parse-test
+TEST_DATA_DIR=$TEST_DATA_BASE_DIR/JSONTestSuite
 TEST_ALL_PARSERS=yes
 
 CLONE_URL=https://github.com/nst/JSONTestSuite.git
@@ -74,7 +74,7 @@ if ! [ -d $TEST_DATA_DIR ]; then
     echo "# Clone git repository $CLONE_URL" >&2
     echo "# "
     mkdir -p $TEST_DATA_BASE_DIR
-    if ! git clone $CLONE_URL $TEST_DATA_DIR; then
+    if ! git clone --depth=1 $CLONE_URL $TEST_DATA_DIR; then
         echo "# "
         echo "# Error: Unable to clone git repository $CLONE_URL"
         echo "# "

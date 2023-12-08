@@ -46,6 +46,14 @@ add_custom_command (OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jpointer.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/utils.hpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jparser.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/jschema.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/invalid_schema.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/validation_context.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/jvocabulary.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/jvocabulary_core.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/jvocabulary_applicator.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/jvocabulary_validation.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ujson/schema/jvocabulary_unevaluated.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating API documentation"
     VERBATIM

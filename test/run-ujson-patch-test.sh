@@ -89,7 +89,7 @@ if ! [ -r $TEST_FILE ]; then
         echo "# "
         rm -rf $TEST_DATA_DIR
         mkdir -p $TEST_DATA_BASE_DIR
-        if ! git clone $CLONE_URL $TEST_DATA_DIR; then
+        if ! git clone --depth=1 $CLONE_URL $TEST_DATA_DIR; then
             echo "# "
             echo "# Error: Unable to clone git repository $CLONE_URL"
             echo "# "

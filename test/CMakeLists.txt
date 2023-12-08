@@ -58,3 +58,18 @@ add_custom_command (OUTPUT ${PATCH_TEST_SCRIPT_DST}
     DEPENDS ${PATCH_TEST_SCRIPT_SRC}
     )
 add_custom_target (patch-test-script ALL DEPENDS ${PATCH_TEST_SCRIPT_DST})
+
+
+#
+# JSON schema test
+#
+set (SCHEMA_TEST_SCRIPT_SRC "${CMAKE_CURRENT_SOURCE_DIR}/run-ujson-schema-test.sh")
+set (SCHEMA_TEST_SCRIPT_DST "${CMAKE_CURRENT_BINARY_DIR}/run-ujson-schema-test.sh")
+
+add_executable (ujson-schema-test ujson-schema-test.cpp ../utils/option-parser.cpp)
+
+add_custom_command (OUTPUT ${SCHEMA_TEST_SCRIPT_DST}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SCHEMA_TEST_SCRIPT_SRC} ${SCHEMA_TEST_SCRIPT_DST}
+    DEPENDS ${SCHEMA_TEST_SCRIPT_SRC}
+    )
+add_custom_target (schema-test-script ALL DEPENDS ${SCHEMA_TEST_SCRIPT_DST})

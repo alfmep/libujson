@@ -13,7 +13,7 @@ ujson-verify \- Check for errors in a JSON document
 
 
 .SH DESCRIPTION
-ujson-verify is a utility used for verifying that JSON documents are syntactically correct. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
+ujson-verify is a utility used for verifying that JSON documents are syntactically correct. And optionally verify the JSON document use a JSON schema. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
 
 
 .SH OPTIONS
@@ -21,6 +21,16 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 .TP
 .B -q, --quiet
 Silent mode, don't write anything to standard output.
+
+.TP
+.B -s, --schema=SCHEMA_FILE Verify the JSON document using a JSON schema file.
+                            This option may be set multiple times.
+                            The first schema file is the main schema used to validate the JSON document.
+                            Add more schema files that can be referenced by the main schema file.
+
+.TP
+.B -d, --verbose
+Verbose mode. Print verbose schema verification output.
 
 .TP
 .B -r, --relaxed
