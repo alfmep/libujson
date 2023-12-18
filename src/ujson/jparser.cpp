@@ -51,6 +51,83 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    static const std::string parser_err_to_str (jparser::err error)
+    {
+        switch (error) {
+        case ujson::jparser::err::ok:
+            return "ok";
+
+        case ujson::jparser::err::invalid_string:
+            return "Invalid string";
+
+        case ujson::jparser::err::unterminated_string:
+            return "Unterminated string";
+
+        case ujson::jparser::err::invalid_escape_code:
+            return "Invalid escape code in string";
+
+        case ujson::jparser::err::invalid_utf8:
+            return "Invalid UTF8 code in string";
+
+        case ujson::jparser::err::invalid_number:
+            return "Invalid number";
+
+        case ujson::jparser::err::number_out_of_range:
+            return "Number out of range";
+
+        case ujson::jparser::err::invalid_token:
+            return "Invalind token";
+
+        case ujson::jparser::err::unexpected_character:
+            return "Unexpected character";
+
+        case ujson::jparser::err::eob:
+            return "Unexpected end of file/buffer";
+
+        case ujson::jparser::err::io:
+            return "I/O error";
+
+        case ujson::jparser::err::internal:
+            return "Internal error";
+
+        case ujson::jparser::err::misplaced_right_curly_bracket:
+            return "Misplaced '}'";
+
+        case ujson::jparser::err::misplaced_right_bracket:
+            return "Misplaced ']";
+
+        case ujson::jparser::err::misplaced_separator:
+            return "Misplaced ','";
+
+        case ujson::jparser::err::misplaced_colon:
+            return "Misplaced ':'";
+
+        case ujson::jparser::err::expected_separator_or_right_bracket:
+            return "Expected ',' or ']'";
+
+        case ujson::jparser::err::expected_separator_or_right_curly_bracket:
+            return "Expected ',' or '}'";
+
+        case ujson::jparser::err::expected_obj_member_name:
+            return "Expected object member name";
+
+        case ujson::jparser::err::expected_colon:
+            return "Expected ':'";
+
+        case ujson::jparser::err::unterminated_array:
+            return "Unterminated array";
+
+        case ujson::jparser::err::unterminated_object:
+            return "Unterminated object";
+
+        default:
+            return "(unkown error)";
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
     class parser_t {
     public:
         parser_t () {
@@ -309,6 +386,9 @@ pair:           STRING COLON value
             return jparser::err::eob;
         }
 
+#if (PARSE_DEBUG)
+        cerr << "Internal error here: " << __LINE__ << endl;
+#endif
         return jparser::err::internal;
     }
 
@@ -684,14 +764,18 @@ pair:           STRING COLON value
     {
         jvalue value (j_invalid);
 
+        if (!parse_state.empty()  && parse_state.top()==ps_str_value) {
+            parse_state.pop (); // pop ps_str_value
+            parse_state.pop (); // pop ps_value  // A string is a value
+        }
+
 #if (PARSE_DEBUG)
         if (token)
             cerr << "Parse ended when tokens left. Next token: " << jtoken_type_to_string(token->type) << endl;
         else
             cerr << "No more tokens to parse" << endl;
-#endif
-
         dump_parse_stack_sizes ();
+#endif
 
         if (err_code != jparser::err::ok) {
             //
@@ -705,33 +789,24 @@ pair:           STRING COLON value
             error (jparser::err::unexpected_character, token->row, token->col );
         }
         else if (parse_state.empty() == false) {
-            if (parse_state.top()==ps_value || parse_state.top()==ps_str_value)
-                parse_state.pop ();
             //
             // Parse state stack not empty
             //
-            if (parse_state.empty() == false) {
-                switch (parse_state.top()) {
-                case ps_array:
-                case ps_elements:
-                    // We have an unterminated array
-                    error (jparser::err::unterminated_array, row, col);
-                    break;
+            switch (parse_state.top()) {
+            case ps_array:
+            case ps_elements:
+                // We have an unterminated array
+                error (jparser::err::unterminated_array, row, col);
+                break;
 
-                case ps_object:
-                case ps_members:
-                case ps_pair:
-                    // We have an unterminated object
-                    error (jparser::err::unterminated_object, row, col);
-                    break;
+            case ps_object:
+            case ps_members:
+            case ps_pair:
+                // We have an unterminated object
+                error (jparser::err::unterminated_object, row, col);
+                break;
 
-                default:
-#if (PARSE_DEBUG)
-                    cerr << "Internal error here: " << __LINE__ << endl;
-#endif
-                    error (jparser::err::internal, row, col);
-                }
-            }else{
+            default:
 #if (PARSE_DEBUG)
                 cerr << "Internal error here: " << __LINE__ << endl;
 #endif
@@ -870,7 +945,18 @@ pair:           STRING COLON value
     //--------------------------------------------------------------------------
     const std::string& jparser::error () const
     {
-        static const std::string err_str ("Deprecated. Use jparser::error_code() instead.");
+        static std::string err_str;
+        auto error_code = CTX->error_code ();
+
+        if (error_code == jparser::err::ok) {
+            err_str = "Ok.";
+        }else{
+            err_str = parser_err_to_str (error_code);
+            err_str.append (" at line ");
+            err_str.append (std::to_string(CTX->error_row()+1));
+            err_str.append (", column ");
+            err_str.append (std::to_string(CTX->error_col()));
+        }
         return err_str;
     }
 
