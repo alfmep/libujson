@@ -34,6 +34,7 @@
 - Simple to use C++ API to parse, create, access, and manage JSON documents and types.
 - Use JSON pointers (RFC6901) to access data in JSON documents.
 - Patch JSON documents with JSON patches as described in RFC6902.
+- Supports JSON Schema validation, JSON schema version 2020-12.
 - Test utility to run the JSON patch test cases defined at https://github.com/json-patch/json-patch-tests (if configured with `-DBUILD_TESTS=True`).
 - Test utility to run the JSON parsing test cases defined at https://github.com/nst/JSONTestSuite (if configured with `-DBUILD_TESTS=True`).
 - Doxygen generated API documentation.
@@ -66,7 +67,6 @@ An example of a JSON document supported by libujson without losing precision:
 ```
 ### Limitations
   - Only UTF-8 encoded JSON documents are supported (escaped UNICODE characters are of course supported as described in RFC 8259).
-  - JSON Schema currently not supported. But work is in progress to support it.
 
 
 ## How to build and install
