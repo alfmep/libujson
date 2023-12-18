@@ -1,4 +1,4 @@
-# libujson - A JSON C++ library and utility applications for handling JSON documents. Including JSON pointers, JSON patches and JSON Schema validtation.
+# libujson - A JSON C++ library and utility applications for handling JSON documents. Including JSON pointers, JSON patches and JSON Schema validation.
 
 ### Table of contents
 - **[Features](#features)**
