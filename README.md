@@ -26,6 +26,7 @@
   - [Working with JSON objects](#working-with-json-objects)
   - [Using JSON pointers](#using-json-pointers)
   - [Using JSON patches](#using-json-patches)
+  - [Using JSON Schema for validation](#using-json-schema)
 
 
 ## Features
@@ -872,6 +873,7 @@ A JSON Schema is represented by class `ujson::jschema`, and JSON instances can b
 A schema object is created with a JSON schema definition. The JSON schema definition can be set in the constructor, or by calling method `ujson::jschema::reset()`. If the root schema definition references another external schema, this other schema definition can be added to the jschema object by calling method `ujson::jschema::add_referenced_schema()` Any number of schema definitions can be added to a jschema object so that it can be directly or indirectly referenced by the root schema.
 Here is a simple example of how to use a JSON Schema to validate a JSON instance:
 ```c++
+    ujson::jparser parser;
     ujson::jvalue schema_definition;
     ujson::jschema schema;
 
