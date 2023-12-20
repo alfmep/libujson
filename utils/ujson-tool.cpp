@@ -31,10 +31,15 @@ using namespace std;
 using fmt = ujson::desc_format_t;
 
 static constexpr const char* prog_name = "ujson-tool";
+static constexpr const int opt_id_schema = 1000;
+static const char* fmt_normal = "";
+static const char* fmt_bold = "";
+
 
 struct appargs_t {
     string cmd;
     vector<string> args;
+    vector<string> schema_files;
     ujson::jpointer ptr;
     ujson::jvalue_type required_type;
     ujson::desc_format_t fmt;
@@ -43,6 +48,7 @@ struct appargs_t {
     bool members_escape;
     bool members_as_json_array;
     bool quiet;
+    bool debug;
 
     appargs_t () {
         required_type = ujson::j_invalid;
@@ -52,6 +58,7 @@ struct appargs_t {
         members_escape = false;
         members_as_json_array = false;
         quiet = false;
+        debug = false;
     }
 };
 
@@ -61,9 +68,9 @@ struct appargs_t {
 static void print_usage_and_exit (std::ostream& out, int exit_code)
 {
     out << endl;
-    out << "View, inspect, and modify JSON documents." << endl;
+    out << fmt_bold << "View, inspect, verify, and modify JSON documents." << fmt_normal << endl;
     out << endl;
-    out << "Usage: " << prog_name << " <COMMAND> [OPTIONS] [COMMAND_ARGUMENTS ...]" << endl;
+    out << fmt_bold << "Usage: " << prog_name << " <COMMAND> [OPTIONS] [COMMAND_ARGUMENTS ...]" << fmt_normal << endl;
     out << endl;
     out << "Common options:" << endl;
     out << "  -r, --relaxed          Relaxed parsing, don't use strict mode when parsing." << endl;
@@ -82,8 +89,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "All commands, except 'patch', reads a JSON document from standard input if no file is supplied." << endl;
     out << endl;
-    out << "Commands:" << endl;
-    out << "  view [OPTIONS] [JSON_DOCUMENT]" << endl;
+    out << fmt_bold << "Commands:" << fmt_normal << endl;
+    out << endl;
+    out << fmt_bold << "  view [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    Print the JSON instance to standard output." << endl;
     out << "    Options:" << endl;
     out << "      -t, --type=TYPE    Require that the viewed instance is of a specific JSON type." << endl;
@@ -93,15 +101,23 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "      -u, --unescape     Only if the resulting instance is a JSON string:" << endl;
     out << "                         print the string value, unescaped witout enclosing double quotes." << endl;
     out << endl;
-    out << "  verify [OPTIONS] [JSON_DOCUMENT]" << endl;
+    out << fmt_bold << "  verify [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    Verify the syntax of the JSON document." << endl;
     out << "    Prints \"Ok\" to standard output and return 0 if the input is a valid JSON document." << endl;
     out << "    Prints an error message to standard error and return 1 if the input is a not valid JSON document." << endl;
-    out << "    Common option '--pointer=POINTER' is ignored by this command." << endl;
+    out << "    Common option '-p,--pointer=POINTER' is ignored by this command." << endl;
+    out << "    Common option '--sort' is ignored by this command." << endl;
     out << "    Options:" << endl;
-    out << "      -q, --quiet    Print nothing, only return 0 on success, and 1 on error." << endl;
+    out << "      --schema=SCHEMA_FILE    Validate the JSON document using a JSON Schema." << endl;
+    out << "                              This option may be set multiple times." << endl;
+    out << "                              The first schema file is the main schema used to validate" << endl;
+    out << "                              the JSON document. More schema files can then be added that" << endl;
+    out << "                              can be referenced by the main and other schema files." << endl;
+    out << "      -q, --quiet             Print nothing, only return 0 on success, and 1 on error." << endl;
+    out << "      -d, --debug             Print verbose schema validation information." << endl;
+    out << "                              This option is ignored if option --quiet is set." << endl;
     out << endl;
-    out << "  type [OPTIONS] [JSON_DOCUMENT]" << endl;
+    out << fmt_bold << "  type [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    Print or check the JSON type of the instance." << endl;
     out << "    Default is to write the JSON type of the instance to standard output." << endl;
     out << "    But if option '--type=TYPE' is used, the command will check if the JSON type of" << endl;
@@ -113,14 +129,14 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                         Valid types are: object, array, string, number, boolean, and null." << endl;
     out << "      -q, --quiet        If option '--type' is used, don't print anything." << endl;
     out << endl;
-    out << "  size [OPTIONS] [JSON_DOCUMENT]" << endl;
+    out << fmt_bold << "  size [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    Print the number of elements/members to standard output if the JSON instance" << endl;
     out << "    is an array or object. If the JSON instance isn't an array or object," << endl;
     out << "    an error message is printed to standard error and 1 is returned." << endl;
     out << "    Note: It is not a recursive count. It is only the number of elements/members" << endl;
     out << "          in the specified array/object, not including sub-items of the array/object." << endl;
     out << endl;
-    out << "  members [OPTIONS] [JSON_DOCUMENT]" << endl;
+    out << fmt_bold << "  members [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    If the instance is a JSON object, print the object member names to standard" << endl;
     out << "    output on separate lines. If not a JSON object, print an error message to" << endl;
     out << "    standard error and return 1." << endl;
@@ -137,7 +153,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "      -j, --json-array      Print the member names as a JSON formatted array." << endl;
     out << "                            Option '--escape-members' is implied by this option." << endl;
     out << endl;
-    out << "  patch [OPTIONS] <JSON_DOCUMENT> [JSON_PATCH_FILE]" << endl;
+    out << fmt_bold << "  patch [OPTIONS] <JSON_DOCUMENT> [JSON_PATCH_FILE]" << fmt_normal << endl;
     out << "    Patch a JSON instance and print the result to standard output." << endl;
     out << "    If option '--pointer=...' is used, the patch definition uses this position in" << endl;
     out << "    the input JSON document as the instance to patch, and the resulting output will" << endl;
@@ -159,23 +175,25 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        { 'r', "relaxed",        opt_t::none,     0},
-        { 'p', "pointer",        opt_t::required, 0},
-        { 'c', "compact",        opt_t::none,     0},
-        { 's', "sort",           opt_t::none,     0},
-        { 'e', "escape-slash",   opt_t::none,     0},
-        { 'e', "escape-members", opt_t::none,     0},
-        { 'a', "array-lines",    opt_t::none,     0},
+        { 'r',  "relaxed",        opt_t::none,     0},
+        { 'p',  "pointer",        opt_t::required, 0},
+        { 'c',  "compact",        opt_t::none,     0},
+        { 's',  "sort",           opt_t::none,     0},
+        { '\0', "schema",         opt_t::required, opt_id_schema},
+        { 'e',  "escape-slash",   opt_t::none,     0},
+        { 'e',  "escape-members", opt_t::none,     0},
+        { 'a',  "array-lines",    opt_t::none,     0},
 #if (UJSON_HAS_CONSOLE_COLOR)
-        { 'o', "color",          opt_t::none,     0},
+        { 'o',  "color",          opt_t::none,     0},
 #endif
-        { 't', "type",           opt_t::required, 0},
-        { 'u', "unescaped",      opt_t::none,     0},
-        { 'q', "quiet",          opt_t::none,     0},
-        { 'm', "escape-members", opt_t::none,     0},
-        { 'j', "json-array",     opt_t::none,     0},
-        { 'v', "version",        opt_t::none,     0},
-        { 'h', "help",           opt_t::none,     0},
+        { 't',  "type",           opt_t::required, 0},
+        { 'u',  "unescaped",      opt_t::none,     0},
+        { 'q',  "quiet",          opt_t::none,     0},
+        { 'd',  "debug",          opt_t::none,     0},
+        { 'm',  "escape-members", opt_t::none,     0},
+        { 'j',  "json-array",     opt_t::none,     0},
+        { 'v',  "version",        opt_t::none,     0},
+        { 'h',  "help",           opt_t::none,     0},
     };
 
     option_parser opt (argc, argv);
@@ -201,6 +219,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
         case 's':
             args.fmt |= fmt::fmt_sorted;
+            break;
+
+        case opt_id_schema:
+            args.schema_files.emplace_back (opt.optarg());
             break;
 
         case 'e':
@@ -230,6 +252,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
         case 'q':
             args.quiet = true;
+            break;
+
+        case 'd':
+            args.debug = true;
             break;
 
         case 'm':
@@ -352,11 +378,68 @@ static int cmd_verify (appargs_t& opt)
     if (document.invalid()) {
         if (!opt.quiet)
             cerr << "Parse error: " << parser.error() << endl;
+        return 1;
+    }
+
+    if (opt.schema_files.empty()) {
+        // All is ok
+        if (!opt.quiet)
+            cout << "Ok" << endl;
+        return 0;
+    }
+
+
+    // Validate JSON document using supplied schema(s)
+    //
+    ujson::jschema schema;
+    try {
+        // Load schema file(s)
+        //
+        bool got_root_schema = false;
+        for (auto& schema_file : opt.schema_files) {
+            auto instance = parser.parse_file (schema_file, opt.strict_parsing);
+            if (instance.invalid()) {
+                if (!opt.quiet) {
+                    cerr << "Error parsing schema file '" << schema_file
+                         << "': " << parser.error() << endl;
+                }
+                return 1;
+            }
+            if (!got_root_schema) {
+                schema.reset (instance);
+                got_root_schema = true;
+            }else{
+                schema.add_referenced_schema (instance);
+            }
+        }
+
+        // Verify the JSON document using the schema
+        //
+        auto ou = schema.validate (document);
+        if (ou["valid"].boolean() == true) {
+            if (!opt.quiet) {
+                if (opt.debug)
+                    cout << ou.describe(opt.fmt) << endl;
+                else
+                    cout << "Ok" << endl;
+            }
+            retval = 0;
+        }else{
+            if (!opt.quiet) {
+                if (opt.debug)
+                    cout << ou.describe(opt.fmt) << endl;
+                else
+                    cout << "Error: Failed schema validation." << endl;
+            }
+            retval = 1;
+        }
+    }
+    catch (ujson::invalid_schema& is) {
+        if (!opt.quiet)
+            cout << "Invalid schema: " << is.what() << endl;
         retval = 1;
     }
-    else if (!opt.quiet) {
-        cout << "Ok" << endl;
-    }
+
     return retval;
 }
 
@@ -551,6 +634,13 @@ int main (int argc, char* argv[])
         {"verify",  cmd_verify},
         {"view",    cmd_view},
     };
+
+#if (UJSON_HAS_CONSOLE_COLOR)
+    if (isatty(fileno(stdout))) {
+        fmt_normal = "\033[0m";
+        fmt_bold = "\033[1m";
+    }
+#endif
 
     appargs_t opt;
     parse_args (argc, argv, opt);

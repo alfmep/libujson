@@ -32,6 +32,8 @@ namespace ujson::schema {
 
     /**
      * JSON schema core vocabulary.
+     * This class implements the JSON Schema
+     * vocabulary defined in https://json-schema.org/draft/2020-12/meta/core.
      */
     class jvocabulary_core : public jvocabulary {
     public:
@@ -39,6 +41,10 @@ namespace ujson::schema {
                                                      const std::string& base_uri,
                                                      const std::string& ref_value)>;
 
+        /**
+         * Constructor.
+         * @param schema_arg A root schema object.
+         */
         jvocabulary_core (jschema& schema_arg);
 
         virtual void load (jvalue& schema, jvalue& load_ctx);

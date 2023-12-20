@@ -69,6 +69,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -u, --unescape   If the resulting value is a JSON string," << endl;
     out << "                   print it as an unescaped string witout enclosing double quotes." << endl;
     out << "  -r, --relaxed    Parse the JSON document in relaxed mode." << endl;
+#if (UJSON_HAS_CONSOLE_COLOR)
+    out << "  -o, --color      Print in color if the output is to a tty." << endl;
+#endif
     out << "  -v, --version    Print version and exit." << endl;
     out << "  -h, --help       Print this help message and exit." << endl;
     out << endl;
@@ -85,6 +88,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         {'t', "type",     opt_t::required, 0},
         {'u', "unescape", opt_t::none,     0},
         {'r', "relaxed",  opt_t::none,     0},
+#if (UJSON_HAS_CONSOLE_COLOR)
+        {'o', "color",    opt_t::none, 0},
+#endif
         {'v', "version",  opt_t::none,     0},
         {'h', "help",     opt_t::none,     0},
     };
@@ -108,6 +114,12 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'r':
             args.relaxed = true;
             break;
+#if (UJSON_HAS_CONSOLE_COLOR)
+        case 'o':
+            if (isatty(fileno(stdout)))
+                args.fmt |= ujson::fmt_color;
+            break;
+#endif
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);

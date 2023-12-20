@@ -1,4 +1,4 @@
-# libujson - A JSON C++ library and utility applications for handling JSON documents. Including JSON pointers, JSON patches and JSON Schema validation.
+# libujson - A JSON C++ library and utility applications for handling JSON documents, JSON pointers, JSON patches, and JSON Schema validation.
 
 ### Table of contents
 - **[Features](#features)**
@@ -14,6 +14,7 @@
 - **[Testing libujson](#testing-libujson)**
   - [Testing JSON parsing in libujson](#testing-json-parsing-in-libujson)
   - [Testing JSON patch support in libujson](#testing-json-patch-support-in-libujson)
+  - [Testing JSON Schema support in libujson](#testing-json-schema-support-in-libujson)
 - **[C++ API](#c-api)**
   - [Include file, C++ namespace, and linking](#include-file-c-namespace-and-linking)
   - [Parsing JSON documents](#parsing-json-documents)
@@ -37,6 +38,7 @@
 - Supports JSON Schema validation, JSON schema version 2020-12.
 - Test utility to run the JSON patch test cases defined at https://github.com/json-patch/json-patch-tests (if configured with `-DBUILD_TESTS=True`).
 - Test utility to run the JSON parsing test cases defined at https://github.com/nst/JSONTestSuite (if configured with `-DBUILD_TESTS=True`).
+- Test utility to run the JSON Schema test cases defined at https://github.com/json-schema-org/JSON-Schema-Test-Suite (if configured with `-DBUILD_TESTS=True`).
 - Doxygen generated API documentation.
 - Support for a "relaxed" format of JSON documents, but uses strict format (RFC8259) as default.
   In relaxed format, the following is allowed in JSON documents:
@@ -103,7 +105,7 @@ Unless configured with parameter `-DBUILD_UTILS=False`, the following utilities 
 - **ujson-tool** - A utility with several sub-commands to handle JSON documents in a variety of ways.
 
 ## ujson-verify
-ujson-verify is a utility used for verifying that JSON documents are syntactically correct. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
+ujson-verify is a utility used for verifying that JSON documents are syntactically correct. And optionally verify the JSON document use a JSON schema. If all the files on the command line are successfully verified, ujson-verify exits with code 0. If any file fails verification, ujson-verify exits with code 1. If no file name is given, a JSON document is read from standard input.
 
 **Synopsis:**
 
@@ -112,6 +114,10 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 **Options:**
 
 **-q, --quiet**		Silent mode, don't write anything to standard output.
+
+**-s, --schema=SCHEMA_FILE**	Verify the JSON document using a JSON schema file. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+
+**-d, --verbose**	Verbose mode. Print verbose schema verification output.
 
 **-r, --relaxed**	Relaxed parsing, don't use strict mode when parsing.
 
@@ -137,9 +143,13 @@ ujson-print parses a JSON document and prints it to standard output. By default,
 
 **-a, --array-lines** For JSON arrays, print each array item on a separate line.
 
+**-b, --tabs** Indent using tab characters instead of spaces. Ignored if option '-c,--compact' is used.
+
 **-r, --relaxed** Print the JSON document in relaxed form. Object member names are printed without enclosing them in double quotes("") when the object member names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*. The exceptions are the object member names "true", "false", and "null". Those object member names are always enclosed by double quotes("").
 
 **-t, --parse-strict** Parse the JSON document in strict mode. This is the only utility that parses in relaxed mode by default.
+
+**-o, --color** Print in color if the output is to a tty.
 
 **-v, --version** Print version and exit.
 
@@ -162,6 +172,8 @@ ujson-get prints value in a JSON document pointed to by a JSON pointer. If the J
 **-u, --unescape** If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
 
 **-r, --relaxed** Parse the JSON document in relaxed mode.
+
+**-o, --color** Print in color if the output is to a tty.
 
 **-v, --version** Print version and exit.
 
@@ -212,6 +224,8 @@ All commands, except 'patch', reads a JSON document from standard input if no fi
 
 **-a, --array-lines** In any resulting JSON output, print JSON array items on separate lines.
 
+**-o, --color** Print resulting JSON in color, if the output is to a tty.
+
 **-v, --version** Print version and exit.
 
 **-h, --help** Print help and exit.
@@ -229,15 +243,12 @@ Print the JSON instance to standard output.
 **-u, --unescape** Only if the resulting instance is a JSON string: print the string value, unescaped witout enclosing double quotes.
 
 *Example - View a JSON document in a compact form without whitespaces:*
-
 `ujson-tool view --compact document.json`
 
 *Example - View a specific item in a JSON document using a JSON pointer:*
-
 `ujson-tool view --pointer=/members/42/name document.json`
 
 *Example - Sort object members when viewing a JSON document:*
-
 `ujson-tool view --sort document.json`
 
 
@@ -250,11 +261,17 @@ Common option `--pointer=POINTER` is ignored by this command.
 
 **Options:**
 
+**--schema=SCHEMA_FILE** Validate the JSON document using a JSON Schema. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+
 **-q, --quiet** Print nothing, only return 0 on success, and 1 on error.
 
-*Example - Verify that a file is indeed a JSON document:*
+**-d, --debug** Print verbose schema validation information. This option is ignored if option --quiet is set.
 
+*Example - Verify that a file is indeed a JSON document:*
 `ujson-tool verify document.json`
+
+*Example - Validate a JSON document using a JSON schema:*
+`ujson-tool verify --schema schema.json document.json`
 
 
 ### type [OPTIONS] [JSON_DOCUMENT]
@@ -271,7 +288,6 @@ Valid JSON types are: object, array, string, number, boolean, and null.
 **-q, --quiet** Only if option `--type=TYPE` is used: don't print anything, only return 0 on success and 1 on failure.
 
 *Example - Print the name of the JSON type at index 42 in a JSON document containing an array;*
-
 `ujson-tool type --pointer=/42 items.json`
 
 *Example - Check that a JSON documents is a JSON object:*
@@ -288,11 +304,9 @@ If the JSON instance isn't an array or object, an error message is printed to st
 *Note:* It is not a recursive count. It is only the number of elements/members in the specified array/object, not including sub-items of the array/object.
 
 *Example - Print the number of members in a JSON document containing an object:*
-
 `ujson-tool size document.json`
 
 *Example - Print the number of items in an array at a specific location in a JSON document:*
-
 `ujson-tool size --pointer=/drawer/boxes document.json`
 
 
@@ -312,15 +326,12 @@ This option is not needed if option `--json-array` is used.
 **-j, --json-array** Print the member names as a JSON formatted array. Option `--escape-members` is implied by this option.
 
 *Example - Print the object member names in a JSON document:*
-
 `ujson-tool members document.json`
 
 *Example - Print the object member names of a JSON object at a specific location in a JSON document:*
-
 `ujson-tool members --pointer=/drawer/boxes/42 document.json`
 
 *Example - Create a JSON array containing the member names of a JSON document in sorted order:*
-
 `ujson-tool members --json-array --sort document.json >member-names.json`
 
 
@@ -383,6 +394,10 @@ Disabled tests : 3
 
 To see all options of the test script, go to directory test and run: `./run-ujson-patch-test.sh --help`
 To see all options of the test application, go to directory test and run: `./ujson-patch-test --help`
+
+### Testing JSON Schema in libujson
+In directory `test`, there is a script named `run-ujson-schema-test.sh` that makes a clone of project https://github.com/json-schema-org/JSON-Schema-Test-Suite.git, and runs the tests.
+When the test script is finished, the result is found in directory `test/result-schema-test`, see file `test/result-schema-test/test-schema-result.txt`.
 
 
 
@@ -848,4 +863,35 @@ if (result.first) {
         }
     }
 }
+```
+
+
+## Using JSON Schema
+libujson supports JSON Schema validation as described in https://json-schema.org/specification. Currently validation using version 2020-12 of the JSON Schema specification is supported.
+A JSON Schema is represented by class `ujson::jschema`, and JSON instances can be validated using method `ujson::jschema::validate()`.
+A schema object is created with a JSON schema definition. The JSON schema definition can be set in the constructor, or by calling method `ujson::jschema::reset()`. If the root schema definition references another external schema, this other schema definition can be added to the jschema object by calling method `ujson::jschema::add_referenced_schema()` Any number of schema definitions can be added to a jschema object so that it can be directly or indirectly referenced by the root schema.
+Here is a simple example of how to use a JSON Schema to validate a JSON instance:
+```c++
+    ujson::jvalue schema_definition;
+    ujson::jschema schema;
+
+    // Load the root schema
+    schema_definition = parser.parse_file (root_schema_file);
+    schema.reset (schema_definition);
+
+    // Load another schema that is referenced by the root schema    
+    schema_definition = parser.parse_file (other_schema_referenced_by_the_root_schema_file);
+    schema.add_referenced_schema (schema_definition);
+
+    // Load the JSON instance we want to validate
+    ujson::jvalue instance = parser.parse_file (json_instance_file_to_be_validated);
+
+    // Validate the JSON instance
+    ujson::jvalue output_unit = schema.validate (instance);
+
+    // Check the result
+    if (output_unit["valid"] == true)
+        std::cout << "Instance is valid" << std::endl;
+    else
+        std::cout << "Instance is not valid" << std::endl;
 ```

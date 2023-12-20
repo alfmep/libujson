@@ -75,13 +75,14 @@ namespace ujson::parser {
 
         /**
          * Constructor.
+         * This will create a token of type <code>tk_invalid</code>
          */
         jtoken () {
             reset ();
         }
 
         /**
-         * Reset the token state.
+         * Reset the token state, making it an invalid token.
          */
         void reset () {
             type = tk_invalid;
@@ -106,24 +107,25 @@ namespace ujson::parser {
 
     /**
      * Class used to scan a buffer and produce tokens for JSON parsing.
+     * Only UTF8 encoded text buffers are supported.
      */
     class jtokenizer {
     public:
         /**
-         * Constructor.
+         * Default Constructor.
          */
         jtokenizer ();
 
         /**
          * Constructor.
-         * @param buffer The buffer to scan for tokens.
+         * @param buffer The buffer to scan for JSON tokens.
          * @param strict_mode Use strict mode when scanning.
          */
         jtokenizer (const std::string_view& buffer, bool strict_mode=true);
 
         /**
          * Reset the tokenizer.
-         * @param buffer The buffer to scan for tokens.
+         * @param buffer The buffer to scan for JSON tokens.
          */
         void reset (const std::string_view& buffer) {
             reset (buffer, strict);
@@ -131,15 +133,17 @@ namespace ujson::parser {
 
         /**
          * Reset the tokenizer.
-         * @param buffer The buffer to scan for tokens.
+         * @param buffer The buffer to scan for JSON tokens.
          * @param strict_mode Use strict mode when scanning.
          */
         void reset (const std::string_view& buffer, bool strict_mode);
 
         /**
-         * Return the next token.
-         * @return The next token in the buffer.
-         *         Or nullptr if no more tokens are available.
+         * Return the next JSON token in the buffer.
+         * @return A pointer to a jtoken object describing
+         *         the next token in the buffer.
+         *         Or <code>nullptr</code> if no more
+         *         tokens are available.
          */
         const jtoken* next_token ();
 

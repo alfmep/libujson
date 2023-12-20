@@ -38,8 +38,6 @@ using std::endl;
 namespace ujson {
 
 
-    const std::string jschema::default_base_uri ("xri://root-schema");
-
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     static std::string carefully_get_schema_id (jvalue& schema,

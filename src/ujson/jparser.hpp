@@ -35,29 +35,28 @@ namespace ujson {
          * An error code generated when parsing a JSON document.
          */
         enum class err {
-            ok,                   /**< No error, all is ok. */
-            invalid_string,       /**< Invalid string. */
-            unterminated_string,  /**< Unterminated string. */
-            invalid_escape_code,  /**< Invalid escape code. */
-            invalid_utf8,         /**< Invalid UTF8 character. */
-            invalid_number,       /**< Invalid number. */
-            number_out_of_range,  /**< Number out of range. */
-            invalid_token,        /**< Invalid token. */
-            unexpected_character, /**< Unexpected character. */
-            eob,                  /**< Unexpected end of buffer/file. */
-            io,                   /**< Error reading input file. */
-            internal,             /**< Internal parser error. */
-
-            misplaced_right_curly_bracket,
-            misplaced_right_bracket,
-            misplaced_separator,
-            misplaced_colon,
-            expected_separator_or_right_bracket,
-            expected_separator_or_right_curly_bracket,
-            expected_obj_member_name,
-            expected_colon,
-            unterminated_array,
-            unterminated_object,
+            ok,                                        /**< No error, all is ok. */
+            invalid_string,                            /**< Invalid string. */
+            unterminated_string,                       /**< Unterminated string. */
+            invalid_escape_code,                       /**< Invalid escape code. */
+            invalid_utf8,                              /**< Invalid UTF8 character. */
+            invalid_number,                            /**< Invalid number. */
+            number_out_of_range,                       /**< Number out of range. */
+            invalid_token,                             /**< Invalid token. */
+            misplaced_right_curly_bracket,             /**< A misplaced '}' token. */
+            misplaced_right_bracket,                   /**< A misplaced ']' token. */
+            misplaced_separator,                       /**< A misplaced ',' token. */
+            misplaced_colon,                           /**< A misplaced ':' token. */
+            expected_separator_or_right_curly_bracket, /**< Expected a ',' or '}' token. */
+            expected_separator_or_right_bracket,       /**< Expected a ',' or ']' token. */
+            expected_obj_member_name,                  /**< Expected an object member name. */
+            expected_colon,                            /**< Expected a ':' token. */
+            unterminated_array,                        /**< Unterminated array. */
+            unterminated_object,                       /**< Unterminated object. */
+            unexpected_character,                      /**< Unexpected character. */
+            eob,                                       /**< Unexpected end of buffer/file. */
+            io,                                        /**< Error reading input file. */
+            internal,                                  /**< Internal parser error. */
         };
 
         /**

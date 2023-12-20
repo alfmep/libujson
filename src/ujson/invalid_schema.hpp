@@ -31,22 +31,46 @@ namespace ujson {
      */
     class invalid_schema : public std::invalid_argument {
     public:
+        /**
+         * Constructor.
+         * @param base_uri_arg A JSON Schema base URI.
+         * @param pointer_arg A JSON pointer to the schema error.
+         * @param what_arg An error description.
+         */
         invalid_schema (const std::string& base_uri_arg,
                         const std::string& pointer_arg,
                         const std::string& what_arg);
 
+        /**
+         * Constructor.
+         * @param base_uri_arg A JSON Schema base URI.
+         * @param pointer_arg A JSON pointer to the schema error.
+         * @param what_arg An error description.
+         */
         invalid_schema (const std::string& base_uri_arg,
                         const std::string& pointer_arg,
                         const char* what_arg);
 
+        /**
+         * Constructor.
+         * @param what_arg An error description.
+         */
         invalid_schema (const std::string& what_arg);
 
+        /**
+         * Constructor.
+         * @param what_arg An error description.
+         */
         invalid_schema (const char* what_arg);
 
+        /**
+         * Copy constructor.
+         * @param other The invalid_schema object to copy.
+         */
         invalid_schema (const invalid_schema& other) noexcept;
 
-        std::string base_uri;
-        std::string pointer;
+        std::string base_uri; /**< A JSON Schema base URI. */
+        std::string pointer;  /**< A JSON pointer to the error in the schema. */
     };
 
 

@@ -38,14 +38,51 @@ namespace ujson::schema {
      */
     class jvocabulary {
     public:
+        /**
+         * Constructor.
+         * @param root_schema_arg A JSON Schema.
+         */
         jvocabulary (jschema& root_schema_arg);
+
+        /**
+         * Constructor.
+         * @param id_arg A schema id (URI).
+         */
         jvocabulary (const std::string& id_arg);
+
+        /**
+         * Constructor.
+         * @param root_schema_arg A JSON Schema.
+         * @param id_arg A schema id (URI).
+         */
         jvocabulary (jschema& root_schema_arg, const std::string& id_arg);
+
+        /**
+         * Destructor.
+         */
         virtual ~jvocabulary () = default;
 
+        /**
+         * Load a JSON Schema definition.
+         * @throw ujson::invalid_schema If the JSON Schema
+         *                              definition is invalid.
+         */
         virtual void load (jvalue& schema, jvalue& load_ctx) = 0;
+
+        /**
+         * Use this vocabulary to validate a JSON instance.
+         * @param ctx A validation context object.
+         * @param schema A JSON (sub)schema.
+         * @param instance The JSON instance to validate.
+         * @return <code>true</code> if the validation was successful.
+         *         <code>false</code> if not.
+         */
         virtual bool validate (validation_context& ctx, jvalue& schema, jvalue& instance) = 0;
 
+        /**
+         * Return the JSON vocabulary id.
+         * @return the JSON vocabulary id.
+         */
         virtual const std::string& id () const;
 
 

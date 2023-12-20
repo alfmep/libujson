@@ -30,6 +30,9 @@ If the resulting value is a JSON string, print it as an unescaped string witout 
 .B -r, --relaxed
 Parse the JSON document in relaxed mode.
 .TP
+.B -o, --color
+Print in color if the output is to a tty.
+.TP
 .B -v, --version
 Print version and exit.
 .TP

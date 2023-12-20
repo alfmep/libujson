@@ -64,11 +64,12 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << endl
         << "Options:" <<endl
         << "  -q, --quiet                 Silent mode, don't write anything to standard output." << endl
-        << "  -s, --schema=SCHEMA_FILE    Verify the JSON document using a JSON schema file." << endl
+        << "  -s, --schema=SCHEMA_FILE    Validate the JSON document using a JSON schema file." << endl
         << "                              This option may be set multiple times." << endl
-        << "                              The first schema file is the main schema used to validate the JSON document." << endl
-        << "                              Add more schema files that can be referenced by the main schema file." << endl
-        << "  -d, --verbose               Verbose mode. Print verbose schema verification output." << endl
+        << "                              The first schema file is the main schema used to validate" << endl
+        << "                              the JSON document. More schema files can then be added that" << endl
+        << "                              can be referenced by the main and other schema files." << endl
+        << "  -d, --verbose               Verbose mode. Print verbose schema validation output." << endl
         << "  -r, --relaxed               Relaxed parsing, don't use strict mode when parsing." << endl
         << "  -v, --version               Print version and exit." << endl
         << "  -h, --help                  Print this help message and exit." << endl

@@ -74,8 +74,15 @@ Common option '--pointer=POINTER' is ignored by this command.
 
 Options:
 .TP
+.B --schema=SCHEMA_FILE
+Validate the JSON document using a JSON Schema.
+This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+.TP
 .B -q, --quiet
 Print nothing, only return 0 on success, and 1 on error.
+.TP
+.B -d, --debug
+Print verbose schema validation information. This option is ignored if option --quiet is set.
 
 
 .SH type [OPTIONS] [JSON_DOCUMENT]
