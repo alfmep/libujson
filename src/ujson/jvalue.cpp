@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -903,11 +903,10 @@ namespace ujson {
             throw std::invalid_argument ("Invalid JSON value");
 
         auto entry = find_last_in_jobj (name, *v.jobj);
-        if (entry == v.jobj->send()) {
+        if (entry == v.jobj->send() || overwrite==false) {
             return v.jobj->emplace_back(name, value).second;
         }else{
-            if (overwrite)
-                entry->second = value;
+            entry->second = value;
             return entry->second;
         }
     }
@@ -926,11 +925,10 @@ namespace ujson {
             throw std::invalid_argument ("Invalid JSON value");
 
         auto entry = find_last_in_jobj (name, *v.jobj);
-        if (entry == v.jobj->send()) {
+        if (entry == v.jobj->send() || overwrite==false) {
             return v.jobj->emplace_back(name, std::forward<jvalue&&>(value)).second;
         }else{
-            if (overwrite)
-                entry->second = std::forward<jvalue&&> (value);
+            entry->second = std::forward<jvalue&&> (value);
             return entry->second;
         }
     }
