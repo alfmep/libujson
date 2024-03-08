@@ -1,10 +1,10 @@
 .\" Manpage for ujson-tool
-.\" Contact https://github.com/alfmep to correct errors or types.
+.\" Contact https://github.com/alfmep/libujson to correct errors or types.
 .TH ujson-tool 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
 .SH NAME
-ujson-tool \- View, inspect, and modify JSON documents.
+ujson-tool \- View, validate, inspect, and modify JSON documents.
 
 
 .SH SYNOPSIS
@@ -13,15 +13,15 @@ COMMAND [OPTIONS] [COMMAND_ARGUMENTS ...]
 
 
 .SH DESCRIPTION
-ujson-tool is a tool to view, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
+ujson-tool is a tool to view, validate, inspect, and modify JSON documents and has several commands to handle JSON documents in a variety of ways.
 
 All commands, except 'patch', reads a JSON document from standard input if no file is supplied.
 
 
 .SH COMMON OPTIONS
 .TP
-.B -r, --relaxed
-Relaxed parsing, don't use strict mode when parsing.
+.B -s, --strict
+Parse JSON documents in strict mode.
 .TP
 .B -p, --pointer=POINTER
 Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
@@ -29,17 +29,17 @@ Use the JSON instance pointed to by the JSON pointer instead of the root of the 
 .B -c, --compact
 Any Resulting JSON output is printed without whitespaces.
 .TP
-.B -s, --sort
-Any Resulting JSON output is printed with object members sorted by name.
-.TP
 .B -e, --escape-slash
 In any resulting JSON string output, forward slash characters("/") are escaped to "\\/".
 .TP
 .B -a, --array-lines
-In any resulting JSON output, print JSON array items on separate lines.
+In any resulting JSON output, print each array item on the same line.
 .TP
 .B -o, --color
 Print resulting JSON in color if the output is to a tty.
+.TP
+.B --sort
+Any Resulting JSON output is printed with object members sorted by name.
 .TP
 .B -v, --version
 Print version and exit.
@@ -66,25 +66,6 @@ Require that the viewed instance is of a specific JSON type. If the resulting in
 Only if the resulting instance is a JSON string: print the string value, unescaped witout enclosing double quotes.
 
 
-.SH verify [OPTIONS] [JSON_DOCUMENT]
-Verify the syntax of the JSON document.
-Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
-Prints an error message to standard error and return 1 if the input is a not valid JSON document.
-Common option '--pointer=POINTER' is ignored by this command.
-
-Options:
-.TP
-.B --schema=SCHEMA_FILE
-Validate the JSON document using a JSON Schema.
-This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
-.TP
-.B -q, --quiet
-Print nothing, only return 0 on success, and 1 on error.
-.TP
-.B -d, --debug
-Print verbose schema validation information. This option is ignored if option --quiet is set.
-
-
 .SH type [OPTIONS] [JSON_DOCUMENT]
 Print or check the JSON type of the instance.
 Default is to write the JSON type of the instance to standard output. But if option '--type=TYPE' is used, the command will check if the JSON type of the instance is the same type as specified.
@@ -105,7 +86,7 @@ If option '--type' is used, don't print anything.
 Print the number of elements/members to standard output if the JSON instance
 is an array or object. If the JSON instance isn't an array or object,
 an error message is printed to standard error and 1 is returned.
-
+.br
 .B Note:
 It is not a recursive count. It is only the number of elements/members in the specified array/object,
 not including sub-items of the array/object.
@@ -140,7 +121,7 @@ the input JSON document as the instance to patch, and the resulting output will
 also be from this position. If no patch file is supplied, the patch definition
 is read from standard input. Errors and failed patch operations are printed to
 standard error. Returns 0 if all patches are successfully aplied, and 1 if not.
-
+.br
 JSON patches are described in RFC 6902.
 
 Options:
@@ -151,9 +132,31 @@ Also, if all patch operations are of type 'test', don't print the
 resulting JSON document to standard output.
 
 
+.SH verify [OPTIONS] [JSON_DOCUMENT]
+Verify the syntax of the JSON document.
+Prints "Ok" to standard output and return 0 if the input is a valid JSON document, and successfully validated using a JSON Schema (if one is supplied).
+Prints an error message to standard error and return 1 if the input is not a valid JSON document, or if not successfully validated using a JSON Schema.
+.br
+Common option '--pointer=POINTER' is ignored by this command.
+.br
+Common option '--sort' is ignored by this command.
+
+Options:
+.TP
+.B --schema=SCHEMA_FILE
+Validate the JSON document using a JSON Schema.
+This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+.TP
+.B -q, --quiet
+Print nothing, only return 0 on success, and 1 on error.
+.TP
+.B -d, --debug
+Print verbose schema validation information. This option is ignored if option --quiet is set.
+
+
 .SH SEE ALSO
-ujson-print(1) ujson-verify(1) ujson-get(1) ujson-patch(1)
+ujson-cmp(1) ujson-get(1) ujson-patch(1) ujson-print(1) ujson-verify(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (https://github.com/alfmep)
+Dan Arrhenius (https://github.com/alfmep/libujson)

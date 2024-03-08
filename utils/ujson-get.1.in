@@ -1,5 +1,5 @@
 .\" Manpage for ujson-get
-.\" Contact https://github.com/alfmep to correct errors or types.
+.\" Contact https://github.com/alfmep/libujson to correct errors or types.
 .TH ujson-get 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
@@ -27,8 +27,8 @@ Require the found value to be of a specific type. TYPE is one of the following: 
 .B -u, --unescape
 If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
 .TP
-.B -r, --relaxed
-Parse the JSON document in relaxed mode.
+.B -s, --strict
+Parse the JSON document in strict mode.
 .TP
 .B -o, --color
 Print in color if the output is to a tty.
@@ -45,8 +45,8 @@ A JSON Pointer as described in RFC 6901.
 A pointer specifies a specific value in a JSON document. Is is a string containing zero or more reference tokens separated by '/'. If a '/' is part of a token it is encoded as '~1'. And if a '~' is parf of a token it is encoded as '~0'.
 
 .SH SEE ALSO
-ujson-tool(1) ujson-print(1) ujson-verify(1) ujson-patch(1)
+ujson-cmp(1) ujson-patch(1) ujson-print(1) ujson-tool(1) ujson-verify(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (https://github.com/alfmep)
+Dan Arrhenius (https://github.com/alfmep/libujson)

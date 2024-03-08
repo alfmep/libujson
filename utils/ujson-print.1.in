@@ -1,5 +1,5 @@
 .\" Manpage for ujson-print
-.\" Contact https://github.com/alfmep to correct errors or types.
+.\" Contact https://github.com/alfmep/libujson to correct errors or types.
 .TH ujson-print 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
@@ -24,11 +24,11 @@ Compact output, print the JSON document without whitespace.
 .B -e, --escape-slash
 When printing JSON strings, forward slash characters("/") are escaped to "\\/".
 .TP
-.B -s, --sort
+.B -t, --sort
 Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
 .TP
 .B -a, --array-lines
-For JSON arrays, print each array item on a separate line. Default is to print array items without separating them with a newline.
+For JSON arrays, print each array item on the same line.
 Ignored if option '-c,--compact' is used.
 .TP
 .B -b, --tabs
@@ -38,7 +38,7 @@ Ignored if option '-c,--compact' is used.
 .B -r, --relaxed
 Print the JSON document in relaxed form. Object member names are printed without enclosing them in double quotes("") when the object member names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*. The exceptions are the object member names "true", "false", and "null". Those object member names are always enclosed by double quotes("").
 .TP
-.B -t, --parse-strict
+.B -s, --strict
 Parse the JSON document in strict mode.
 .TP
 .B -o, --color
@@ -52,8 +52,8 @@ Print help and exit.
 
 
 .SH SEE ALSO
-ujson-tool(1) ujson-get(1) ujson-verify(1) ujson-patch(1)
+ujson-cmp(1) ujson-get(1) ujson-patch(1) ujson-tool(1) ujson-verify(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (https://github.com/alfmep)
+Dan Arrhenius (https://github.com/alfmep/libujson)

@@ -1,5 +1,5 @@
 .\" Manpage for ujson-patch
-.\" Contact https://github.com/alfmep to correct errors or types.
+.\" Contact https://github.com/alfmep/libujson to correct errors or types.
 .TH ujson-patch 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
@@ -26,8 +26,8 @@ JSON_PATCH_FILE is a JSON document containing the patches to apply. It no patch 
 .B -c, --compact
 Print the resulting JSON document without whitespaces.
 .TP
-.B -r, --relaxed
-Parse JSON input files in relaxed mode.
+.B -s, --strict
+Parse JSON input files in strict mode.
 .TP
 .B -q, --quiet
 No errors are written to standard error. On errors, of failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
@@ -39,8 +39,7 @@ Print version and exit.
 Print help and exit.
 
 .SH SEE ALSO
-ujson-tool(1) ujson-print(1) ujson-get(1) ujson-verify(1)
-
+ujson-cmp(1) ujson-get(1) ujson-print(1) ujson-tool(1) ujson-verify(1)
 
 .SH AUTHOR
-Dan Arrhenius (https://github.com/alfmep)
+Dan Arrhenius (https://github.com/alfmep/libujson)

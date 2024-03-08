@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -21,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <map>
 #include <unistd.h>
@@ -32,6 +33,7 @@ using fmt = ujson::desc_format_t;
 
 static constexpr const char* prog_name = "ujson-tool";
 static constexpr const int opt_id_schema = 1000;
+static constexpr const int opt_id_sort   = 1001;
 static const char* fmt_normal = "";
 static const char* fmt_bold = "";
 
@@ -53,7 +55,7 @@ struct appargs_t {
     appargs_t () {
         required_type = ujson::j_invalid;
         fmt = fmt::fmt_pretty;
-        strict_parsing = true;
+        strict_parsing = false;
         print_unescaped_string = false;
         members_escape = false;
         members_as_json_array = false;
@@ -68,22 +70,22 @@ struct appargs_t {
 static void print_usage_and_exit (std::ostream& out, int exit_code)
 {
     out << endl;
-    out << fmt_bold << "View, inspect, verify, and modify JSON documents." << fmt_normal << endl;
+    out << fmt_bold << "View, validate, inspect, verify, and modify JSON documents." << fmt_normal << endl;
     out << endl;
     out << fmt_bold << "Usage: " << prog_name << " <COMMAND> [OPTIONS] [COMMAND_ARGUMENTS ...]" << fmt_normal << endl;
     out << endl;
     out << "Common options:" << endl;
-    out << "  -r, --relaxed          Relaxed parsing, don't use strict mode when parsing." << endl;
+    out << "  -s, --strict           Parse JSON documents in strict mode." << endl;
     out << "  -p, --pointer=POINTER  Use the JSON instance pointed to by the JSON pointer" << endl;
     out << "                         instead of the root of the input JSON document." << endl;
     out << "  -c, --compact          Any Resulting JSON output is printed without whitespaces." << endl;
-    out << "  -s, --sort             Any Resulting JSON output is printed with object members sorted by name." << endl;
     out << "  -e, --escape-slash     In any resulting JSON string output," << endl;
     out << "                         forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
-    out << "  -a, --array-lines      In any resulting JSON output, print JSON array items on separate lines." << endl;
+    out << "  -a, --array-lines      In any resulting JSON output, print each array item on the same line." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color            Print resulting JSON in color if the output is to a tty." << endl;
 #endif
+    out << "      --sort             Any Resulting JSON output is printed with object members sorted by name." << endl;
     out << "  -v, --version          Print version and exit." << endl;
     out << "  -h, --help             Print this help message and exit." << endl;
     out << endl;
@@ -100,22 +102,6 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                         Valid types are: object, array, string, number, boolean, and null." << endl;
     out << "      -u, --unescape     Only if the resulting instance is a JSON string:" << endl;
     out << "                         print the string value, unescaped witout enclosing double quotes." << endl;
-    out << endl;
-    out << fmt_bold << "  verify [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
-    out << "    Verify the syntax of the JSON document." << endl;
-    out << "    Prints \"Ok\" to standard output and return 0 if the input is a valid JSON document." << endl;
-    out << "    Prints an error message to standard error and return 1 if the input is a not valid JSON document." << endl;
-    out << "    Common option '-p,--pointer=POINTER' is ignored by this command." << endl;
-    out << "    Common option '--sort' is ignored by this command." << endl;
-    out << "    Options:" << endl;
-    out << "      --schema=SCHEMA_FILE    Validate the JSON document using a JSON Schema." << endl;
-    out << "                              This option may be set multiple times." << endl;
-    out << "                              The first schema file is the main schema used to validate" << endl;
-    out << "                              the JSON document. More schema files can then be added that" << endl;
-    out << "                              can be referenced by the main and other schema files." << endl;
-    out << "      -q, --quiet             Print nothing, only return 0 on success, and 1 on error." << endl;
-    out << "      -d, --debug             Print verbose schema validation information." << endl;
-    out << "                              This option is ignored if option --quiet is set." << endl;
     out << endl;
     out << fmt_bold << "  type [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
     out << "    Print or check the JSON type of the instance." << endl;
@@ -144,7 +130,6 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "    and a single member name can thus be printed on multiple lines if it contains" << endl;
     out << "    one or more line breaks." << endl;
     out << "    Options:" << endl;
-    out << "      -s, --sort            Sort the member names." << endl;
     out << "      -m, --escape-members  Print the member names as JSON formatted strings." << endl;
     out << "                            The names are printed JSON escaped, enclosed by double quotes." << endl;
     out << "                            This will ensure that no member name is written on multiple" << endl;
@@ -152,6 +137,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                            This option is not needed if option '--json-array' is used." << endl;
     out << "      -j, --json-array      Print the member names as a JSON formatted array." << endl;
     out << "                            Option '--escape-members' is implied by this option." << endl;
+    out << "          --sort            Sort the member names." << endl;
     out << endl;
     out << fmt_bold << "  patch [OPTIONS] <JSON_DOCUMENT> [JSON_PATCH_FILE]" << fmt_normal << endl;
     out << "    Patch a JSON instance and print the result to standard output." << endl;
@@ -166,6 +152,24 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                   Also, if all patch operations are of type 'test', don't print the" << endl;
     out << "                   resulting JSON document to standard output." << endl;
     out << endl;
+    out << fmt_bold << "  verify [OPTIONS] [JSON_DOCUMENT]" << fmt_normal << endl;
+    out << "    Verify the syntax of the JSON document." << endl;
+    out << "    Prints \"Ok\" to standard output and return 0 if the input is a valid JSON document," << endl;
+    out << "    and successfully validated using a JSON Schema (if one is supplied)." << endl;
+    out << "    Prints an error message to standard error and return 1 if the input is not a valid" << endl;
+    out << "    JSON document, or if not successfully validated using a JSON Schema." << endl;
+    out << "    Common option '-p,--pointer=POINTER' is ignored by this command." << endl;
+    out << "    Common option '--sort' is ignored by this command." << endl;
+    out << "    Options:" << endl;
+    out << "      --schema=SCHEMA_FILE    Validate the JSON document using a JSON Schema." << endl;
+    out << "                              This option may be set multiple times." << endl;
+    out << "                              The first schema file is the main schema used to validate" << endl;
+    out << "                              the JSON document. More schema files can then be added that" << endl;
+    out << "                              can be referenced by the main and other schema files." << endl;
+    out << "      -q, --quiet             Print nothing, only return 0 on success, and 1 on error." << endl;
+    out << "      -d, --debug             Print verbose schema validation information." << endl;
+    out << "                              This option is ignored if option --quiet is set." << endl;
+    out << endl;
     exit (exit_code);
 }
 
@@ -176,9 +180,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
         { 'r',  "relaxed",        opt_t::none,     0},
+        { 's',  "strict",         opt_t::none,     0},
         { 'p',  "pointer",        opt_t::required, 0},
         { 'c',  "compact",        opt_t::none,     0},
-        { 's',  "sort",           opt_t::none,     0},
+        { '\0', "sort",           opt_t::none,     opt_id_sort},
         { '\0', "schema",         opt_t::required, opt_id_schema},
         { 'e',  "escape-slash",   opt_t::none,     0},
         { 'e',  "escape-members", opt_t::none,     0},
@@ -203,6 +208,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.strict_parsing = false;
             break;
 
+        case 's':
+            args.strict_parsing = true;
+            break;
+
         case 'p':
             try {
                 args.ptr = opt.optarg ();
@@ -217,7 +226,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.fmt ^= fmt::fmt_pretty;
             break;
 
-        case 's':
+        case opt_id_sort:
             args.fmt |= fmt::fmt_sorted;
             break;
 
@@ -230,7 +239,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
 
         case 'a':
-            args.fmt |= fmt::fmt_sep_elements;
+            args.fmt |= fmt::fmt_compact_array;
             break;
 
 #if (UJSON_HAS_CONSOLE_COLOR)
@@ -537,7 +546,7 @@ static int cmd_members (appargs_t& opt)
     }
 
     if (opt.members_as_json_array)
-        cout << instance.describe(opt.fmt) << endl;
+        cout << result_array.describe(opt.fmt) << endl;
 
     return 0;
 }

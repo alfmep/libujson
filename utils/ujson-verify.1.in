@@ -1,5 +1,5 @@
 .\" Manpage for ujson-verify
-.\" Contact https://github.com/alfmep to correct errors or types.
+.\" Contact https://github.com/alfmep/libujson to correct errors or types.
 .TH ujson-verify 1 "" "@CMAKE_PROJECT_NAME@ @libujson_VERSION_MAJOR@.@libujson_VERSION_MINOR@.@libujson_VERSION_PATCH@" "User Commands"
 
 
@@ -23,7 +23,7 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 Silent mode, don't write anything to standard output.
 
 .TP
-.B -s, --schema=SCHEMA_FILE
+.B -c, --schema=SCHEMA_FILE
 Validate the JSON document using a JSON schema file.
 This option may be set multiple times.
 The first schema file is the main schema used to validate the JSON document.
@@ -34,8 +34,8 @@ More schema files can then be added that can be referenced by the main and other
 Verbose mode. Print verbose schema validation output.
 
 .TP
-.B -r, --relaxed
-Relaxed parsing, don't use strict mode when parsing.
+.B -s, --strict
+Parse JSON documents in strict mode.
 .TP
 .B -v, --version
 Print version and exit.
@@ -45,7 +45,8 @@ Print help and exit.
 
 
 .SH NOTES
-By default JSON documents are verified using the official JSON syntax. But libujson also support a more relaxed format.
+By default JSON documents are verified using relaxed format.
+To verified using the official JSON syntax, use option '-s, --strict'.
 .PP
 The following is allowed in JSON documents when relaxed format is used:
 
@@ -72,15 +73,16 @@ Example of a JSON document that is allowed in relaxed mode:
     desc: "Some text here",
     "normal_member_name": "Another string",
 
-    // The following object member name must be enclosed by double quotes
+    // The following object member name must be enclosed by
+    // double quotes since 'null' is a reserved word.
     "null": 0,
 
-    long_string: "This is a string value on " // This can be used to
-                 "more than one line that, "  // make it more readable.
-                 "when parsed, will be one "
+    long_string: "This string value is split "     // This can be used to
+                 "up in more than one line that, " // make it more readable
+                 "when parsed, will be a single "  // when editing.
                  "long string value.",
 
-    // Note that the last array item ends with a separator
+    // Note that the last array item can end with a separator
     list_of_values: [1, 2, 3, 4, 5, 6, 7,],
 
     // Also, the last object member can end with a separator
@@ -90,8 +92,8 @@ Example of a JSON document that is allowed in relaxed mode:
 
 
 .SH SEE ALSO
-ujson-tool(1) ujson-print(1) ujson-get(1) ujson-patch(1)
+ujson-cmp(1) ujson-get(1) ujson-patch(1) ujson-print(1) ujson-tool(1)
 
 
 .SH AUTHOR
-Dan Arrhenius (https://github.com/alfmep)
+Dan Arrhenius (https://github.com/alfmep/libujson)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -55,17 +55,16 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "In no file name is given, a JSON document is read from standard input." << endl;
     out << "By default, the JSON document is parsed in relaxed mode." << endl;
     out << "Options:" <<endl;
-    out << "  -c, --compact         Compact output, no newlines or intendation." << endl;
+    out << "  -c, --compact         Compact output, no newlines or indentation." << endl;
     out << "  -e, --escape-slash    Forward slash characters(\"/\") are escaped to \"\\/\"." << endl;
-    out << "  -s, --sort            Object members are listed in sorted order, not in natural order." << endl;
-    out << "  -a, --array-lines     For JSON arrays, print each array item on a separate line." << endl;
-    out << "                        Ignored if option '-c,--compact' is used." << endl;
+    out << "  -t, --sort            Object members are listed in sorted order, not in natural order." << endl;
+    out << "  -a, --array-lines     For JSON arrays, print each array item on the same line." << endl;
     out << "  -b, --tabs            Indent using tab characters instead of spaces." << endl;
     out << "                        Ignored if option '-c,--compact' is used." << endl;
     out << "  -r, --relaxed         Print the JSON document in relaxed form." << endl;
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
-    out << "  -t, --parse-strict    Parse the JSON document in strict mode." << endl;
+    out << "  -s, --strict          Parse the JSON document in strict mode." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color           Print in color if the output is to a tty." << endl;
 #endif
@@ -83,11 +82,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     optlist_t options = {
         { 'c', "compact",      opt_t::none, 0},
         { 'e', "escape-slash", opt_t::none, 0},
-        { 's', "sort",         opt_t::none, 0},
+        { 't', "sort",         opt_t::none, 0},
         { 'a', "array-lines",  opt_t::none, 0},
         { 'b', "tabs",         opt_t::none, 0},
         { 'r', "relaxed",      opt_t::none, 0},
-        { 't', "parse-strict", opt_t::none, 0},
+        { 's', "strict",       opt_t::none, 0},
 #if (UJSON_HAS_CONSOLE_COLOR)
         { 'o', "color",        opt_t::none, 0},
 #endif
@@ -104,11 +103,11 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'e':
             args.fmt |= fmt::fmt_escape_slash;
             break;
-        case 's':
+        case 't':
             args.fmt |= fmt::fmt_sorted;
             break;
         case 'a':
-            args.fmt |= fmt::fmt_sep_elements;
+            args.fmt |= fmt::fmt_compact_array;
             break;
         case 'b':
             args.fmt |= fmt::fmt_tabs;
@@ -116,7 +115,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'r':
             args.fmt |= fmt::fmt_relaxed;
             break;
-        case 't':
+        case 's':
             args.parse_strict = true;
             break;
 #if (UJSON_HAS_CONSOLE_COLOR)

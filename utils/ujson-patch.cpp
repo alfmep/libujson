@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -33,14 +33,14 @@ static constexpr const char* prog_name = "ujson-patch";
 
 struct appargs_t {
     ujson::desc_format_t fmt;
-    bool relaxed;
+    bool strict;
     bool quiet;
     std::string document_filename;
     std::string patch_filename;
 
     appargs_t () {
         fmt = ujson::fmt_pretty;
-        relaxed = false;
+        strict = false;
         quiet = false;
     }
 };
@@ -62,7 +62,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Options:" <<endl;
     out << "  -c, --compact    Print the resulting JSON document without whitespaces." << endl;
-    out << "  -r, --relaxed    Parse JSON input files in relaxed mode." << endl;
+    out << "  -s, --strict     Parse JSON documents in strict mode." << endl;
     out << "  -q, --quiet      No errors are written to standard error. On errors, or failed patch test operations," << endl;
     out << "                   the application exits with an error code. If the patch definition only contains" << endl;
     out << "                   patch operations of type 'test', nothing is written to standard output." << endl;
@@ -83,6 +83,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     optlist_t options = {
         {'c', "compact",  opt_t::none, 0},
         {'r', "relaxed",  opt_t::none, 0},
+        {'s', "strict",   opt_t::none, 0},
         {'q', "quiet",    opt_t::none, 0},
         {'v', "version",  opt_t::none, 0},
         {'h', "help",     opt_t::none, 0},
@@ -95,7 +96,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.fmt = ujson::fmt_none;
             break;
         case 'r':
-            args.relaxed = true;
+            args.strict = false;
+            break;
+        case 's':
+            args.strict = true;
             break;
         case 'q':
             args.quiet = true;
@@ -149,7 +153,7 @@ int main (int argc, char* argv[])
     // Parse the JSON document
     //
     ujson::jparser parser;
-    auto instance = parser.parse_file (opt.document_filename, !opt.relaxed);
+    auto instance = parser.parse_file (opt.document_filename, opt.strict);
     if (!instance.valid()) {
         if (!opt.quiet)
             cerr << "Parse error, " << opt.document_filename << ": " << parser.error() << endl;
@@ -162,9 +166,9 @@ int main (int argc, char* argv[])
     if (opt.patch_filename.empty()) {
         ifstream ifs;
         string json_desc ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
-        patch = parser.parse_string (json_desc, !opt.relaxed);
+        patch = parser.parse_string (json_desc, opt.strict);
     }else{
-        patch = parser.parse_file (opt.patch_filename, !opt.relaxed);
+        patch = parser.parse_file (opt.patch_filename, opt.strict);
     }
     if (!patch.valid()) {
         if (!opt.quiet) {

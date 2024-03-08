@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -36,13 +36,13 @@ struct appargs_t {
     ujson::jpointer pointer;
     ujson::jvalue_type jtype;
     ujson::desc_format_t fmt;
-    bool relaxed;
+    bool strict;
     bool unescape;
 
     appargs_t () {
         jtype = ujson::j_invalid;
         fmt = ujson::fmt_pretty;
-        relaxed = false;
+        strict = false;
         unescape = false;
     }
 };
@@ -68,7 +68,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                   If the value is of a different type, exit with code 1." << endl;
     out << "  -u, --unescape   If the resulting value is a JSON string," << endl;
     out << "                   print it as an unescaped string witout enclosing double quotes." << endl;
-    out << "  -r, --relaxed    Parse the JSON document in relaxed mode." << endl;
+    out << "  -s, --strict     Parse the JSON document in strict mode." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color      Print in color if the output is to a tty." << endl;
 #endif
@@ -88,6 +88,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         {'t', "type",     opt_t::required, 0},
         {'u', "unescape", opt_t::none,     0},
         {'r', "relaxed",  opt_t::none,     0},
+        {'s', "strict",   opt_t::none,     0},
 #if (UJSON_HAS_CONSOLE_COLOR)
         {'o', "color",    opt_t::none, 0},
 #endif
@@ -112,7 +113,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.unescape = true;
             break;
         case 'r':
-            args.relaxed = true;
+            args.strict = false;
+            break;
+        case 's':
+            args.strict = true;
             break;
 #if (UJSON_HAS_CONSOLE_COLOR)
         case 'o':
@@ -185,7 +189,7 @@ int main (int argc, char* argv[])
     // Parse json document
     //
     ujson::jparser parser;
-    auto instance = parser.parse_string (json_desc, !opt.relaxed);
+    auto instance = parser.parse_string (json_desc, opt.strict);
     if (!instance.valid()) {
         cerr << "Parse error: " << parser.error() << endl;
         exit (1);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -46,7 +46,7 @@ struct appargs_t {
     bool verbose;
 
     appargs_t() {
-        strict = true;
+        strict = false;
         quiet = false;
         verbose = false;
     }
@@ -64,13 +64,13 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << endl
         << "Options:" <<endl
         << "  -q, --quiet                 Silent mode, don't write anything to standard output." << endl
-        << "  -s, --schema=SCHEMA_FILE    Validate the JSON document using a JSON schema file." << endl
+        << "  -c, --schema=SCHEMA_FILE    Validate the JSON document using a JSON schema file." << endl
         << "                              This option may be set multiple times." << endl
         << "                              The first schema file is the main schema used to validate" << endl
         << "                              the JSON document. More schema files can then be added that" << endl
         << "                              can be referenced by the main and other schema files." << endl
         << "  -d, --verbose               Verbose mode. Print verbose schema validation output." << endl
-        << "  -r, --relaxed               Relaxed parsing, don't use strict mode when parsing." << endl
+        << "  -s, --strict                Parse JSON documents in strict mode." << endl
         << "  -v, --version               Print version and exit." << endl
         << "  -h, --help                  Print this help message and exit." << endl
         << endl;
@@ -84,9 +84,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
         { 'q', "quiet",   opt_t::none, 0},
-        { 's', "schema",  opt_t::required, 0},
+        { 'c', "schema",  opt_t::required, 0},
         { 'd', "verbose", opt_t::none, 0},
         { 'r', "relaxed", opt_t::none, 0},
+        { 's', "strict",  opt_t::none, 0},
         { 'v', "version", opt_t::none, 0},
         { 'h', "help",    opt_t::none, 0},
     };
@@ -97,7 +98,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'q':
             args.quiet = true;
             break;
-        case 's':
+        case 'c':
             args.schema_files.emplace_back (opt.optarg());
             break;
         case 'd':
@@ -105,6 +106,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'r':
             args.strict = false;
+            break;
+        case 's':
+            args.strict = true;
             break;
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
@@ -160,10 +164,10 @@ static int verify_document (const std::string& filename,
                     cout << log_filename << ": Validation error: " << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
                     if (isatty(fileno(stdout)))
-                        cout << result.describe(ujson::fmt_pretty | ujson::fmt_sep_elements | ujson::fmt_color) << endl;
+                        cout << result.describe(ujson::fmt_pretty | ujson::fmt_color) << endl;
                     else
 #endif
-                        cout << result.describe(ujson::fmt_pretty | ujson::fmt_sep_elements) << endl;
+                        cout << result.describe(ujson::fmt_pretty) << endl;
                     cout << endl;
                 }
                 return 1;
@@ -189,10 +193,10 @@ static int verify_document (const std::string& filename,
             //cout << "    ";
 #if (UJSON_HAS_CONSOLE_COLOR)
             if (isatty(fileno(stdout)))
-                cout << result.describe(ujson::fmt_pretty|ujson::fmt_sep_elements|ujson::fmt_color) << endl;
+                cout << result.describe(ujson::fmt_pretty|ujson::fmt_color) << endl;
             else
 #endif
-                cout << result.describe(ujson::fmt_pretty|ujson::fmt_sep_elements) << endl;
+                cout << result.describe(ujson::fmt_pretty) << endl;
             cout << endl;
         }
     }

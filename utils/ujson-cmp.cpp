@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -32,12 +32,12 @@ using namespace std;
 static constexpr const char* prog_name = "ujson-cmp";
 
 struct appargs_t {
-    bool relaxed;
+    bool strict;
     bool quiet;
     string filename[2];
 
     appargs_t () {
-        relaxed = false;
+        strict = false;
         quiet = false;
     }
 };
@@ -53,7 +53,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << prog_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
         << endl
         << "Options:" <<endl
-        << "  -r, --relaxed    Parse JSON documents in relaxed mode." << endl
+        << "  -s, --strict     Parse JSON documents in strict mode." << endl
         << "  -q, --quiet      Silent mode, don't write anything to standard output." << endl
         << "  -v, --version    Print version and exit." << endl
         << "  -h, --help       Print this help message and exit." << endl
@@ -68,6 +68,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
         {'r', "relaxed", opt_t::none, 0},
+        {'s', "strict",  opt_t::none, 0},
         {'q', "quiet",   opt_t::none, 0},
         {'v', "version", opt_t::none, 0},
         {'h', "help",    opt_t::none, 0},
@@ -77,7 +78,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     while (int id=opt(options)) {
         switch (id) {
         case 'r':
-            args.relaxed = true;
+            args.strict = false;
+            break;
+        case 's':
+            args.strict = true;
             break;
         case 'q':
             args.quiet = true;
@@ -145,7 +149,7 @@ int main (int argc, char* argv[])
     ujson::jparser parser;
     ujson::jvalue instance[2];
     for (auto i=0; i<2; ++i) {
-        instance[i] = parser.parse_string (json_desc[i], !opt.relaxed);
+        instance[i] = parser.parse_string (json_desc[i], opt.strict);
         if (!instance[i].valid()) {
             if (!opt.quiet)
                 cerr << "Error parsing " << opt.filename[i] << ": " << parser.error() << endl;
