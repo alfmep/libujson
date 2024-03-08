@@ -116,15 +116,15 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 **-q, --quiet**		Silent mode, don't write anything to standard output.
 
-**-s, --schema=SCHEMA_FILE**	Verify the JSON document using a JSON schema file. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+**-c, --schema=SCHEMA_FILE**	Verify the JSON document using a JSON schema file. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
 
 **-d, --verbose**	Verbose mode. Print verbose schema verification output.
 
-**-r, --relaxed**	Relaxed parsing, don't use strict mode when parsing.
+**-s, --strict**	Parse JSON documents in strict mode.
 
 **-v, --version**	Print version and exit.
 
-**-h, --help**			Print help and exit.
+**-h, --help**		Print help and exit.
 
 
 ## ujson-print
@@ -140,15 +140,15 @@ ujson-print parses a JSON document and prints it to standard output. By default,
 
 **-e, --escape-slash** When printing JSON strings, forward slash characters("/") are escaped to "\\/".
 
-**-s, --sort** Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
+**-t, --sort** Object members are printed in sorted order, not in natural order. Sorting is made on the member name.
 
-**-a, --array-lines** For JSON arrays, print each array item on a separate line.
+**-a, --array-lines** For JSON arrays, print each array item on the same line. Ignored if option '-c,--compact' is used.
 
 **-b, --tabs** Indent using tab characters instead of spaces. Ignored if option '-c,--compact' is used.
 
 **-r, --relaxed** Print the JSON document in relaxed form. Object member names are printed without enclosing them in double quotes("") when the object member names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*. The exceptions are the object member names "true", "false", and "null". Those object member names are always enclosed by double quotes("").
 
-**-t, --parse-strict** Parse the JSON document in strict mode. This is the only utility that parses in relaxed mode by default.
+**-s, --strict** Parse the JSON document in strict mode.
 
 **-o, --color** Print in color if the output is to a tty.
 
@@ -172,7 +172,7 @@ ujson-get prints value in a JSON document pointed to by a JSON pointer. If the J
 
 **-u, --unescape** If the resulting value is a JSON string, print it as an unescaped string witout enclosing double quotes. Note that this will make the output an invalid JSON document.
 
-**-r, --relaxed** Parse the JSON document in relaxed mode.
+**-s, --strict** Parse the JSON document in strict mode.
 
 **-o, --color** Print in color if the output is to a tty.
 
@@ -193,7 +193,7 @@ If no patch file is given, the JSON patch definition is read from standard input
 
 **-c, --compact** Print the resulting JSON document without whitespaces.
 
-**-r, --relaxed** Parse JSON input files in relaxed mode.
+**-s, --strict** Parse JSON input files in strict mode.
 
 **-q, --quiet** No errors are written to standard error. On errors, or failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 
@@ -213,19 +213,19 @@ All commands, except 'patch', reads a JSON document from standard input if no fi
 
 **Common options:**
 
-**-r, --relaxed** Relaxed parsing, don't use strict mode when parsing.
+**-s, --strict** Parse JSON documents in strict mode.
 
 **-p, --pointer=POINTER** Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
 
 **-c, --compact** Any Resulting JSON output is printed without whitespaces.
 
-**-s, --sort** Any Resulting JSON output is printed with object members sorted by name.
-
 **-e, --escape-slash** In any resulting JSON string output, forward slash characters("/") are escaped to "\\/".
 
-**-a, --array-lines** In any resulting JSON output, print JSON array items on separate lines.
+**-a, --array-lines** In any resulting JSON output, print each array item on the same line.
 
 **-o, --color** Print resulting JSON in color, if the output is to a tty.
+
+**--sort** Any Resulting JSON output is printed with object members sorted by name.
 
 **-v, --version** Print version and exit.
 
@@ -251,28 +251,6 @@ Print the JSON instance to standard output.
 
 *Example - Sort object members when viewing a JSON document:*
 `ujson-tool view --sort document.json`
-
-
-### verify [OPTIONS] [JSON_DOCUMENT]
-Verify the syntax of a JSON document.
-
-Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
-Prints an error message to standard error and return 1 if the input isn't valid JSON document.
-Common option `--pointer=POINTER` is ignored by this command.
-
-**Options:**
-
-**--schema=SCHEMA_FILE** Validate the JSON document using a JSON Schema. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
-
-**-q, --quiet** Print nothing, only return 0 on success, and 1 on error.
-
-**-d, --debug** Print verbose schema validation information. This option is ignored if option --quiet is set.
-
-*Example - Verify that a file is indeed a JSON document:*
-`ujson-tool verify document.json`
-
-*Example - Validate a JSON document using a JSON schema:*
-`ujson-tool verify --schema schema.json document.json`
 
 
 ### type [OPTIONS] [JSON_DOCUMENT]
@@ -349,6 +327,28 @@ standard error. Returns 0 if all patches are successfully applied, and 1 if not.
 **-q, --quiet** Don't print failed patch operations to standard error,
 only return 1. Also, if all patch operations are of type 'test', don't
 print the resulting JSON document to standard output.
+
+
+### verify [OPTIONS] [JSON_DOCUMENT]
+Verify the syntax of a JSON document.
+
+Prints "Ok" to standard output and return 0 if the input is a valid JSON document.
+Prints an error message to standard error and return 1 if the input isn't valid JSON document.
+Common option `--pointer=POINTER` is ignored by this command.
+
+**Options:**
+
+**--schema=SCHEMA_FILE** Validate the JSON document using a JSON Schema. This option may be set multiple times. The first schema file is the main schema used to validate the JSON document. More schema files can then be added that can be referenced by the main and other schema files.
+
+**-q, --quiet** Print nothing, only return 0 on success, and 1 on error.
+
+**-d, --debug** Print verbose schema validation information. This option is ignored if option --quiet is set.
+
+*Example - Verify that a file is indeed a JSON document:*
+`ujson-tool verify document.json`
+
+*Example - Validate a JSON document using a JSON schema:*
+`ujson-tool verify --schema schema.json document.json`
 
 
 
