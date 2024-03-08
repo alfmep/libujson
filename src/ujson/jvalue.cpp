@@ -163,20 +163,6 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
-    // Functor to compare a string with the key in a json_pair object
-    // when searching for an entry in a json object.
-    class json_pair_key_cmp_t {
-    public:
-        json_pair_key_cmp_t (const std::string& k) : key(k) {}
-        bool operator() (json_pair& entry) {
-            return entry.first == key;
-        }
-    private:
-        const std::string& key;
-    };
-
-
-    //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue::jvalue ()
         : jtype {j_null}
