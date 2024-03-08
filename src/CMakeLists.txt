@@ -36,17 +36,18 @@ set_target_properties (ujson PROPERTIES
 #
 if (GMPXX_FOUND)
     target_include_directories (ujson
-        PUBLIC
+        PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-        INTERFACE
-        $<INSTALL_INTERFACE:include>
+        PUBLIC
         ${GMPXX_INCLUDE_DIRS}
         ${GMP_INCLUDE_DIRS}
+        INTERFACE
+        $<INSTALL_INTERFACE:include>
         )
 else()
     target_include_directories (ujson
-        PUBLIC
+        PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         INTERFACE
@@ -74,13 +75,11 @@ configure_file (
 #
 if (GMPXX_FOUND)
     target_link_libraries (ujson
-        PRIVATE
+        PUBLIC
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES}
         INTERFACE
         ujson
-        ${GMPXX_LIBRARIES}
-        ${GMP_LIBRARIES}
         )
 endif()
 

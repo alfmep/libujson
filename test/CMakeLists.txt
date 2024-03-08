@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -20,6 +20,11 @@ cmake_minimum_required (VERSION 3.22)
 
 
 link_libraries (ujson)
+
+include_directories (
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../src>
+)
 
 
 #
