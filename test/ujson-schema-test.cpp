@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -202,9 +202,9 @@ int main (int argc, char* argv[])
         auto ou = s.validate (instance);
 
         if (isatty(fileno(stdout)))
-            cout << ou.describe(uj::fmt_pretty | uj::fmt_sep_elements | uj::fmt_color) << endl;
+            cout << ou.describe(uj::fmt_pretty | uj::fmt_color) << endl;
         else
-            cout << ou.describe(uj::fmt_pretty | uj::fmt_sep_elements) << endl;
+            cout << ou.describe(uj::fmt_pretty) << endl;
 
         //return ou["valid"] == true ? 0 : 1;
         return 0;

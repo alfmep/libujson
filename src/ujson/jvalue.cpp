@@ -1086,7 +1086,7 @@ namespace ujson {
         desc_format_t fmt;
         if (pretty) {
             fmt = fmt_pretty;
-            fmt |= array_items_on_same_line ? fmt_none : fmt_sep_elements;
+            fmt |= array_items_on_same_line ? fmt_compact_array : fmt_none;
             fmt |= sorted_properties ? fmt_sorted : fmt_none;
             fmt |= escape_slash ? fmt_escape_slash: fmt_none;
             fmt |= relaxed_mode ? fmt_relaxed : fmt_none;
@@ -1196,7 +1196,8 @@ namespace ujson {
 
         auto& members = *v.jobj;
 
-        bool one_liner = members.size()==1 && members.front().second.is_container()==false;
+        bool one_liner = members.size()==1 &&
+            (members.front().second.is_container()==false || members.front().second.size()==0);
 
         if (!members.empty()) {
             auto i = (fmt & fmt_sorted) ? members.sbegin() : members.begin();
@@ -1222,9 +1223,7 @@ namespace ujson {
                 else
                     ss << ',';
                 if (fmt & fmt_pretty) {
-                    if (one_liner)
-                        ss << ' ';
-                    else
+                    if (!one_liner)
                         put_indent (ss, fmt, indent_depth+1); //ss << std::endl << indent;
                 }
 
@@ -1246,9 +1245,7 @@ namespace ujson {
             }
         }
         if ((fmt & fmt_pretty) && !first) {
-            if (one_liner)
-                ss << ' ';
-            else
+            if (!one_liner)
                 put_indent (ss, fmt, indent_depth); //ss << std::endl << indent;
         }
         if ((fmt & fmt_color) && HAS_COLOR)
@@ -1274,13 +1271,15 @@ namespace ujson {
         }
 
         unsigned next_indent_depth = indent_depth;
-        if (fmt & fmt_sep_elements)
+        bool same_line = fmt & fmt_compact_array;
+
+        if (elements.size()==1 &&
+            (elements[0].is_container()==false || elements[0].size()==0))
+        {
+            same_line = true;
+        }
+        if (!same_line)
             ++next_indent_depth;
-        /*
-        bool one_liner = elements.size()==1 && (!elements[0].is_container() ||  elements[0].size()<=1);
-        if (one_liner)
-            fmt |= fmt_same_line; //array_items_on_same_line = true;
-        */
 
         if ((fmt & fmt_color) && HAS_COLOR)
             ss << array_color << '[' << color_normal;
@@ -1294,18 +1293,18 @@ namespace ujson {
             if (!first)
                 ss << ',';
             if ((fmt & fmt_pretty)) {
-                if (fmt & fmt_sep_elements) {
-                    put_indent (ss, fmt, next_indent_depth);
-                }else{
+                if (fmt & same_line) {
                     if (!first)
                         ss << ' ';
+                }else{
+                    put_indent (ss, fmt, next_indent_depth);
                 }
             }
             first = false;
             e.describe (ss, fmt, next_indent_depth);
         }
 
-        if ((fmt & fmt_pretty) && (fmt & fmt_sep_elements))
+        if ((fmt & fmt_pretty) && !(fmt & same_line))
             put_indent (ss, fmt, indent_depth);
         if ((fmt & fmt_color) && HAS_COLOR)
             ss << array_color << ']' << color_normal;

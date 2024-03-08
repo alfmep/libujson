@@ -67,10 +67,8 @@ namespace ujson {
         fmt_pretty       = 0x01,
 
         /**
-         * If set, each array element is printed on a separate line.<br/>
-         * If not set, all array elements are printed on one line
-         * (any object in the array will still be printed
-         * with each attribute indented on a separate line).<br/>
+         * This flag is deprecated and ignored.
+         * It will be removed in future versions.
          */
         fmt_sep_elements = 0x02,
 
@@ -108,7 +106,13 @@ namespace ujson {
          */
         fmt_relaxed      = 0x40,
 
-        fmt_mask         = 0x7f,
+        /**
+         * If set, print all array items on the same line.
+         * Note that objects in the array may still be split on multiple lines.
+         */
+        fmt_compact_array= 0x80,
+
+        fmt_mask         = 0xff,
     };
     /**  Bitwise OR (desc_format_t | desc_format_t). */
     inline desc_format_t operator| (const desc_format_t& lhs, const desc_format_t& rhs) {
