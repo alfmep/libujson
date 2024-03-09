@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -492,6 +492,8 @@ pair:           STRING COLON value
                 parse_state.pop ();
                 if (!parse_state.empty() && parse_state.top()==ps_elements)
                     parse_elements_tokens (token);
+                else
+                    error (jparser::err::misplaced_right_bracket, token.row, token.col);
             }
             break;
 
