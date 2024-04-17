@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -51,6 +51,7 @@ namespace ujson {
             expected_separator_or_right_bracket,       /**< Expected a ',' or ']' token. */
             expected_obj_member_name,                  /**< Expected an object member name. */
             expected_colon,                            /**< Expected a ':' token. */
+            duplicate_obj_member,                      /**< Duplicate object member name found. */
             unterminated_array,                        /**< Unterminated array. */
             unterminated_object,                       /**< Unterminated object. */
             unexpected_character,                      /**< Unexpected character. */

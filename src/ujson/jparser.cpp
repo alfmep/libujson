@@ -115,6 +115,9 @@ namespace ujson {
         case ujson::jparser::err::expected_colon:
             return "Expected ':'";
 
+        case ujson::jparser::err::duplicate_obj_member:
+            return "Duplicate object member name found.";
+
         case ujson::jparser::err::unterminated_array:
             return "Unterminated array";
 
@@ -266,16 +269,20 @@ namespace ujson {
 
         struct obj_member_t {
             obj_member_t ()
-                : has_name (false),
+                : row (0),
+                  col (0),
+                  has_name (false),
                   has_colon (false)
                 {
                 }
             void reset () {
+                row = col = 0;
                 has_name = false;
                 has_colon = false;
             }
             std::string str;
-            //jvalue value;
+            unsigned row;
+            unsigned col;
             bool has_name;
             bool has_colon;
         };
@@ -604,6 +611,8 @@ pair:           STRING COLON value
                 try {
                     parse_pairs.top().str = unescape (token.data);
                     parse_pairs.top().has_name = true;
+                    parse_pairs.top().row = token.row;
+                    parse_pairs.top().col = token.col;
                 }
                 catch (...) {
                     error (jparser::err::invalid_string, token.row, token.col);
@@ -632,6 +641,14 @@ pair:           STRING COLON value
         else {
             // We have a key-value pair
             auto& obj = parse_objects.top().obj ();
+            if (allow_duplicates == false) {
+                if (parse_objects.top().has(parse_pairs.top().str)) {
+                    error (jparser::err::duplicate_obj_member,
+                           parse_pairs.top().row,
+                           parse_pairs.top().col);
+                    return;
+                }
+            }
             obj.emplace_back (std::move(parse_pairs.top().str),
                               std::move(parse_values.top()[0]));
             parse_values.pop ();
@@ -906,7 +923,7 @@ pair:           STRING COLON value
                                 bool strict_mode,
                                 bool allow_duplicates_in_obj)
     {
-        return CTX->parse_file (f, strict_mode/*, allow_duplicates_in_obj*/);
+        return CTX->parse_file (f, strict_mode, allow_duplicates_in_obj);
     }
 
 
@@ -916,7 +933,7 @@ pair:           STRING COLON value
                                   bool strict_mode,
                                   bool allow_duplicates_in_obj)
     {
-        return CTX->parse (str, strict_mode/*, allow_duplicates_in_obj*/);
+        return CTX->parse (str, strict_mode, allow_duplicates_in_obj);
     }
 
 
@@ -927,7 +944,7 @@ pair:           STRING COLON value
                                   bool strict_mode,
                                   bool allow_duplicates_in_obj)
     {
-        return CTX->parse (buf, length, strict_mode/*, allow_duplicates_in_obj*/);
+        return CTX->parse (buf, length, strict_mode, allow_duplicates_in_obj);
     }
 
 
