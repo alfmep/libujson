@@ -42,11 +42,13 @@ struct appargs_t {
     std::vector<string> files;
     std::vector<string> schema_files;
     bool strict;
+    bool allow_duplicates;
     bool quiet;
     bool verbose;
 
     appargs_t() {
         strict = false;
+        allow_duplicates = true;
         quiet = false;
         verbose = false;
     }
@@ -71,6 +73,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "                              can be referenced by the main and other schema files." << endl
         << "  -d, --verbose               Verbose mode. Print verbose schema validation output." << endl
         << "  -s, --strict                Parse JSON documents in strict mode." << endl
+        << "  -n, --no-duplicates         Don't allow objects with duplicate member names." << endl
         << "  -v, --version               Print version and exit." << endl
         << "  -h, --help                  Print this help message and exit." << endl
         << endl;
@@ -83,13 +86,14 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        { 'q', "quiet",   opt_t::none, 0},
-        { 'c', "schema",  opt_t::required, 0},
-        { 'd', "verbose", opt_t::none, 0},
-        { 'r', "relaxed", opt_t::none, 0},
-        { 's', "strict",  opt_t::none, 0},
-        { 'v', "version", opt_t::none, 0},
-        { 'h', "help",    opt_t::none, 0},
+        { 'q', "quiet",         opt_t::none, 0},
+        { 'c', "schema",        opt_t::required, 0},
+        { 'd', "verbose",       opt_t::none, 0},
+        { 'r', "relaxed",       opt_t::none, 0},
+        { 's', "strict",        opt_t::none, 0},
+        { 'n', "no-duplicates", opt_t::none, 0},
+        { 'v', "version",       opt_t::none, 0},
+        { 'h', "help",          opt_t::none, 0},
     };
 
     option_parser opt (argc, argv);
@@ -109,6 +113,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.strict = true;
+            break;
+        case 'n':
+            args.allow_duplicates = false;
             break;
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
@@ -139,7 +146,7 @@ static int verify_document (const std::string& filename,
     std::string log_filename = filename.empty() ? "JSON document" : filename;
 
     // Parse file and check result
-    auto instance = parser.parse_file (filename, args.strict);
+    auto instance = parser.parse_file (filename, args.strict, args.allow_duplicates);
     if (!instance.valid()) {
         if (!args.quiet) {
             auto err = parser.get_error ();
@@ -212,7 +219,7 @@ static bool load_schema (ujson::jparser& parser, ujson::jschema& schema, const a
     bool use_schema = false;
 
     for (auto& schema_file : args.schema_files) {
-        auto schema_def = parser.parse_file (schema_file, args.strict);
+        auto schema_def = parser.parse_file (schema_file, args.strict, args.allow_duplicates);
         if (schema_def.invalid()) {
             auto err = parser.get_error ();
             cerr << "Error: Parse error in schema file '" << schema_file << "' at "

@@ -37,12 +37,14 @@ struct appargs_t {
     ujson::jvalue_type jtype;
     ujson::desc_format_t fmt;
     bool strict;
+    bool allow_duplicates;
     bool unescape;
 
     appargs_t () {
         jtype = ujson::j_invalid;
         fmt = ujson::fmt_pretty;
         strict = false;
+        allow_duplicates = true;
         unescape = false;
     }
 };
@@ -62,18 +64,19 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << prog_name << " exits with code 1." << endl;
     out << endl;
     out << "Options:" <<endl;
-    out << "  -c, --compact    If the JSON value is an object or an array, print it without whitespace." << endl;
-    out << "  -t, --type=TYPE  Require the value to be of a specific type." << endl;
-    out << "                   TYPE is one of the following: boolean, number, string, null, object, or array." << endl;
-    out << "                   If the value is of a different type, exit with code 1." << endl;
-    out << "  -u, --unescape   If the resulting value is a JSON string," << endl;
-    out << "                   print it as an unescaped string witout enclosing double quotes." << endl;
-    out << "  -s, --strict     Parse the JSON document in strict mode." << endl;
+    out << "  -c, --compact        If the JSON value is an object or an array, print it without whitespace." << endl;
+    out << "  -t, --type=TYPE      Require the value to be of a specific type." << endl;
+    out << "                       TYPE is one of the following: boolean, number, string, null, object, or array." << endl;
+    out << "                       If the value is of a different type, exit with code 1." << endl;
+    out << "  -u, --unescape       If the resulting value is a JSON string," << endl;
+    out << "                       print it as an unescaped string witout enclosing double quotes." << endl;
+    out << "  -s, --strict         Parse the JSON document in strict mode." << endl;
+    out << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
-    out << "  -o, --color      Print in color if the output is to a tty." << endl;
+    out << "  -o, --color          Print in color if the output is to a tty." << endl;
 #endif
-    out << "  -v, --version    Print version and exit." << endl;
-    out << "  -h, --help       Print this help message and exit." << endl;
+    out << "  -v, --version        Print version and exit." << endl;
+    out << "  -h, --help           Print this help message and exit." << endl;
     out << endl;
     exit (exit_code);
 }
@@ -84,16 +87,17 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        {'c', "compact",  opt_t::none,     0},
-        {'t', "type",     opt_t::required, 0},
-        {'u', "unescape", opt_t::none,     0},
-        {'r', "relaxed",  opt_t::none,     0},
-        {'s', "strict",   opt_t::none,     0},
+        {'c', "compact",       opt_t::none,     0},
+        {'t', "type",          opt_t::required, 0},
+        {'u', "unescape",      opt_t::none,     0},
+        {'r', "relaxed",       opt_t::none,     0},
+        {'s', "strict",        opt_t::none,     0},
+        {'n', "no-duplicates", opt_t::none,     0},
 #if (UJSON_HAS_CONSOLE_COLOR)
-        {'o', "color",    opt_t::none, 0},
+        {'o', "color",         opt_t::none,     0},
 #endif
-        {'v', "version",  opt_t::none,     0},
-        {'h', "help",     opt_t::none,     0},
+        {'v', "version",       opt_t::none,     0},
+        {'h', "help",          opt_t::none,     0},
     };
 
     option_parser opt (argc, argv);
@@ -117,6 +121,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.strict = true;
+            break;
+        case 'n':
+            args.allow_duplicates = false;
             break;
 #if (UJSON_HAS_CONSOLE_COLOR)
         case 'o':
@@ -189,7 +196,7 @@ int main (int argc, char* argv[])
     // Parse json document
     //
     ujson::jparser parser;
-    auto instance = parser.parse_string (json_desc, opt.strict);
+    auto instance = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
     if (!instance.valid()) {
         cerr << "Parse error: " << parser.error() << endl;
         exit (1);

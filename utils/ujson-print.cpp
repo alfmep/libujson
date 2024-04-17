@@ -34,11 +34,13 @@ static constexpr const char* prog_name = "ujson-print";
 struct appargs_t {
     ujson::desc_format_t fmt;
     bool parse_strict;
+    bool allow_duplicates;
     string filename;
 
     appargs_t () {
         fmt = fmt::fmt_pretty;
         parse_strict = false;
+        allow_duplicates = true;
     }
 };
 
@@ -65,6 +67,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                        Object member names are printed without enclosing double quotes" << endl;
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
     out << "  -s, --strict          Parse the JSON document in strict mode." << endl;
+    out << "  -n, --no-duplicates   Don't allow objects with duplicate member names." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color           Print in color if the output is to a tty." << endl;
 #endif
@@ -87,6 +90,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'b', "tabs",         opt_t::none, 0},
         { 'r', "relaxed",      opt_t::none, 0},
         { 's', "strict",       opt_t::none, 0},
+        { 'n', "no-duplicates",opt_t::none, 0},
 #if (UJSON_HAS_CONSOLE_COLOR)
         { 'o', "color",        opt_t::none, 0},
 #endif
@@ -117,6 +121,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.parse_strict = true;
+            break;
+        case 'n':
+            args.allow_duplicates = false;
             break;
 #if (UJSON_HAS_CONSOLE_COLOR)
         case 'o':
@@ -170,7 +177,7 @@ int main (int argc, char* argv[])
     // Parse json file
     //
     ujson::jparser parser;
-    auto instance = parser.parse_string (json_desc, opt.parse_strict);
+    auto instance = parser.parse_string (json_desc, opt.parse_strict, opt.allow_duplicates);
     if (!instance.valid()) {
         auto err = parser.get_error ();
         cerr << "Parse error at " << (err.row+1) << ", " << err.col

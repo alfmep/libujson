@@ -23,6 +23,9 @@ All commands, except 'patch', reads a JSON document from standard input if no fi
 .B -s, --strict
 Parse JSON documents in strict mode.
 .TP
+.B -n, --no-duplicates
+Don't allow objects with duplicate member names.
+.TP
 .B -p, --pointer=POINTER
 Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
 .TP

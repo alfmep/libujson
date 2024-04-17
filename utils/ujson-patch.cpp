@@ -34,6 +34,7 @@ static constexpr const char* prog_name = "ujson-patch";
 struct appargs_t {
     ujson::desc_format_t fmt;
     bool strict;
+    bool allow_duplicates;
     bool quiet;
     std::string document_filename;
     std::string patch_filename;
@@ -41,6 +42,7 @@ struct appargs_t {
     appargs_t () {
         fmt = ujson::fmt_pretty;
         strict = false;
+        allow_duplicates = true;
         quiet = false;
     }
 };
@@ -61,15 +63,18 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "If one or more patches fails, error info is written to standard error." << endl;
     out << endl;
     out << "Options:" <<endl;
-    out << "  -c, --compact    Print the resulting JSON document without whitespaces." << endl;
-    out << "  -s, --strict     Parse JSON documents in strict mode." << endl;
-    out << "  -q, --quiet      No errors are written to standard error. On errors, or failed patch test operations," << endl;
-    out << "                   the application exits with an error code. If the patch definition only contains" << endl;
-    out << "                   patch operations of type 'test', nothing is written to standard output." << endl;
-    out << "                   If the patch definition contains operations other than 'test', the resulting JSON" << endl;
-    out << "                   document is still printed to standard output." << endl;
-    out << "  -v, --version    Print version and exit." << endl;
-    out << "  -h, --help       Print this help message and exit." << endl;
+    out << "  -c, --compact        Print the resulting JSON document without whitespaces." << endl;
+    out << "  -s, --strict         Parse JSON documents in strict mode." << endl;
+    out << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl;
+    out << "  -q, --quiet          No errors are written to standard error. On errors," << endl;
+    out << "                       or failed patch test operations, the application" << endl;
+    out << "                       exits with an error code. If the patch definition only" << endl;
+    out << "                       contains patch operations of type 'test', nothing is" << endl;
+    out << "                       written to standard output. If the patch definition" << endl;
+    out << "                       contains operations other than 'test', the resulting" << endl;
+    out << "                       JSON document is still printed to standard output." << endl;
+    out << "  -v, --version        Print version and exit." << endl;
+    out << "  -h, --help           Print this help message and exit." << endl;
     out << endl;
     out << "" << endl;
     exit (exit_code);
@@ -81,12 +86,13 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        {'c', "compact",  opt_t::none, 0},
-        {'r', "relaxed",  opt_t::none, 0},
-        {'s', "strict",   opt_t::none, 0},
-        {'q', "quiet",    opt_t::none, 0},
-        {'v', "version",  opt_t::none, 0},
-        {'h', "help",     opt_t::none, 0},
+        {'c', "compact",       opt_t::none, 0},
+        {'r', "relaxed",       opt_t::none, 0},
+        {'s', "strict",        opt_t::none, 0},
+        {'n', "no-duplicates", opt_t::none, 0},
+        {'q', "quiet",         opt_t::none, 0},
+        {'v', "version",       opt_t::none, 0},
+        {'h', "help",          opt_t::none, 0},
     };
 
     option_parser opt (argc, argv);
@@ -100,6 +106,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.strict = true;
+            break;
+        case 'n':
+            args.allow_duplicates = false;
             break;
         case 'q':
             args.quiet = true;
@@ -153,7 +162,7 @@ int main (int argc, char* argv[])
     // Parse the JSON document
     //
     ujson::jparser parser;
-    auto instance = parser.parse_file (opt.document_filename, opt.strict);
+    auto instance = parser.parse_file (opt.document_filename, opt.strict, opt.allow_duplicates);
     if (!instance.valid()) {
         if (!opt.quiet)
             cerr << "Parse error, " << opt.document_filename << ": " << parser.error() << endl;
@@ -166,9 +175,9 @@ int main (int argc, char* argv[])
     if (opt.patch_filename.empty()) {
         ifstream ifs;
         string json_desc ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
-        patch = parser.parse_string (json_desc, opt.strict);
+        patch = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
     }else{
-        patch = parser.parse_file (opt.patch_filename, opt.strict);
+        patch = parser.parse_file (opt.patch_filename, opt.strict, opt.allow_duplicates);
     }
     if (!patch.valid()) {
         if (!opt.quiet) {

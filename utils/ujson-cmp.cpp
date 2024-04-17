@@ -33,11 +33,13 @@ static constexpr const char* prog_name = "ujson-cmp";
 
 struct appargs_t {
     bool strict;
+    bool allow_duplicates;
     bool quiet;
     string filename[2];
 
     appargs_t () {
         strict = false;
+        allow_duplicates = true;
         quiet = false;
     }
 };
@@ -53,10 +55,11 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << prog_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
         << endl
         << "Options:" <<endl
-        << "  -s, --strict     Parse JSON documents in strict mode." << endl
-        << "  -q, --quiet      Silent mode, don't write anything to standard output." << endl
-        << "  -v, --version    Print version and exit." << endl
-        << "  -h, --help       Print this help message and exit." << endl
+        << "  -s, --strict         Parse JSON documents in strict mode." << endl
+        << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl
+        << "  -q, --quiet          Silent mode, don't write anything to standard output." << endl
+        << "  -v, --version        Print version and exit." << endl
+        << "  -h, --help           Print this help message and exit." << endl
         << endl;
         exit (exit_code);
 }
@@ -67,11 +70,12 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        {'r', "relaxed", opt_t::none, 0},
-        {'s', "strict",  opt_t::none, 0},
-        {'q', "quiet",   opt_t::none, 0},
-        {'v', "version", opt_t::none, 0},
-        {'h', "help",    opt_t::none, 0},
+        {'r', "relaxed",       opt_t::none, 0},
+        {'s', "strict",        opt_t::none, 0},
+        {'n', "no-duplicates", opt_t::none, 0},
+        {'q', "quiet",         opt_t::none, 0},
+        {'v', "version",       opt_t::none, 0},
+        {'h', "help",          opt_t::none, 0},
     };
 
     option_parser opt (argc, argv);
@@ -82,6 +86,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 's':
             args.strict = true;
+            break;
+        case 'n':
+            args.allow_duplicates = false;
             break;
         case 'q':
             args.quiet = true;
@@ -149,7 +156,7 @@ int main (int argc, char* argv[])
     ujson::jparser parser;
     ujson::jvalue instance[2];
     for (auto i=0; i<2; ++i) {
-        instance[i] = parser.parse_string (json_desc[i], opt.strict);
+        instance[i] = parser.parse_string (json_desc[i], opt.strict, opt.allow_duplicates);
         if (!instance[i].valid()) {
             if (!opt.quiet)
                 cerr << "Error parsing " << opt.filename[i] << ": " << parser.error() << endl;

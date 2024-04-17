@@ -36,9 +36,15 @@ Verbose mode. Print verbose schema validation output.
 .TP
 .B -s, --strict
 Parse JSON documents in strict mode.
+
+.TP
+.B -n, --no-duplicates
+Don't allow objects with duplicate member names.
+
 .TP
 .B -v, --version
 Print version and exit.
+
 .TP
 .B -h, --help
 Print help and exit.

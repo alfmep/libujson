@@ -41,6 +41,9 @@ Print the JSON document in relaxed form. Object member names are printed without
 .B -s, --strict
 Parse the JSON document in strict mode.
 .TP
+.B -n, --no-duplicates
+Don't allow objects with duplicate member names.
+.TP
 .B -o, --color
 Print in color if the output is to a tty.
 .TP

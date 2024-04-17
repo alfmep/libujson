@@ -46,6 +46,7 @@ struct appargs_t {
     ujson::jvalue_type required_type;
     ujson::desc_format_t fmt;
     bool strict_parsing;
+    bool allow_duplicates;
     bool print_unescaped_string;
     bool members_escape;
     bool members_as_json_array;
@@ -56,6 +57,7 @@ struct appargs_t {
         required_type = ujson::j_invalid;
         fmt = fmt::fmt_pretty;
         strict_parsing = false;
+        allow_duplicates = true;
         print_unescaped_string = false;
         members_escape = false;
         members_as_json_array = false;
@@ -76,6 +78,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Common options:" << endl;
     out << "  -s, --strict           Parse JSON documents in strict mode." << endl;
+    out << "  -n, --no-duplicates    Don't allow objects with duplicate member names." << endl;
     out << "  -p, --pointer=POINTER  Use the JSON instance pointed to by the JSON pointer" << endl;
     out << "                         instead of the root of the input JSON document." << endl;
     out << "  -c, --compact          Any Resulting JSON output is printed without whitespaces." << endl;
@@ -181,6 +184,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     optlist_t options = {
         { 'r',  "relaxed",        opt_t::none,     0},
         { 's',  "strict",         opt_t::none,     0},
+        { 'n',  "no-duplicates",  opt_t::none,     0},
         { 'p',  "pointer",        opt_t::required, 0},
         { 'c',  "compact",        opt_t::none,     0},
         { '\0', "sort",           opt_t::none,     opt_id_sort},
@@ -210,6 +214,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
         case 's':
             args.strict_parsing = true;
+            break;
+
+        case 'n':
+            args.allow_duplicates = false;
             break;
 
         case 'p':
@@ -318,11 +326,12 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 //------------------------------------------------------------------------------
 static ujson::jvalue get_instance (const string& filename,
                                    const bool strict_parsing,
+                                   const bool allow_duplicates,
                                    const ujson::jpointer& ptr,
                                    const bool quiet=false)
 {
     ujson::jparser parser;
-    ujson::jvalue document = parser.parse_file (filename, strict_parsing);
+    ujson::jvalue document = parser.parse_file (filename, strict_parsing, allow_duplicates);
     if (document.invalid()) {
         if (!quiet)
             cerr << "Parse error: " << parser.error() << endl;
@@ -351,6 +360,7 @@ static int cmd_view (appargs_t& opt)
     }
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
+                                  opt.allow_duplicates,
                                   opt.ptr);
     if (instance.invalid())
         return 1;
@@ -383,7 +393,8 @@ static int cmd_verify (appargs_t& opt)
     int retval = 0;
     ujson::jparser parser;
     ujson::jvalue document = parser.parse_file (opt.args[0],
-                                                opt.strict_parsing);
+                                                opt.strict_parsing,
+                                                opt.allow_duplicates);
     if (document.invalid()) {
         if (!opt.quiet)
             cerr << "Parse error: " << parser.error() << endl;
@@ -406,7 +417,9 @@ static int cmd_verify (appargs_t& opt)
         //
         bool got_root_schema = false;
         for (auto& schema_file : opt.schema_files) {
-            auto instance = parser.parse_file (schema_file, opt.strict_parsing);
+            auto instance = parser.parse_file (schema_file,
+                                               opt.strict_parsing,
+                                               opt.allow_duplicates);
             if (instance.invalid()) {
                 if (!opt.quiet) {
                     cerr << "Error parsing schema file '" << schema_file
@@ -465,6 +478,7 @@ static int cmd_type (appargs_t& opt)
     }
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
+                                  opt.allow_duplicates,
                                   opt.ptr,
                                   opt.quiet);
     if (instance.invalid())
@@ -499,6 +513,7 @@ static int cmd_size (appargs_t& opt)
 
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
+                                  opt.allow_duplicates,
                                   opt.ptr);
     if (instance.is_container() == false) {
         cerr << "Error: Instance is not a JSON array or a JSON object" << endl;
@@ -523,6 +538,7 @@ static int cmd_members (appargs_t& opt)
 
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
+                                  opt.allow_duplicates,
                                   opt.ptr);
     if (instance.is_object() == false) {
         cerr << "Error: Instance is not a JSON object" << endl;
@@ -562,6 +578,7 @@ static int cmd_patch (appargs_t& opt)
     }
     auto instance = get_instance (opt.args[0],
                                   opt.strict_parsing,
+                                  opt.allow_duplicates,
                                   opt.ptr);
     if (instance.invalid())
         return 1;
@@ -571,7 +588,7 @@ static int cmd_patch (appargs_t& opt)
     if (opt.args.size() < 2)
         opt.args.emplace_back ("");
     ujson::jparser parser;
-    ujson::jvalue patch = parser.parse_file (opt.args[1], opt.strict_parsing);
+    ujson::jvalue patch = parser.parse_file (opt.args[1], opt.strict_parsing, opt.allow_duplicates);
     if (patch.invalid()) {
         cerr << "Patch definition parse error: " << parser.error() << endl;
         return 1;

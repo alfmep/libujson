@@ -21,6 +21,9 @@ ujson-cmp parses two JSON documents and compares the instances for equality. If 
 .B -s, --strict
 Parse JSON documents in strict mode.
 .TP
+.B -n, --no-duplicates
+Don't allow objects with duplicate member names.
+.TP
 .B -q, --quiet
 Silent mode, don't write anything to standard output.
 .TP

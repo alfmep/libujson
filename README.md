@@ -122,6 +122,8 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 **-s, --strict**	Parse JSON documents in strict mode.
 
+**-n, --no-duplicates**	Don't allow objects with duplicate member names.
+
 **-v, --version**	Print version and exit.
 
 **-h, --help**		Print help and exit.
@@ -150,6 +152,8 @@ ujson-print parses a JSON document and prints it to standard output. By default,
 
 **-s, --strict** Parse the JSON document in strict mode.
 
+**-n, --no-duplicates**	Don't allow objects with duplicate member names.
+
 **-o, --color** Print in color if the output is to a tty.
 
 **-v, --version** Print version and exit.
@@ -174,6 +178,8 @@ ujson-get prints value in a JSON document pointed to by a JSON pointer. If the J
 
 **-s, --strict** Parse the JSON document in strict mode.
 
+**-n, --no-duplicates**	Don't allow objects with duplicate member names.
+
 **-o, --color** Print in color if the output is to a tty.
 
 **-v, --version** Print version and exit.
@@ -195,6 +201,8 @@ If no patch file is given, the JSON patch definition is read from standard input
 
 **-s, --strict** Parse JSON input files in strict mode.
 
+**-n, --no-duplicates**	Don't allow objects with duplicate member names.
+
 **-q, --quiet** No errors are written to standard error. On errors, or failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 
 **-v, --version** Print version and exit.
@@ -214,6 +222,8 @@ All commands, except 'patch', reads a JSON document from standard input if no fi
 **Common options:**
 
 **-s, --strict** Parse JSON documents in strict mode.
+
+**-n, --no-duplicates**	Don't allow objects with duplicate member names.
 
 **-p, --pointer=POINTER** Use the JSON instance pointed to by the JSON pointer instead of the root of the input JSON document.
 

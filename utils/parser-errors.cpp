@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -82,6 +82,9 @@ const std::string parser_err_to_str (ujson::jparser::err error)
 
     case ujson::jparser::err::expected_colon:
         return "expected_colon";
+
+    case ujson::jparser::err::duplicate_obj_member:
+        return "Duplicate object member name found.";
 
     case ujson::jparser::err::unterminated_array:
         return "unterminated_array";

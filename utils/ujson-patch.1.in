@@ -29,6 +29,9 @@ Print the resulting JSON document without whitespaces.
 .B -s, --strict
 Parse JSON input files in strict mode.
 .TP
+.B -n, --no-duplicates
+Don't allow objects with duplicate member names.
+.TP
 .B -q, --quiet
 No errors are written to standard error. On errors, of failed patch test operations, the application exits with code 1. If the patch definition only contains patch operations of type 'test', nothing is written to standard output. If the patch definition contains operations other than 'test', the resulting JSON document is still printed to standard output.
 .TP
