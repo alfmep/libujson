@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <string_view>
 #include <string>
+#include <mutex>
 #include <stack>
 #include <list>
 #include <set>
@@ -175,6 +176,8 @@ namespace ujson {
         const unsigned error_col () const {
             return err_col;
         }
+
+        std::mutex mutex;
 
     private:
         unsigned max_depth;
@@ -989,6 +992,7 @@ pair:           STRING COLON value
                           unsigned max_array_size,
                           unsigned max_object_size)
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         CTX->limits (max_depth, max_array_size, max_object_size);
     }
 
@@ -999,6 +1003,7 @@ pair:           STRING COLON value
                                 bool strict_mode,
                                 bool allow_duplicates_in_obj)
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         return CTX->parse_file (f, strict_mode, allow_duplicates_in_obj);
     }
 
@@ -1009,6 +1014,7 @@ pair:           STRING COLON value
                                   bool strict_mode,
                                   bool allow_duplicates_in_obj)
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         return CTX->parse (str, strict_mode, allow_duplicates_in_obj);
     }
 
@@ -1020,6 +1026,7 @@ pair:           STRING COLON value
                                   bool strict_mode,
                                   bool allow_duplicates_in_obj)
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         return CTX->parse (buf, length, strict_mode, allow_duplicates_in_obj);
     }
 
@@ -1028,6 +1035,7 @@ pair:           STRING COLON value
     //--------------------------------------------------------------------------
     const jparser::error_t jparser::get_error () const
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         error_t err;
         err.code = CTX->error_code ();
         err.row  = CTX->error_row ();
@@ -1040,6 +1048,7 @@ pair:           STRING COLON value
     //--------------------------------------------------------------------------
     const std::string& jparser::error () const
     {
+        std::lock_guard<std::mutex> lock (CTX->mutex);
         static std::string err_str;
         auto error_code = CTX->error_code ();
 
