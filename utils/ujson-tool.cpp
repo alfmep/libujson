@@ -32,8 +32,11 @@ using namespace std;
 using fmt = ujson::desc_format_t;
 
 static constexpr const char* prog_name = "ujson-tool";
-static constexpr const int opt_id_schema = 1000;
-static constexpr const int opt_id_sort   = 1001;
+static constexpr const int opt_id_schema    = 1000;
+static constexpr const int opt_id_sort      = 1001;
+static constexpr const int opt_id_max_depth = 1002;
+static constexpr const int opt_id_max_asize = 1003;
+static constexpr const int opt_id_max_osize = 1004;
 static const char* fmt_normal = "";
 static const char* fmt_bold = "";
 
@@ -52,6 +55,9 @@ struct appargs_t {
     bool members_as_json_array;
     bool quiet;
     bool debug;
+    unsigned max_depth;
+    unsigned max_asize;
+    unsigned max_osize;
 
     appargs_t () {
         required_type = ujson::j_invalid;
@@ -63,6 +69,9 @@ struct appargs_t {
         members_as_json_array = false;
         quiet = false;
         debug = false;
+        max_depth = 0;
+        max_asize = 0;
+        max_osize = 0;
     }
 };
 
@@ -89,6 +98,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -o, --color            Print resulting JSON in color if the output is to a tty." << endl;
 #endif
     out << "      --sort             Any Resulting JSON output is printed with object members sorted by name." << endl;
+    out << "      --max-depth=DEPTH  Set maximum nesting depth." << endl;
+    out << "      --max-asize=ITEMS  Set the maximum allowed number of elements in a single JSON array." << endl;
+    out << "      --max-osize=ITEMS  Set the maximum allowed number of members in a single JSON object." << endl;
     out << "  -v, --version          Print version and exit." << endl;
     out << "  -h, --help             Print this help message and exit." << endl;
     out << endl;
@@ -201,6 +213,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'd',  "debug",          opt_t::none,     0},
         { 'm',  "escape-members", opt_t::none,     0},
         { 'j',  "json-array",     opt_t::none,     0},
+        { '\0', "max-depth",      opt_t::required, opt_id_max_depth},
+        { '\0', "max-asize",      opt_t::required, opt_id_max_asize},
+        { '\0', "max-osize",      opt_t::required, opt_id_max_osize},
         { 'v',  "version",        opt_t::none,     0},
         { 'h',  "help",           opt_t::none,     0},
     };
@@ -283,6 +298,18 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.members_as_json_array = true;
             break;
 
+        case opt_id_max_depth:
+            args.max_depth = atoi (opt.optarg().c_str());
+            break;
+
+        case opt_id_max_asize:
+            args.max_asize = atoi (opt.optarg().c_str());
+            break;
+
+        case opt_id_max_osize:
+            args.max_osize = atoi (opt.optarg().c_str());
+            break;
+
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);
@@ -324,21 +351,19 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-static ujson::jvalue get_instance (const string& filename,
-                                   const bool strict_parsing,
-                                   const bool allow_duplicates,
-                                   const ujson::jpointer& ptr,
-                                   const bool quiet=false)
+static ujson::jvalue get_instance (appargs_t& opt, const bool quiet=false)
 {
-    ujson::jparser parser;
-    ujson::jvalue document = parser.parse_file (filename, strict_parsing, allow_duplicates);
+    ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
+    ujson::jvalue document = parser.parse_file (opt.args[0],
+                                                opt.strict_parsing,
+                                                opt.allow_duplicates);
     if (document.invalid()) {
         if (!quiet)
             cerr << "Parse error: " << parser.error() << endl;
         return ujson::jvalue (ujson::j_invalid);
     }
 
-    auto& instance = ujson::find_jvalue (document, ptr);
+    auto& instance = ujson::find_jvalue (document, opt.ptr);
     if (instance.invalid()) {
         if (!quiet)
             cerr << "Pointer error: No such item" << endl;
@@ -358,10 +383,7 @@ static int cmd_view (appargs_t& opt)
         cerr << "Error: Too many arguments" << endl;
         return 1;
     }
-    auto instance = get_instance (opt.args[0],
-                                  opt.strict_parsing,
-                                  opt.allow_duplicates,
-                                  opt.ptr);
+    auto instance = get_instance (opt);
     if (instance.invalid())
         return 1;
 
@@ -391,7 +413,7 @@ static int cmd_verify (appargs_t& opt)
     }
 
     int retval = 0;
-    ujson::jparser parser;
+    ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
     ujson::jvalue document = parser.parse_file (opt.args[0],
                                                 opt.strict_parsing,
                                                 opt.allow_duplicates);
@@ -476,11 +498,7 @@ static int cmd_type (appargs_t& opt)
         cerr << "Error: Too many arguments" << endl;
         return 1;
     }
-    auto instance = get_instance (opt.args[0],
-                                  opt.strict_parsing,
-                                  opt.allow_duplicates,
-                                  opt.ptr,
-                                  opt.quiet);
+    auto instance = get_instance (opt, opt.quiet);
     if (instance.invalid())
         return 1;
 
@@ -511,10 +529,7 @@ static int cmd_size (appargs_t& opt)
         return 1;
     }
 
-    auto instance = get_instance (opt.args[0],
-                                  opt.strict_parsing,
-                                  opt.allow_duplicates,
-                                  opt.ptr);
+    auto instance = get_instance (opt);
     if (instance.is_container() == false) {
         cerr << "Error: Instance is not a JSON array or a JSON object" << endl;
         return 1;
@@ -536,10 +551,7 @@ static int cmd_members (appargs_t& opt)
         return 1;
     }
 
-    auto instance = get_instance (opt.args[0],
-                                  opt.strict_parsing,
-                                  opt.allow_duplicates,
-                                  opt.ptr);
+    auto instance = get_instance (opt);
     if (instance.is_object() == false) {
         cerr << "Error: Instance is not a JSON object" << endl;
         return 1;
@@ -576,10 +588,7 @@ static int cmd_patch (appargs_t& opt)
         cerr << "Error: Missing input file" << endl;
         return 1;
     }
-    auto instance = get_instance (opt.args[0],
-                                  opt.strict_parsing,
-                                  opt.allow_duplicates,
-                                  opt.ptr);
+    auto instance = get_instance (opt);
     if (instance.invalid())
         return 1;
 
@@ -587,7 +596,7 @@ static int cmd_patch (appargs_t& opt)
     //
     if (opt.args.size() < 2)
         opt.args.emplace_back ("");
-    ujson::jparser parser;
+    ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
     ujson::jvalue patch = parser.parse_file (opt.args[1], opt.strict_parsing, opt.allow_duplicates);
     if (patch.invalid()) {
         cerr << "Patch definition parse error: " << parser.error() << endl;

@@ -124,6 +124,12 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 **-n, --no-duplicates**	Don't allow objects with duplicate member names.
 
+**--max-depth=DEPTH**   Set maximum nesting depth. Both objects and arrays increases the nesting depth. A value of 0 means no limit. Default is no limit.
+
+**--max-asize=ITEMS**   Set the maximum allowed number of elements in a single JSON array. A value of 0 means no limit. Default is no limit.
+
+**--max-osize=ITEMS**   Set the maximum allowed number of members in a single JSON object. A value of 0 means no limit. Default is no limit.
+
 **-v, --version**	Print version and exit.
 
 **-h, --help**		Print help and exit.
@@ -236,6 +242,12 @@ All commands, except 'patch', reads a JSON document from standard input if no fi
 **-o, --color** Print resulting JSON in color, if the output is to a tty.
 
 **--sort** Any Resulting JSON output is printed with object members sorted by name.
+
+**--max-depth=DEPTH**  Set maximum nesting depth.
+
+**--max-asize=ITEMS**  Set the maximum allowed number of elements in a single JSON array.
+
+**--max-osize=ITEMS**  Set the maximum allowed number of members in a single JSON object.
 
 **-v, --version** Print version and exit.
 

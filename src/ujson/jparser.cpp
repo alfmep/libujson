@@ -124,6 +124,15 @@ namespace ujson {
         case ujson::jparser::err::unterminated_object:
             return "Unterminated object";
 
+        case ujson::jparser::err::max_depth_exceeded:
+            return "Maximum nesting depth exceeded.";
+
+        case ujson::jparser::err::max_array_size_exceeded:
+            return "Maximum number of array items exceeded.";
+
+        case ujson::jparser::err::max_obj_size_exceeded:
+            return "Maximum number of object members exceeded.";
+
         default:
             return "(unkown error)";
         }
@@ -134,10 +143,17 @@ namespace ujson {
     class parser_t {
     public:
         parser_t () {
+            max_depth = 0;
+            max_array_size = 0;
+            max_object_size = 0;
             strict = true;
             allow_duplicates = true;
             reset ();
         }
+
+        void limits (unsigned max_depth_arg,
+                     unsigned max_array_size_arg,
+                     unsigned max_object_size_arg);
 
         jvalue parse (const char* buffer,
                       const unsigned buffer_size,
@@ -150,18 +166,6 @@ namespace ujson {
                            bool strict_parsing=false,
                            bool allow_duplicates_in_obj=true);
 
-        /*
-        const std::string& error () const {
-            return err_msg;
-        }
-        jparser::err_code_t error_code () const {
-            return err_code;
-        }
-        std::pair<unsigned, unsigned> error_pos () const {
-            return std::make_pair (err_row, err_col);
-        }
-        */
-        //void dump_tokens ();
         const jparser::err error_code () const {
             return err_code;
         }
@@ -173,6 +177,9 @@ namespace ujson {
         }
 
     private:
+        unsigned max_depth;
+        unsigned max_array_size;
+        unsigned max_object_size;
         unsigned row;
         unsigned col;
         unsigned err_row;
@@ -215,6 +222,7 @@ namespace ujson {
 
         jvalue token_to_number (const jtoken& token);
 
+        void on_parsed_value (const jtoken& token, jvalue&& value);
         jvalue parse_tokens ();
         jvalue post_parse_tokens (const jtoken* token);
         void parse_value_tokens (const jtoken& token);
@@ -223,6 +231,7 @@ namespace ujson {
         void parse_elements_tokens (const jtoken& token);
         void parse_object_tokens (const jtoken& token);
         void parse_members_tokens (const jtoken& token);
+        void on_object_member_name (const jtoken& token);
         void parse_pair_tokens (const jtoken& token);
 
         enum parse_state_t {
@@ -269,20 +278,15 @@ namespace ujson {
 
         struct obj_member_t {
             obj_member_t ()
-                : row (0),
-                  col (0),
-                  has_name (false),
+                : has_name (false),
                   has_colon (false)
                 {
                 }
             void reset () {
-                row = col = 0;
                 has_name = false;
                 has_colon = false;
             }
-            std::string str;
-            unsigned row;
-            unsigned col;
+            std::string name;
             bool has_name;
             bool has_colon;
         };
@@ -296,7 +300,7 @@ namespace ujson {
         // with either:
         //   The elements of the currently parsed JSON array.
         // or:
-        //   A single element of the currently parsed object member.
+        //   A single element of the currently parsed object member value.
         std::stack<json_array> parse_values;
 
         // The top of the stack contains the currently parsed object.
@@ -305,6 +309,12 @@ namespace ujson {
         // The top of the stack contains the state
         // of the currently parsed object member.
         std::stack<obj_member_t> parse_pairs;
+
+        // This is the currently parsed string value until
+        // the complete string is parsed.
+        // In relaxed mode, a string can be made up by
+        // multiple strings divided by whitespaces and comments.
+        std::string parsed_string;
 
 #if (PARSE_DEBUG)
         void dump_parse_stack_sizes () {
@@ -400,19 +410,30 @@ pair:           STRING COLON value
     }
 
 
+     //--------------------------------------------------------------------------
+     //--------------------------------------------------------------------------
+    void parser_t::limits (unsigned max_depth_arg,
+                           unsigned max_array_size_arg,
+                           unsigned max_object_size_arg)
+    {
+        max_depth = max_depth_arg;
+        max_array_size = max_array_size_arg;
+        max_object_size = max_object_size_arg;
+    }
+
+
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     bool parser_t::parse_str_value_tokens (const jtoken& token)
     {
         if (token.type != jtoken::tk_string) {
             parse_state.pop (); // pop ps_str_value
-            parse_state.pop (); // pop ps_value  // A string is a value
+            on_parsed_value (token, jvalue(std::move(parsed_string)));
             return false; // Token not consumed
         }
 
         try {
-            auto& value = parse_values.top().back ();
-            value.str().append (unescape(token.data));
+            parsed_string.append (unescape(token.data));
         }
         catch (...) {
             error (jparser::err::invalid_string, token.row, token.col);
@@ -471,6 +492,21 @@ pair:           STRING COLON value
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    void parser_t::on_parsed_value (const jtoken& token, jvalue&& value)
+    {
+        parse_values.top().emplace_back (std::forward<jvalue>(value));
+        parse_state.pop ();
+        if (max_array_size && !parse_state.empty() && parse_state.top()==ps_elements) {
+            if (parse_values.top().size() > max_array_size) {
+                error (jparser::err::max_array_size_exceeded,
+                       token.row,
+                       token.col);
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void parser_t::parse_value_tokens (const jtoken& token)
     {
         switch (token.type) {
@@ -480,7 +516,10 @@ pair:           STRING COLON value
 
         case jtoken::tk_lcbrack:
             // Start of object
-            parse_state.push (ps_object);
+            if (max_depth  &&  parse_values.size() > max_depth)
+                error (jparser::err::max_depth_exceeded, token.row, token.col);
+            else
+                parse_state.push (ps_object);
             break;
 
         case jtoken::tk_rcbrack:
@@ -489,7 +528,10 @@ pair:           STRING COLON value
 
         case jtoken::tk_lbrack:
             // Start of array
-            parse_state.push (ps_array);
+            if (max_depth  &&  parse_values.size() > max_depth)
+                error (jparser::err::max_depth_exceeded, token.row, token.col);
+            else
+                parse_state.push (ps_array);
             break;
 
         case jtoken::tk_rbrack:
@@ -513,27 +555,23 @@ pair:           STRING COLON value
             break;
 
         case jtoken::tk_null:
-            parse_values.top().emplace_back (nullptr);
-            parse_state.pop ();
+            on_parsed_value (token, nullptr);
             break;
 
         case jtoken::tk_true:
-            parse_values.top().emplace_back (true);
-            parse_state.pop ();
+            on_parsed_value (token, true);
             break;
 
         case jtoken::tk_false:
-            parse_values.top().emplace_back (false);
-            parse_state.pop ();
+            on_parsed_value (token, false);
             break;
 
         case jtoken::tk_string:
             try {
                 if (strict) {
-                    parse_values.top().emplace_back (unescape(token.data));
-                    parse_state.pop ();
+                    on_parsed_value (token, unescape(token.data));
                 }else{
-                    parse_values.top().emplace_back (unescape(token.data));
+                    parsed_string = unescape (token.data);
                     parse_state.push (ps_str_value);
                 }
             }
@@ -543,8 +581,7 @@ pair:           STRING COLON value
             break;
 
         case jtoken::tk_number:
-            parse_values.top().emplace_back (token_to_number(token));
-            parse_state.pop ();
+            on_parsed_value (token, token_to_number(token));
             break;
 
         case jtoken::tk_identifier:
@@ -569,11 +606,10 @@ pair:           STRING COLON value
             // Array done !
             jvalue array_value = std::move (parse_values.top());
             parse_values.pop ();
-            parse_values.top().emplace_back (std::move(array_value));
 
             parse_state.pop (); // pop ps_elements
             parse_state.pop (); // pop ps_array
-            parse_state.pop (); // pop ps_value  // An array is a value
+            on_parsed_value (token, std::move(array_value));
         }
         else {
             error (jparser::err::expected_separator_or_right_bracket, token.row, token.col);
@@ -587,9 +623,8 @@ pair:           STRING COLON value
     {
         if (token.type == jtoken::tk_rbrack) {
             // Array done - empty array
-            parse_values.top().emplace_back (jvalue(j_array));
             parse_state.pop (); // pop ps_array
-            parse_state.pop (); // pop ps_value  // An array is a value
+            on_parsed_value (token, jvalue(j_array));
         }else{
             // Start collecting array values
             parse_values.push (json_array());
@@ -603,20 +638,48 @@ pair:           STRING COLON value
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    void parser_t::on_object_member_name (const jtoken& token)
+    {
+        try {
+            parse_pairs.top().name = unescape (token.data);
+            parse_pairs.top().has_name = true;
+        }
+        catch (...) {
+            error (jparser::err::invalid_string, token.row, token.col);
+            return;
+        }
+
+        // Check for duplicate name
+        if (allow_duplicates == false) {
+            if (parse_objects.top().has(parse_pairs.top().name)) {
+                error (jparser::err::duplicate_obj_member,
+                       token.row,
+                       token.col);
+                return;
+            }
+        }
+
+        // Check object size limit
+        auto& obj = parse_objects.top().obj ();
+        if (max_object_size  &&  obj.size()+1 > max_object_size) {
+            error (jparser::err::max_obj_size_exceeded,
+                   token.row,
+                   token.col);
+            return;
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void parser_t::parse_pair_tokens (const jtoken& token)
     {
         if (parse_pairs.top().has_name == false) {
             // We haven't got a member name yet
             if (token.type == jtoken::tk_string  ||  token.type == jtoken::tk_identifier) {
-                try {
-                    parse_pairs.top().str = unescape (token.data);
-                    parse_pairs.top().has_name = true;
-                    parse_pairs.top().row = token.row;
-                    parse_pairs.top().col = token.col;
-                }
-                catch (...) {
-                    error (jparser::err::invalid_string, token.row, token.col);
-                }
+
+                on_object_member_name (token);
+
             }else{
                 if (strict==false && token.type == jtoken::tk_rcbrack) {
                     // Object member list ended with a ','
@@ -641,15 +704,7 @@ pair:           STRING COLON value
         else {
             // We have a key-value pair
             auto& obj = parse_objects.top().obj ();
-            if (allow_duplicates == false) {
-                if (parse_objects.top().has(parse_pairs.top().str)) {
-                    error (jparser::err::duplicate_obj_member,
-                           parse_pairs.top().row,
-                           parse_pairs.top().col);
-                    return;
-                }
-            }
-            obj.emplace_back (std::move(parse_pairs.top().str),
+            obj.emplace_back (std::move(parse_pairs.top().name),
                               std::move(parse_values.top()[0]));
             parse_values.pop ();
             parse_state.pop (); // ps_pair
@@ -669,13 +724,13 @@ pair:           STRING COLON value
             parse_state.push (ps_pair);
         }
         else if (token.type == jtoken::tk_rcbrack) {
-            parse_values.top().emplace_back (std::move(parse_objects.top()));
-            parse_pairs.pop (); // Done with current temporary object pair
-            parse_objects.pop (); // Done with the current object
-
+            // Object done !
             parse_state.pop (); // pop ps_members
             parse_state.pop (); // pop ps_object
-            parse_state.pop (); // pop ps_value  // An object is a value
+            on_parsed_value (token, std::move(parse_objects.top()));
+
+            parse_pairs.pop ();   // Done with current temporary object pair
+            parse_objects.pop (); // Done with the current object
         }
         else {
             error (jparser::err::expected_separator_or_right_curly_bracket, token.row, token.col);
@@ -689,9 +744,8 @@ pair:           STRING COLON value
     {
         if (token.type == jtoken::tk_rcbrack) {
             // An empty object
-            parse_values.top().emplace_back (jvalue(j_object));
             parse_state.pop (); // pop ps_object
-            parse_state.pop (); // pop ps_value  // An object is a value
+            on_parsed_value (token, jvalue(j_object));
         }else{
             // Start parsing a new object member
             parse_objects.push (jvalue(j_object));
@@ -784,8 +838,9 @@ pair:           STRING COLON value
         jvalue value (j_invalid);
 
         if (!parse_state.empty()  && parse_state.top()==ps_str_value) {
-            parse_state.pop (); // pop ps_str_value
-            parse_state.pop (); // pop ps_value  // A string is a value
+            // We were parsing a string in relaxed mode, finish it
+            jtoken dummy_token;
+            parse_str_value_tokens (dummy_token);
         }
 
 #if (PARSE_DEBUG)
@@ -911,9 +966,30 @@ pair:           STRING COLON value
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    jparser::jparser (unsigned max_depth,
+                      unsigned max_array_size,
+                      unsigned max_object_size)
+    {
+        parse_context = new parser_t;
+        limits (max_depth, max_array_size, max_object_size);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     jparser::~jparser ()
     {
         delete CTX;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void jparser::limits (unsigned max_depth,
+                          unsigned max_array_size,
+                          unsigned max_object_size)
+    {
+        CTX->limits (max_depth, max_array_size, max_object_size);
     }
 
 

@@ -92,6 +92,15 @@ const std::string parser_err_to_str (ujson::jparser::err error)
     case ujson::jparser::err::unterminated_object:
         return "unterminated_object";
 
+    case ujson::jparser::err::max_depth_exceeded:
+        return "Maximum nesting depth exceeded.";
+
+    case ujson::jparser::err::max_array_size_exceeded:
+        return "Maximum number of array items exceeded.";
+
+    case ujson::jparser::err::max_obj_size_exceeded:
+        return "Maximum number of object members exceeded.";
+
     default:
         return "(unkown error)";
     }

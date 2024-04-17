@@ -41,12 +41,16 @@ static constexpr const char* prog_name = "ujson-verify";
 struct appargs_t {
     std::vector<string> files;
     std::vector<string> schema_files;
+    unsigned max_depth;
+    unsigned max_array_size;
+    unsigned max_obj_size;
     bool strict;
     bool allow_duplicates;
     bool quiet;
     bool verbose;
 
     appargs_t() {
+        max_depth = max_array_size = max_obj_size = 0;
         strict = false;
         allow_duplicates = true;
         quiet = false;
@@ -65,17 +69,20 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "Usage: " << prog_name << " [OPTIONS] [FILE...]" << endl
         << endl
         << "Options:" <<endl
-        << "  -q, --quiet                 Silent mode, don't write anything to standard output." << endl
-        << "  -c, --schema=SCHEMA_FILE    Validate the JSON document using a JSON schema file." << endl
-        << "                              This option may be set multiple times." << endl
-        << "                              The first schema file is the main schema used to validate" << endl
-        << "                              the JSON document. More schema files can then be added that" << endl
-        << "                              can be referenced by the main and other schema files." << endl
-        << "  -d, --verbose               Verbose mode. Print verbose schema validation output." << endl
-        << "  -s, --strict                Parse JSON documents in strict mode." << endl
-        << "  -n, --no-duplicates         Don't allow objects with duplicate member names." << endl
-        << "  -v, --version               Print version and exit." << endl
-        << "  -h, --help                  Print this help message and exit." << endl
+        << "  -q, --quiet               Silent mode, don't write anything to standard output." << endl
+        << "  -c, --schema=SCHEMA_FILE  Validate the JSON document using a JSON schema file." << endl
+        << "                            This option may be set multiple times." << endl
+        << "                            The first schema file is the main schema used to validate" << endl
+        << "                            the JSON document. More schema files can then be added that" << endl
+        << "                            can be referenced by the main and other schema files." << endl
+        << "  -d, --verbose             Verbose mode. Print verbose schema validation output." << endl
+        << "  -s, --strict              Parse JSON documents in strict mode." << endl
+        << "  -n, --no-duplicates       Don't allow objects with duplicate member names." << endl
+        << "      --max-depth=DEPTH     Set maximum nesting depth." << endl
+        << "      --max-asize=ITEMS     Set the maximum allowed number of elements in a single JSON array." << endl
+        << "      --max-osize=ITEMS     Set the maximum allowed number of members in a single JSON object." << endl
+        << "  -v, --version             Print version and exit." << endl
+        << "  -h, --help                Print this help message and exit." << endl
         << endl;
         exit (exit_code);
 }
@@ -86,14 +93,17 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
     optlist_t options = {
-        { 'q', "quiet",         opt_t::none, 0},
-        { 'c', "schema",        opt_t::required, 0},
-        { 'd', "verbose",       opt_t::none, 0},
-        { 'r', "relaxed",       opt_t::none, 0},
-        { 's', "strict",        opt_t::none, 0},
-        { 'n', "no-duplicates", opt_t::none, 0},
-        { 'v', "version",       opt_t::none, 0},
-        { 'h', "help",          opt_t::none, 0},
+        { 'q',  "quiet",         opt_t::none,        0},
+        { 'c',  "schema",        opt_t::required,    0},
+        { 'd',  "verbose",       opt_t::none,        0},
+        { 'r',  "relaxed",       opt_t::none,        0},
+        { 's',  "strict",        opt_t::none,        0},
+        { 'n',  "no-duplicates", opt_t::none,        0},
+        { '\0', "max-depth",     opt_t::required, 1000},
+        { '\0', "max-asize",     opt_t::required, 1001},
+        { '\0', "max-osize",     opt_t::required, 1002},
+        { 'v',  "version",       opt_t::none,        0},
+        { 'h',  "help",          opt_t::none,        0},
     };
 
     option_parser opt (argc, argv);
@@ -116,6 +126,15 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'n':
             args.allow_duplicates = false;
+            break;
+        case 1000: // --max-depth
+            args.max_depth = atoi (opt.optarg().c_str());
+            break;
+        case 1001: // --max-array-size
+            args.max_array_size = atoi (opt.optarg().c_str());
+            break;
+        case 1002: // --max-object-size
+            args.max_obj_size = atoi (opt.optarg().c_str());
             break;
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
@@ -258,7 +277,9 @@ int main (int argc, char* argv[])
     appargs_t args;
     parse_args (argc, argv, args);
 
-    ujson::jparser parser;
+    ujson::jparser parser (args.max_depth,
+                           args.max_array_size,
+                           args.max_obj_size);
     ujson::jschema schema;
 
     if (args.files.empty())

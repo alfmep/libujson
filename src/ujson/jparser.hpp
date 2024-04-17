@@ -55,6 +55,9 @@ namespace ujson {
             unterminated_array,                        /**< Unterminated array. */
             unterminated_object,                       /**< Unterminated object. */
             unexpected_character,                      /**< Unexpected character. */
+            max_depth_exceeded,                        /**< Maximum nesting depth exceeded. */
+            max_array_size_exceeded,                   /**< Maximum number of array items exceeded. */
+            max_obj_size_exceeded,                     /**< Maximum number of object members exceeded. */
             eob,                                       /**< Unexpected end of buffer/file. */
             io,                                        /**< Error reading input file. */
             internal,                                  /**< Internal parser error. */
@@ -73,6 +76,17 @@ namespace ujson {
          * Default constructor.
          */
         jparser ();
+
+        /**
+         * Constructor.
+         * @param max_depth Maximum nesting depth. 0 for no limit.
+         *                  The nesting depth is increased by both arrays and objects.
+         * @param max_array_size Maximum number of items allowed in an array. 0 for no limit.
+         * @param max_object_size Maximum number of object members allowed in a JSON object. 0 for no limit.
+         */
+        jparser (unsigned max_depth,
+                 unsigned max_array_size,
+                 unsigned max_object_size);
 
         /**
          * Destructor.
@@ -180,6 +194,18 @@ namespace ujson {
                              size_t length,
                              bool strict_mode=true,
                              bool allow_duplicates_in_obj=true);
+
+        /**
+         * Set limits when parsing JSON documents.
+         * By default no limits are imposed.
+         * @param max_depth Maximum nesting depth. 0 for no limit.
+         *                  The nesting depth is increased by both arrays and objects.
+         * @param max_array_size Maximum number of items allowed in an array. 0 for no limit.
+         * @param max_object_size Maximum number of object members allowed in a JSON object. 0 for no limit.
+         */
+        void limits (unsigned max_depth,
+                     unsigned max_array_size,
+                     unsigned max_object_size);
 
         /**
          * Get an error code and position.
