@@ -165,8 +165,12 @@ namespace ujson::parser {
                 return;
             }
             if (*buf_pos != name[++name_index]) {
-                // This could be an identifier
-                if (!strict && (std::isalnum(*buf_pos) || *buf_pos=='_')) {
+                if (strict) {
+                    set_token (jtoken::tk_invalid, buf_pos-token_pos, jtoken::err_invalid);
+                    return;
+                }
+                // This is an identifier
+                if ((std::isalnum(*buf_pos) || *buf_pos=='_')) {
                     do {
                         advance_pos ();
                     }while ((buf_pos < buf_end) && (std::isalnum(*buf_pos) || *buf_pos=='_'));
@@ -174,7 +178,9 @@ namespace ujson::parser {
                     if (buf_pos < buf_end)
                         --buf_pos;
                 }else{
-                    set_token (jtoken::tk_invalid, buf_pos-token_pos, jtoken::err_invalid);
+                    set_token (jtoken::tk_identifier, buf_pos-token_pos);
+                    if (buf_pos < buf_end)
+                        --buf_pos;
                 }
                 return;
             }
