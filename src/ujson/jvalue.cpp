@@ -1031,16 +1031,19 @@ namespace ujson {
         case j_object:
             v.jobj = rval.v.jobj;
             rval.v.jobj = nullptr;
+            rval.jtype = j_null;
             break;
 
         case j_array:
             v.jarray = rval.v.jarray;
             rval.v.jarray = nullptr;
+            rval.jtype = j_null;
             break;
 
         case j_string:
             v.jstr = rval.v.jstr;
             rval.v.jstr = nullptr;
+            rval.jtype = j_null;
             break;
 
         case j_number:
@@ -1050,11 +1053,13 @@ namespace ujson {
 #else
             rval.v.jnum = 0.0;
 #endif
+            rval.jtype = j_null;
             break;
 
         case j_bool:
             v.jbool = rval.v.jbool;
             rval.v.jbool = false;
+            rval.jtype = j_null;
             break;
 
         case j_null:
