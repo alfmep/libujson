@@ -44,6 +44,9 @@ Parse the JSON document in strict mode.
 .B -n, --no-duplicates
 Don't allow objects with duplicate member names.
 .TP
+.B -m, --multi-doc
+Parse multiple JSON instances. The input is treated as a stream of JSON instances, separated by line breaks.
+.TP
 .B -o, --color
 Print in color if the output is to a tty.
 This parameter is ignored if libujson is built without support for console colors.

@@ -35,12 +35,14 @@ struct appargs_t {
     ujson::desc_format_t fmt;
     bool parse_strict;
     bool allow_duplicates;
+    bool multi_doc;
     string filename;
 
     appargs_t () {
         fmt = fmt::fmt_pretty;
         parse_strict = false;
         allow_duplicates = true;
+        multi_doc = false;
     }
 };
 
@@ -68,6 +70,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "                        when the names are in the following format: [_a-zA-Z][_a-zA-Z0-9]*" << endl;
     out << "  -s, --strict          Parse the JSON document in strict mode." << endl;
     out << "  -n, --no-duplicates   Don't allow objects with duplicate member names." << endl;
+    out << "  -m, --multi-doc       Parse multiple JSON instances." << endl;
+    out << "                        The input is treated as a stream of JSON " << endl;
+    out << "                        instances, separated by line breaks." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color           Print in color if the output is to a tty." << endl;
 #endif
@@ -91,6 +96,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'r', "relaxed",      opt_t::none, 0},
         { 's', "strict",       opt_t::none, 0},
         { 'n', "no-duplicates",opt_t::none, 0},
+        { 'm', "multi-doc",    opt_t::none, 0},
         { 'o', "color",        opt_t::none, 0},
         { 'v', "version",      opt_t::none, 0},
         { 'h', "help",         opt_t::none, 0},
@@ -122,6 +128,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'n':
             args.allow_duplicates = false;
+            break;
+        case 'm':
+            args.multi_doc = true;
             break;
         case 'o':
 #if (UJSON_HAS_CONSOLE_COLOR)
@@ -160,23 +169,47 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+static int parse_multiple_instances (istream& in,appargs_t& opt)
+{
+    ujson::jparser parser;
+    std::string line;
+
+    while (getline(in, line)) {
+        auto instance = parser.parse_string (line, opt.parse_strict, opt.allow_duplicates);
+        if (instance.valid())
+            cout << instance.describe(opt.fmt) << endl;
+        else
+            cerr << "Error: " << parser.error() << endl;
+    }
+    return in.fail() ? 1 : 0;
+}
+
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int main (int argc, char* argv[])
 {
     appargs_t opt;
     parse_args (argc, argv, opt);
 
-    // Read json file
+    // Open json document
     //
     ifstream ifs;
     if (!opt.filename.empty())
         ifs.open (opt.filename);
     istream& in = opt.filename.empty() ? cin : ifs;
-    string json_desc ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
 
-    // Parse json file
+    if (opt.multi_doc) {
+        // Treat the input as a stream of
+        // JSON instances separated by line breaks.
+        return parse_multiple_instances (in, opt);
+    }
+
+    // Read and parse json document
     //
+    string buffer ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
     ujson::jparser parser;
-    auto instance = parser.parse_string (json_desc, opt.parse_strict, opt.allow_duplicates);
+    auto instance = parser.parse_string (buffer, opt.parse_strict, opt.allow_duplicates);
     if (!instance.valid()) {
         auto err = parser.get_error ();
         cerr << "Parse error at " << (err.row+1) << ", " << err.col
