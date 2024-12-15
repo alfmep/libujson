@@ -160,6 +160,8 @@ ujson-print parses a JSON document and prints it to standard output. By default,
 
 **-n, --no-duplicates**	Don't allow objects with duplicate member names.
 
+**-m, --multi-doc** Parse multiple JSON instances. The input is treated as a stream of JSON  instances, separated by line breaks.
+
 **-o, --color** Print in color if the output is to a tty.
 
 **-v, --version** Print version and exit.
