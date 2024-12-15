@@ -173,7 +173,6 @@ int main (int argc, char* argv[])
     //
     ujson::jvalue patch;
     if (opt.patch_filename.empty()) {
-        ifstream ifs;
         string json_desc ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
         patch = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
     }else{

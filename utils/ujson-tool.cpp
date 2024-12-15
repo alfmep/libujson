@@ -349,9 +349,17 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 static ujson::jvalue get_instance (appargs_t& opt, const bool quiet=false)
 {
     ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
-    ujson::jvalue document = parser.parse_file (opt.args[0],
-                                                opt.strict_parsing,
-                                                opt.allow_duplicates);
+    ujson::jvalue document;
+    if (opt.args[0].empty()) {
+        string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+        document = parser.parse_string (buffer,
+                                        opt.strict_parsing,
+                                        opt.allow_duplicates);
+    }else{
+        document = parser.parse_file (opt.args[0],
+                                      opt.strict_parsing,
+                                      opt.allow_duplicates);
+    }
     if (document.invalid()) {
         if (!quiet)
             cerr << "Parse error: " << parser.error() << endl;
@@ -409,9 +417,17 @@ static int cmd_verify (appargs_t& opt)
 
     int retval = 0;
     ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
-    ujson::jvalue document = parser.parse_file (opt.args[0],
-                                                opt.strict_parsing,
-                                                opt.allow_duplicates);
+    ujson::jvalue document;
+    if (opt.args[0].empty()) {
+        string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+        document = parser.parse_string (buffer,
+                                        opt.strict_parsing,
+                                        opt.allow_duplicates);
+    }else{
+        document = parser.parse_file (opt.args[0],
+                                      opt.strict_parsing,
+                                      opt.allow_duplicates);
+    }
     if (document.invalid()) {
         if (!opt.quiet)
             cerr << "Parse error: " << parser.error() << endl;
@@ -579,7 +595,7 @@ static int cmd_members (appargs_t& opt)
 //------------------------------------------------------------------------------
 static int cmd_patch (appargs_t& opt)
 {
-    if (opt.args.empty()) {
+    if (opt.args.empty() || opt.args[0].empty()) {
         cerr << "Error: Missing input file" << endl;
         return 1;
     }
