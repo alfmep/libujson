@@ -184,7 +184,7 @@ static int verify_document (const std::string& filename,
     if (!instance.valid()) {
         if (!args.quiet) {
             auto err = parser.get_error ();
-            cout << log_filename << "Error at " << err.row << ", " << err.col
+            cout << log_filename << "Error at line " << (err.row+1) << ", column " << err.col
                  << ": " << parser_err_to_str(err.code) << endl;
         }
         return 1;
