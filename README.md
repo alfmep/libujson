@@ -120,6 +120,8 @@ ujson-verify is a utility used for verifying that JSON documents are syntactical
 
 **-d, --verbose**	Verbose mode. Print verbose schema verification output.
 
+**-f, --full-validation**	If verbose mode and a JSON schema is used, show all failed validation tests, not only the first.
+
 **-s, --strict**	Parse JSON documents in strict mode.
 
 **-n, --no-duplicates**	Don't allow objects with duplicate member names.
@@ -367,6 +369,8 @@ Common option `--pointer=POINTER` is ignored by this command.
 **-q, --quiet** Print nothing, only return 0 on success, and 1 on error.
 
 **-d, --debug** Print verbose schema validation information. This option is ignored if option --quiet is set.
+
+**-f, --full-validation**	If verbose mode and a JSON schema is used, show all failed validation tests, not only the first.
 
 *Example - Verify that a file is indeed a JSON document:*
 `ujson-tool verify document.json`
