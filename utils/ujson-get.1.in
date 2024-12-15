@@ -35,6 +35,7 @@ Don't allow objects with duplicate member names.
 .TP
 .B -o, --color
 Print in color if the output is to a tty.
+This parameter is ignored if libujson is built without support for console colors.
 .TP
 .B -v, --version
 Print version and exit.

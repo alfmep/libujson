@@ -40,6 +40,7 @@ In any resulting JSON output, print each array item on the same line.
 .TP
 .B -o, --color
 Print resulting JSON in color if the output is to a tty.
+This parameter is ignored if libujson is built without support for console colors.
 .TP
 .B --sort
 Any Resulting JSON output is printed with object members sorted by name.

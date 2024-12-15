@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -58,15 +58,24 @@ namespace ujson {
          */
         fmt_none         = 0x00,
 
+#if (UJSON_HAS_CONSOLE_COLOR)
         /**
          * If set, whitespaces (line brake and indentation) are used
-         * to make the description more readable.<br/>
+         * to make the description more readable.
          * All flags below, except fmt_color,
          * depends on this flag being set.
          */
+#else
+        /**
+         * If set, whitespaces (line brake and indentation) are used
+         * to make the description more readable.
+         * All flags below depends on this flag being set.
+         */
+#endif
         fmt_pretty       = 0x01,
 
         /**
+         * @deprecated
          * This flag is deprecated and ignored.
          * It will be removed in future versions.
          */
@@ -93,12 +102,17 @@ namespace ujson {
 
 #if (UJSON_HAS_CONSOLE_COLOR)
         /**
-         * If set, print any object member name without
-         * enclosing double quotes if the object member
-         * name is in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+         * Make the output more readable by color
+         * coding the syntax using escape codes for
+         * console colors.
+         * @note When using this flag, the resulting output
+         *       string can <b>NOT</b> be used as a valid
+         *       JSON instance, since it may contain escape
+         *       codes for colors.
          */
-        fmt_color        = 0x20,
 #endif
+        fmt_color        = 0x20,
+
         /**
          * If set, print any object member name without
          * enclosing double quotes if the object member
@@ -1121,8 +1135,8 @@ namespace ujson {
          *            output string.
          * @return A string in JSON format defining this JSON intance.
          * @note If flag <code>fmt_color</code> is set, the resulting
-         *       string is <b>NOT</b> a valid JSON instance, since
-         *       is contains escape codes for colors.
+         *       string can <b>NOT</b> be used as a valid JSON instance,
+         *       since it may contain escape codes for console colors.
          * @see desc_format_t
          */
         inline std::string describe (desc_format_t fmt=fmt_none) const {
@@ -1133,14 +1147,14 @@ namespace ujson {
          * Return a string representation of this JSON value.
          * @param fmt Flags describing the format of the resulting
          *            output string.
-         * @param starting_indent_depth Only relevant if flag
-         *                              <code></code> is set.
-         *                              Start the output with
-         *                              this indentation level.
+         * @param starting_indent_depth Start the output with
+         *                              this indentation depth.
+         *                              Only relevant if flag
+         *                              <code>fmt_pretty</code> is set.
          * @return A string in JSON format defining this JSON intance.
          * @note If flag <code>fmt_color</code> is set, the resulting
-         *       string is <b>NOT</b> a valid JSON instance, since
-         *       is contains escape codes for colors.
+         *       string can <b>NOT</b> be used as a valid JSON instance,
+         *       since it may contain escape codes for console colors.
          * @see desc_format_t
          */
         std::string describe (desc_format_t fmt,
@@ -1177,12 +1191,7 @@ namespace ujson {
          *               print any member name without enclosing double
          *               quotes if the object member name is in the
          *               following format: [_a-zA-Z][_a-zA-Z0-9]*
-         * @param indent Indentation to use if <code>pretty</code>
-         *               is <code>true</code>. Normally zero or more
-         *               space characters.<br/>
-         *               If anything other than whitespace, the returned
-         *               string will fail to be parsed as a valid JSON instance.<br/>
-         *               <b>NOTE!</b> This parameter is deprecated and no longer used.
+         * @param indent This parameter is deprecated and ignored.
          * @return A string in JSON format defining this JSON intance.
          * @deprecated Use <code>describe(desc_format_t fmt)</code> instead.
          */

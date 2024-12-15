@@ -93,9 +93,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         {'r', "relaxed",       opt_t::none,     0},
         {'s', "strict",        opt_t::none,     0},
         {'n', "no-duplicates", opt_t::none,     0},
-#if (UJSON_HAS_CONSOLE_COLOR)
         {'o', "color",         opt_t::none,     0},
-#endif
         {'v', "version",       opt_t::none,     0},
         {'h', "help",          opt_t::none,     0},
     };
@@ -125,12 +123,12 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         case 'n':
             args.allow_duplicates = false;
             break;
-#if (UJSON_HAS_CONSOLE_COLOR)
         case 'o':
+#if (UJSON_HAS_CONSOLE_COLOR)
             if (isatty(fileno(stdout)))
                 args.fmt |= ujson::fmt_color;
-            break;
 #endif
+            break;
         case 'v':
             std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
             exit (0);

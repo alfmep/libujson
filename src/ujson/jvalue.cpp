@@ -55,6 +55,18 @@ static constexpr const char* const attribute_color = COLOR_BLUE;
 
 static constexpr const char* const object_color = ""; //COLOR_BOLD;
 static constexpr const char* const array_color = ""; //COLOR_BOLD;
+#else
+static constexpr const char* const color_normal = "";
+static constexpr const char* const color_string = "";
+//static constexpr const char* const color_string = "";
+//static constexpr const char* const color_boolean = "";
+static constexpr const char* const color_boolean = "";
+static constexpr const char* const color_boolean_true = "";
+static constexpr const char* const boolean_false_color = "";
+static constexpr const char* const null_color = "";
+static constexpr const char* const attribute_color = "";
+static constexpr const char* const object_color = "";
+static constexpr const char* const array_color = "";
 #endif
 
 #if (UJSON_HAS_CONSOLE_COLOR)

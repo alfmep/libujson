@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -17,13 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 cmake_minimum_required (VERSION 3.22)
-
-
-if (GMPXX_FOUND)
-    set (PREDEFINED_IN_DOXYGEN "UJSON_HAVE_GMPXX=1")
-else()
-    set (PREDEFINED_IN_DOXYGEN "UJSON_HAVE_GMPXX=0")
-endif()
 
 
 configure_file (

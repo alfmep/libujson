@@ -204,9 +204,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'e',  "escape-slash",   opt_t::none,     0},
         { 'e',  "escape-members", opt_t::none,     0},
         { 'a',  "array-lines",    opt_t::none,     0},
-#if (UJSON_HAS_CONSOLE_COLOR)
         { 'o',  "color",          opt_t::none,     0},
-#endif
         { 't',  "type",           opt_t::required, 0},
         { 'u',  "unescaped",      opt_t::none,     0},
         { 'q',  "quiet",          opt_t::none,     0},
@@ -265,11 +263,13 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             args.fmt |= fmt::fmt_compact_array;
             break;
 
-#if (UJSON_HAS_CONSOLE_COLOR)
         case 'o':
-            args.fmt |= fmt::fmt_color;
-            break;
+#if (UJSON_HAS_CONSOLE_COLOR)
+            if (isatty(fileno(stdout)))
+                args.fmt |= fmt::fmt_color;
 #endif
+            break;
+
         case 't':
             args.required_type = ujson::str_to_jtype (opt.optarg());
             if (args.required_type == ujson::j_invalid) {
@@ -341,11 +341,6 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
     args.cmd = *arg_entry;
     while (++arg_entry != arguments.end())
         args.args.emplace_back (*arg_entry);
-
-#if (UJSON_HAS_CONSOLE_COLOR)
-    if ((args.fmt & fmt::fmt_color) && !isatty(fileno(stdout)))
-        args.fmt ^= fmt::fmt_color;
-#endif
 }
 
 
