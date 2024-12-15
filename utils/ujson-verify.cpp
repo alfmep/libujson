@@ -18,6 +18,7 @@
  */
 #include <ujson.hpp>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -149,8 +150,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         }
     }
-    for (auto& argument : opt.arguments())
-        args.files.emplace_back (argument);
+    for (auto& argument : opt.arguments()) {
+        if (argument.empty() == false)
+            args.files.emplace_back (argument);
+    }
 }
 
 
@@ -162,14 +165,26 @@ static int verify_document (const std::string& filename,
                             bool use_schema,
                             const appargs_t& args)
 {
-    std::string log_filename = filename.empty() ? "JSON document" : filename;
+    std::string log_filename;
+    if (filename.empty() == false) {
+        log_filename = filename;
+        log_filename.append (": ");
+    }
+
+    // Read json file
+    //
+    std::ifstream ifs;
+    if (!filename.empty())
+        ifs.open (filename);
+    std::istream& in = filename.empty() ? std::cin : ifs;
+    string json_document ((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 
     // Parse file and check result
-    auto instance = parser.parse_file (filename, args.strict, args.allow_duplicates);
+    auto instance = parser.parse_string (json_document, args.strict, args.allow_duplicates);
     if (!instance.valid()) {
         if (!args.quiet) {
             auto err = parser.get_error ();
-            cout << log_filename << ": Error at " << err.row << ", " << err.col
+            cout << log_filename << "Error at " << err.row << ", " << err.col
                  << ": " << parser_err_to_str(err.code) << endl;
         }
         return 1;
@@ -185,9 +200,9 @@ static int verify_document (const std::string& filename,
                     return 1;
 
                 if (!args.verbose) {
-                    cout << log_filename << ": Schema not successfully validated" << endl;
+                    cout << log_filename << "Schema not successfully validated" << endl;
                 }else{
-                    cout << log_filename << ": Validation error: " << endl;
+                    cout << log_filename << "Validation error: " << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
                     if (isatty(fileno(stdout)))
                         cout << result.describe(ujson::fmt_pretty | ujson::fmt_color) << endl;
@@ -213,9 +228,9 @@ static int verify_document (const std::string& filename,
 
     if (!args.quiet) {
         if (!args.verbose || !use_schema) {
-            cout << log_filename << ": ok" << endl;
+            cout << log_filename << "ok" << endl;
         }else{
-            cout << log_filename << ':' << endl;
+            //cout << log_filename << ':' << endl;
             //cout << "    ";
 #if (UJSON_HAS_CONSOLE_COLOR)
             if (isatty(fileno(stdout)))
@@ -289,7 +304,6 @@ int main (int argc, char* argv[])
 
     int retval = 0;
     for (auto& filename : args.files) {
-        //std::string log_filename = filename.empty() ? "JSON document" : filename;
         if (verify_document(filename, parser, schema, use_schema, args)) {
             retval = 1;
         }
