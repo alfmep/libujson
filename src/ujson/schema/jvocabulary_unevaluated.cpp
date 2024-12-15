@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -69,7 +69,10 @@ namespace ujson::schema {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvocabulary_unevaluated::validate (validation_context& ctx, jvalue& schema, jvalue& instance)
+    bool jvocabulary_unevaluated::validate (validation_context& ctx,
+                                            jvalue& schema,
+                                            jvalue& instance,
+                                            const bool quit_on_first_error)
     {
         bool valid = true;
         if (instance.type() == j_array) {
@@ -78,7 +81,9 @@ namespace ujson::schema {
                 ctx.push_schema_path ("unevaluatedItems");
                 auto indexes = collect_unevaluatedItems_annotations (ctx, instance);
                 if (indexes.empty() == false) {
-                    if (validate_unevaluatedItems (ctx, indexes, schema, schema_value, instance) == false) {
+                    if (validate_unevaluatedItems (ctx, indexes, schema, schema_value,
+                                                   instance, quit_on_first_error) == false)
+                    {
                         ctx.set_valid (false);
                         valid = false;
                     }
@@ -90,7 +95,9 @@ namespace ujson::schema {
             auto& schema_value = schema.get ("unevaluatedProperties");
             if (schema_value.valid()) {
                 ctx.push_schema_path ("unevaluatedProperties");
-                if (validate_unevaluatedProperties (ctx, schema, schema_value, instance) == false) {
+                if (validate_unevaluatedProperties (ctx, schema, schema_value, instance,
+                                                    quit_on_first_error) == false)
+                {
                     ctx.set_valid (false);
                     valid = false;
                 }
@@ -266,16 +273,20 @@ namespace ujson::schema {
                                                              std::set<size_t>& indexes,
                                                              jvalue& schema,
                                                              jvalue& schema_value,
-                                                             jvalue& instance)
+                                                             jvalue& instance,
+                                                             const bool quit_on_first_error)
     {
         validation_context sub_ctx (ctx);
 
         bool all_valid = true;
         for (auto i : indexes) {
             sub_ctx.push_instance_path (std::to_string(i));
-            if (validate_subschema(sub_ctx, schema_value, instance[i]) == false)
+            if (validate_subschema(sub_ctx, schema_value, instance[i], quit_on_first_error) == false)
                 all_valid = false;
             sub_ctx.pop_instance_path ();
+
+            if (quit_on_first_error && all_valid==false)
+                break;
         }
 
         sub_ctx.set_valid (all_valid);
@@ -338,7 +349,8 @@ namespace ujson::schema {
     bool jvocabulary_unevaluated::validate_unevaluatedProperties (validation_context& ctx,
                                                                   jvalue& schema,
                                                                   jvalue& schema_value,
-                                                                  jvalue& instance)
+                                                                  jvalue& instance,
+                                                                  const bool quit_on_first_error)
     {
         if (instance.obj().empty())
             return true;
@@ -352,6 +364,10 @@ namespace ujson::schema {
         validation_context sub_ctx (ctx);
 
         for (auto& property : instance.obj()) {
+
+            if (quit_on_first_error && all_valid==false)
+                break;
+
             auto& property_name = property.first;
             auto& sub_instance = property.second;
 
@@ -362,7 +378,7 @@ namespace ujson::schema {
             none_evaluated = false;
 
             sub_ctx.push_instance_path (property_name);
-            if (validate_subschema(sub_ctx, schema_value, sub_instance) == false)
+            if (validate_subschema(sub_ctx, schema_value, sub_instance, quit_on_first_error) == false)
                 all_valid = false;
             else
                 annotation.append (property_name);

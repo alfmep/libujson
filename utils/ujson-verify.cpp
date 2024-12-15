@@ -49,6 +49,7 @@ struct appargs_t {
     bool allow_duplicates;
     bool quiet;
     bool verbose;
+    bool full_validation;
 
     appargs_t() {
         max_depth = max_array_size = max_obj_size = 0;
@@ -56,6 +57,7 @@ struct appargs_t {
         allow_duplicates = true;
         quiet = false;
         verbose = false;
+        full_validation = false;
     }
 };
 
@@ -77,6 +79,8 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
         << "                            the JSON document. More schema files can then be added that" << endl
         << "                            can be referenced by the main and other schema files." << endl
         << "  -d, --verbose             Verbose mode. Print verbose schema validation output." << endl
+        << "  -f, --full-validation     If verbose mode and a JSON schema is used," << endl
+        << "                            show all failed validation tests, not only the first." << endl
         << "  -s, --strict              Parse JSON documents in strict mode." << endl
         << "  -n, --no-duplicates       Don't allow objects with duplicate member names." << endl
         << "      --max-depth=DEPTH     Set maximum nesting depth." << endl
@@ -97,6 +101,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'q',  "quiet",         opt_t::none,        0},
         { 'c',  "schema",        opt_t::required,    0},
         { 'd',  "verbose",       opt_t::none,        0},
+        { 'f',  "full-validation", opt_t::none,      0},
         { 'r',  "relaxed",       opt_t::none,        0},
         { 's',  "strict",        opt_t::none,        0},
         { 'n',  "no-duplicates", opt_t::none,        0},
@@ -118,6 +123,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'd':
             args.verbose = true;
+            break;
+        case 'f':
+            args.full_validation = true;
             break;
         case 'r':
             args.strict = false;
@@ -194,7 +202,10 @@ static int verify_document (const std::string& filename,
 
     if (use_schema) {
         try {
-            result = schema.validate (instance);
+            bool fast_validation = true;
+            if (args.verbose && args.full_validation)
+                fast_validation = false;
+            result = schema.validate (instance, fast_validation);
             if (result["valid"] == false) {
                 if (args.quiet)
                     return 1;

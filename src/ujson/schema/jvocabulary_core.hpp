@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -48,7 +48,10 @@ namespace ujson::schema {
         jvocabulary_core (jschema& schema_arg);
 
         virtual void load (jvalue& schema, jvalue& load_ctx);
-        virtual bool validate (validation_context& ctx, jvalue& schema, jvalue& instance);
+        virtual bool validate (validation_context& ctx,
+                               jvalue& schema,
+                               jvalue& instance,
+                               const bool quit_on_first_error);
 
         void set_invalid_ref_cb (invalid_ref_cb_t cb);
         void print_maps (std::ostream& out);
@@ -63,8 +66,16 @@ namespace ujson::schema {
         //void load_comment (jvalue& schema, jvalue& schema_value, jvalue& load_ctx);
 
         bool validate_id (validation_context& ctx, jvalue& schema_value, jvalue& instance);
-        bool validate_ref (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_dynamicRef (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
+        bool validate_ref (validation_context& ctx,
+                           jvalue& schema,
+                           jvalue& schema_value,
+                           jvalue& instance,
+                           const bool quit_on_first_error);
+        bool validate_dynamicRef (validation_context& ctx,
+                                  jvalue& schema,
+                                  jvalue& schema_value,
+                                  jvalue& instance,
+                                  const bool quit_on_first_error);
         //bool validate_comment (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
 
         jvalue* resolve_ref (validation_context& ctx, jvalue& schema, std::string& ref);

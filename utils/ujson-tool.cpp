@@ -55,6 +55,7 @@ struct appargs_t {
     bool members_as_json_array;
     bool quiet;
     bool debug;
+    bool full_validation;
     unsigned max_depth;
     unsigned max_asize;
     unsigned max_osize;
@@ -69,6 +70,7 @@ struct appargs_t {
         members_as_json_array = false;
         quiet = false;
         debug = false;
+        full_validation = false;
         max_depth = 0;
         max_asize = 0;
         max_osize = 0;
@@ -184,6 +186,8 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "      -q, --quiet             Print nothing, only return 0 on success, and 1 on error." << endl;
     out << "      -d, --debug             Print verbose schema validation information." << endl;
     out << "                              This option is ignored if option --quiet is set." << endl;
+    out << "      -f, --full-validation   If verbose mode and a JSON schema is used," << endl;
+    out << "                              show all failed validation tests, not only the first." << endl;
     out << endl;
     exit (exit_code);
 }
@@ -209,6 +213,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 'u',  "unescaped",      opt_t::none,     0},
         { 'q',  "quiet",          opt_t::none,     0},
         { 'd',  "debug",          opt_t::none,     0},
+        { 'f',  "full-validation", opt_t::none,    0},
         { 'm',  "escape-members", opt_t::none,     0},
         { 'j',  "json-array",     opt_t::none,     0},
         { '\0', "max-depth",      opt_t::required, opt_id_max_depth},
@@ -288,6 +293,10 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 
         case 'd':
             args.debug = true;
+            break;
+
+        case 'f':
+            args.full_validation = true;
             break;
 
         case 'm':
@@ -470,7 +479,11 @@ static int cmd_verify (appargs_t& opt)
 
         // Verify the JSON document using the schema
         //
-        auto ou = schema.validate (document);
+        bool fast_validation = true;
+        if (!opt.quiet && opt.debug && opt.full_validation)
+            fast_validation = false;
+
+        auto ou = schema.validate (document, fast_validation);
         if (ou["valid"].boolean() == true) {
             if (!opt.quiet) {
                 if (opt.debug)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -412,7 +412,10 @@ namespace ujson::schema {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvocabulary_validation::validate (validation_context& ctx, jvalue& schema, jvalue& instance)
+    bool jvocabulary_validation::validate (validation_context& ctx,
+                                           jvalue& schema,
+                                           jvalue& instance,
+                                           const bool quit_on_first_error)
     {
         bool valid = true;
 

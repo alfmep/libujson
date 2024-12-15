@@ -34,6 +34,10 @@ More schema files can then be added that can be referenced by the main and other
 Verbose mode. Print verbose schema validation output.
 
 .TP
+.B -f, --full-validation
+If verbose mode and a JSON schema is used, show all failed validation tests, not only the first.
+
+.TP
 .B -s, --strict
 Parse JSON documents in strict mode.
 

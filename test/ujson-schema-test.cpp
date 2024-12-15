@@ -44,6 +44,7 @@ namespace uj = ujson;
 struct appargs_t {
     std::string load_dir;
     std::vector<std::string> args; // Arguments that are not options
+    bool full_validation;
 
     appargs_t (int argc, char* argv[]);
     void print_usage_and_exit (std::ostream& out, int exit_code);
@@ -57,8 +58,9 @@ void appargs_t::print_usage_and_exit (std::ostream& out, int exit_code)
     out << std::endl
         << "Usage: " << program_invocation_short_name << " [OPTIONS]  <json-schema ...> <json-instance>" << std::endl
         << std::endl
-        << "  -d, --dir=DIR    Load referenced schemas from this diectory." << std::endl
-        << "  -h, --help       Print this help message." << std::endl
+        << "  -d, --dir=DIR            Load referenced schemas from this diectory." << std::endl
+        << "  -f, --full_validation    Validate all values in the instance even if some fails validation." << std::endl
+        << "  -h, --help               Print this help message." << std::endl
         << std::endl;
 
         exit (exit_code);
@@ -68,12 +70,15 @@ void appargs_t::print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 appargs_t::appargs_t (int argc, char* argv[])
+    : full_validation (false)
 {
     static struct option long_options[] = {
-        { "help", no_argument, 0, 'h'},
+        { "dir",             required_argument, 0, 'd'},
+        { "full-validation", no_argument,       0, 'f'},
+        { "help",            no_argument,       0, 'h'},
         { 0, 0, 0, 0}
     };
-    static const char* arg_format = "d:h";
+    static const char* arg_format = "d:fh";
 
     while (1) {
         int c = getopt_long (argc, argv, arg_format, long_options, NULL);
@@ -82,6 +87,9 @@ appargs_t::appargs_t (int argc, char* argv[])
         switch (c) {
         case 'd':
             load_dir = optarg;
+            break;
+        case 'f':
+            full_validation = true;
             break;
         case 'h':
             print_usage_and_exit (std::cout, 0);
@@ -199,7 +207,7 @@ int main (int argc, char* argv[])
             });
         }
 
-        auto ou = s.validate (instance);
+        auto ou = s.validate (instance, opt.full_validation?false:true);
 
         if (isatty(fileno(stdout)))
             cout << ou.describe(uj::fmt_pretty | uj::fmt_color) << endl;

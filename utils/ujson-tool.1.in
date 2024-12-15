@@ -168,6 +168,9 @@ Print nothing, only return 0 on success, and 1 on error.
 .TP
 .B -d, --debug
 Print verbose schema validation information. This option is ignored if option --quiet is set.
+.TP
+.B -f, --full-validation
+If verbose mode and a JSON schema is used, show all failed validation tests, not only the first.
 
 
 .SH SEE ALSO

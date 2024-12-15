@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -246,8 +246,16 @@ namespace ujson {
     //--------------------------------------------------------------------------
     jvalue jschema::validate (jvalue& instance)
     {
+        return validate (instance, true);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    jvalue jschema::validate (jvalue& instance, bool quit_on_first_error)
+    {
         schema::validation_context ctx;
-        validate (ctx, root, instance);
+        validate (ctx, root, instance, quit_on_first_error);
 
         if (ctx.output_unit["valid"].boolean()) {
             ctx.output_unit.remove ("error");
@@ -263,7 +271,10 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jschema::validate (schema::validation_context& ctx, jvalue& schema, jvalue& instance)
+    bool jschema::validate (schema::validation_context& ctx,
+                            jvalue& schema,
+                            jvalue& instance,
+                            bool quit_on_first_error)
     {
         // Handle boolean schemas
         if (schema.type() == j_bool) {
@@ -273,8 +284,11 @@ namespace ujson {
 
         bool valid = true;
         for (auto& entry : vocabularies) {
-            if (entry.second->validate(ctx, schema, instance) == false)
+            if (entry.second->validate(ctx, schema, instance, quit_on_first_error) == false) {
                 valid = false;
+                if (quit_on_first_error)
+                    break;
+            }
         }
 
         return valid;

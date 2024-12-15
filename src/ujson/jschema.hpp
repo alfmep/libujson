@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -122,7 +122,10 @@ namespace ujson {
          * Validate a JSON instance using this schema.
          * The JSON instance will be validated using the root schema definition,
          * and any added schema that is referenced, directly or indirectly, by
-         * the root schema definition.
+         * the root schema definition.<br/>
+         * Validation stops at the first failed annotation test in the
+         * JSON instance. To get a fully populated output unit, call
+         * <code>validate(instance, false);</code>
          * @param instance The JSON instance to validate.
          * @return A JSON Schema Output Unit. This is a JSON object
          *         describing the result of the validation.<br/>
@@ -136,6 +139,34 @@ namespace ujson {
          *                              a "$dynamicRef" can't be dereferenced).
          */
         jvalue validate (jvalue& instance);
+
+        /**
+         * Validate a JSON instance using this schema.
+         * The JSON instance will be validated using the root schema definition,
+         * and any added schema that is referenced, directly or indirectly, by
+         * the root schema definition.
+         * @param instance The JSON instance to validate.
+         * @param quit_on_first_error If <code>false</code>,
+         *         validation continues even if some value
+         *         in the instance fails a validation test.
+         *         This makes the output unit to be fully
+         *         populated with all annotation results.<br>
+         *         If <code>true</code>, quit validation on first error.
+         *         This makes validation faster, but the
+         *         resulting output unit may not contain all
+         *         annotations that would otherwise be produced.
+         * @return A JSON Schema Output Unit. This is a JSON object
+         *         describing the result of the validation.<br/>
+         *         If the instance was successfully validated, the
+         *         attribute <code>"valid"</code> in the Output Unit will be
+         *         <code>true</code>. If it was an unsuccessful validation
+         *         the attribute <code>"valid"</code> will be set to
+         *         <code>false</code>.
+         * @throw ujson::invalid_schema If the JSON Schema
+         *                              definition is invalid (if, for instance,
+         *                              a "$dynamicRef" can't be dereferenced).
+         */
+        jvalue validate (jvalue& instance, bool quit_on_first_error);
 
         /**
          * Return a pointer to a JSON Schema Vocabulary used by the schema.
@@ -153,7 +184,10 @@ namespace ujson {
         virtual void load (jvalue& schema);
         virtual void init_vocabularies ();
 
-        bool validate (schema::validation_context& ctx, jvalue& schema, jvalue& instance);
+        bool validate (schema::validation_context& ctx,
+                       jvalue& schema,
+                       jvalue& instance,
+                       bool quit_on_first_error);
 
         multimap_list<std::string, std::shared_ptr<schema::jvocabulary>> vocabularies;
         jvalue root; // Root schema definition

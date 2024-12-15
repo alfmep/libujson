@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -52,6 +52,7 @@ RESULT_FILE=$TEST_RESULT_DIR/tmp-test-result.json
 ERROR_FILE=$TEST_RESULT_DIR/tmp-test-error.json
 
 LOAD_META_SCHEMAS=no
+FULL_VALIDATION=no
 VERBOSE=no
 DEBUG=no
 ARGS=""
@@ -106,6 +107,7 @@ print_help() {
     echo "        Remove test data and result files."
     echo ""
     echo "    run-ujson-schema-test.sh [-v|-m] all"
+    echo "        -f    Validate all values in a JSON instance even if some fails validation."
     echo "        -v    Verbose (print test descriptions)"
     echo "        -m    Also load meta schemas"
     echo "        Test everything."
@@ -126,6 +128,7 @@ print_help() {
     echo "        Show the description, schema and test."
     echo ""
     echo "    run-ujson-schema-test.sh  [-v|-d|-m] test <test-file> <schema-index> <test-index>"
+    echo "        -f    Validate all values in a JSON instance even if some fails validation."
     echo "        -v    Verbose (print test descriptions)"
     echo "        -d    Debug (print standard output even if no error)"
     echo "        -m    Also load meta schemas"
@@ -185,8 +188,15 @@ make_test() {
     echo "Expected validity: $EXPECTED_RESULT"
     echo ""
     echo "Result:"
+
+    FULL_ARG=""
+    if [ "$FULL_VALIDATION" = "yes" ]; then
+        FULL_ARG="-f"
+    fi
+
     if [ "$LOAD_META_SCHEMAS" = "yes" ]; then
-        $BASE_DIR/ujson-schema-test -d $REMOTE_DIR $SCHEMA_FILE \
+        $BASE_DIR/ujson-schema-test $FULL_ARG \
+                                    -d $REMOTE_DIR $SCHEMA_FILE \
                                     $SCHEMA_SPEC_DIR/schema.json \
                                     $SCHEMA_SPEC_DIR/meta/applicator.json \
                                     $SCHEMA_SPEC_DIR/meta/content.json \
@@ -198,7 +208,7 @@ make_test() {
                                     $SCHEMA_SPEC_DIR/meta/validation.json \
                                     $INSTANCE_FILE >$RESULT_FILE 2>$ERROR_FILE
     else
-        $BASE_DIR/ujson-schema-test -d $REMOTE_DIR $SCHEMA_FILE $INSTANCE_FILE >$RESULT_FILE 2>$ERROR_FILE
+        $BASE_DIR/ujson-schema-test $FULL_ARG -d $REMOTE_DIR $SCHEMA_FILE $INSTANCE_FILE >$RESULT_FILE 2>$ERROR_FILE
     fi
     if ! $UJSON_PRINT -ao $RESULT_FILE 2>/dev/null; then
         cat $RESULT_FILE
@@ -302,6 +312,10 @@ while [ "$DONE" = "false" ]; do
     if [ "$1" = "-v" ]; then
         VERBOSE=yes
         ARGS="$ARGS -v"
+        shift
+    elif [ "$1" = "-f" ]; then
+        FULL_VALIDATION=yes
+        ARGS="$ARGS -f"
         shift
     elif [ "$1" = "-d" ]; then
         DEBUG=yes
@@ -437,13 +451,22 @@ case "$CMD" in
         ;;
 
     *)
+        FULL_ARG=""
+        if [ "$FULL_VALIDATION" = "yes" ]; then
+            FULL_ARG="-f"
+        fi
+
         initialize_test
         rm -f $TEST_RESULT_DIR/test-schema-result.txt
         TESTS=`ls $TEST_DIR/*.json`
         for FILE in $TESTS; do
             TEST=`basename $FILE`
-            echo "Testing $TEST" 2>&1 | tee -a $TEST_RESULT_DIR/test-schema-result.txt
-            $BASE_DIR/run-ujson-schema-test.sh -v -m test $TEST 2>&1 | tee -a $TEST_RESULT_DIR/test-schema-result.txt
+            if [ -n "$FULL_ARG" ]; then
+               echo "Testing full validation: $TEST" 2>&1 | tee -a $TEST_RESULT_DIR/test-schema-result.txt
+            else
+               echo "Testing validation: $TEST" 2>&1 | tee -a $TEST_RESULT_DIR/test-schema-result.txt
+            fi
+            $BASE_DIR/run-ujson-schema-test.sh $FULL_ARG -v -m test $TEST 2>&1 | tee -a $TEST_RESULT_DIR/test-schema-result.txt
             echo "" | tee -a $TEST_RESULT_DIR/test-schema-result.txt
         done
         echo ""

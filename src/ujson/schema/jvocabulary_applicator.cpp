@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -231,7 +231,10 @@ namespace ujson::schema {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvocabulary_applicator::validate (validation_context& ctx, jvalue& schema, jvalue& instance)
+    bool jvocabulary_applicator::validate (validation_context& ctx,
+                                           jvalue& schema,
+                                           jvalue& instance,
+                                           const bool quit_on_first_error)
     {
         auto instance_type = instance.type ();
         bool keyword_if_handled = false;
@@ -239,6 +242,10 @@ namespace ujson::schema {
         bool valid = true;
 
         for (auto& member : schema.obj()) {
+
+            if (quit_on_first_error && valid==false)
+                break;
+
             const std::string& schema_keyword = member.first;
             ujson::jvalue& schema_value = member.second;
 
@@ -252,7 +259,7 @@ namespace ujson::schema {
                     if (kw_jtype==instance_type || kw_jtype==j_invalid) {
                         std::string error_msg;
                         ctx.push_schema_path (schema_keyword);
-                        if ((this->*kw_validator)(ctx, schema, schema_value, instance) == false)
+                        if ((this->*kw_validator)(ctx, schema, schema_value, instance, quit_on_first_error) == false)
                             valid = false;
                         ctx.pop_schema_path ();
                         continue;
@@ -265,14 +272,14 @@ namespace ujson::schema {
             if (!keyword_if_handled && schema_keyword == "if") {
                 keyword_if_handled = true;
                 ctx.push_schema_path ("if");
-                is_if_true = validate_if (ctx, schema, schema_value, instance);
+                is_if_true = validate_if (ctx, schema, schema_value, instance, quit_on_first_error);
                 ctx.pop_schema_path ();
 
                 if (is_if_true) {
                     auto& schema_value = schema.get ("then");
                     if (schema_value.valid()) {
                         ctx.push_schema_path ("then");
-                        if (validate_then(ctx, schema, schema_value, instance) == false)
+                        if (validate_then(ctx, schema, schema_value, instance, quit_on_first_error) == false)
                             valid = false;
                         ctx.pop_schema_path ();
                     }
@@ -280,7 +287,7 @@ namespace ujson::schema {
                     auto& schema_value = schema.get ("else");
                     if (schema_value.valid()) {
                         ctx.push_schema_path ("else");
-                        if (validate_else(ctx, schema, schema_value, instance) == false)
+                        if (validate_else(ctx, schema, schema_value, instance, quit_on_first_error) == false)
                             valid = false;
                         ctx.pop_schema_path ();
                     }
@@ -288,13 +295,16 @@ namespace ujson::schema {
             }
         }
 
+        if (quit_on_first_error && valid==false)
+            return false;
+
         if (instance_type == j_array) {
             // Handle 'items' after other array-keywords
             // items depends on 'prefixItems'
             auto& schema_value = schema.get ("items");
             if (schema_value.valid()) {
                 ctx.push_schema_path ("items");
-                if (validate_items(ctx, schema, schema_value, instance) == false)
+                if (validate_items(ctx, schema, schema_value, instance, quit_on_first_error) == false)
                     valid = false;
                 ctx.pop_schema_path ();
             }
@@ -305,7 +315,7 @@ namespace ujson::schema {
             auto& schema_value = schema.get ("additionalProperties");
             if (schema_value.valid()) {
                 ctx.push_schema_path ("additionalProperties");
-                if (validate_additionalProperties(ctx, schema, schema_value, instance) == false)
+                if (validate_additionalProperties(ctx, schema, schema_value, instance, quit_on_first_error) == false)
                     valid = false;
                 ctx.pop_schema_path ();
             }
@@ -323,16 +333,19 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_allOf (validation_context& ctx,
                                                  jvalue& schema,
                                                  jvalue& schema_value,
-                                                 jvalue& instance)
+                                                 jvalue& instance,
+                                                 const bool quit_on_first_error)
     {
         bool all_valid = true;
         validation_context ctx_allOf (ctx);
 
         for (size_t i=0; i < schema_value.array().size(); ++i) {
             ctx_allOf.push_schema_path (std::to_string(i));
-            if (validate_subschema(ctx_allOf, schema_value[i], instance) == false)
+            if (validate_subschema(ctx_allOf, schema_value[i], instance, quit_on_first_error) == false)
                 all_valid = false;
             ctx_allOf.pop_schema_path ();
+            if (quit_on_first_error && all_valid==false)
+                break;
         }
 
         ctx_allOf.set_valid (all_valid);
@@ -357,14 +370,15 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_anyOf (validation_context& ctx,
                                                  jvalue& schema,
                                                  jvalue& schema_value,
-                                                 jvalue& instance)
+                                                 jvalue& instance,
+                                                 const bool quit_on_first_error)
     {
         bool some_valid = false;
         validation_context ctx_anyOf (ctx);
 
         for (size_t i=0; i < schema_value.array().size(); ++i) {
             ctx_anyOf.push_schema_path (std::to_string(i));
-            if (validate_subschema(ctx_anyOf, schema_value[i], instance) == true)
+            if (validate_subschema(ctx_anyOf, schema_value[i], instance, quit_on_first_error) == true)
                 some_valid = true;
             ctx_anyOf.pop_schema_path ();
         }
@@ -390,7 +404,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_oneOf (validation_context& ctx,
                                                  jvalue& schema,
                                                  jvalue& schema_value,
-                                                 jvalue& instance)
+                                                 jvalue& instance,
+                                                 const bool quit_on_first_error)
     {
         size_t num_valid = 0;
         size_t num_subschemas = 0;
@@ -401,10 +416,13 @@ namespace ujson::schema {
             ++num_subschemas;
             ctx_oneOf.push_schema_path (std::to_string(i));
 
-            if (validate_subschema (ctx_oneOf, schema_value[i], instance))
+            if (validate_subschema (ctx_oneOf, schema_value[i], instance, quit_on_first_error))
                 ++num_valid;
 
             ctx_oneOf.pop_schema_path ();
+
+            if (quit_on_first_error && num_valid>1)
+                break;
         }
 
         ctx_oneOf.set_valid (num_valid == 1);
@@ -414,7 +432,7 @@ namespace ujson::schema {
             retval = false;
             if (num_valid == 0)
                 ctx_oneOf.set_error ("No subschema evaluated true.");
-            else if (num_valid == num_subschemas)
+            else if (num_valid == num_subschemas && !quit_on_first_error)
                 ctx_oneOf.set_error ("All subschemas evaluated true.");
             else
                 ctx_oneOf.set_error ("More than one subschema evaluated true.");
@@ -434,11 +452,12 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_not (validation_context& ctx,
                                                jvalue& schema,
                                                jvalue& schema_value,
-                                               jvalue& instance)
+                                               jvalue& instance,
+                                               const bool quit_on_first_error)
     {
         validation_context sub_ctx (ctx);
 
-        bool is_valid = validate_subschema (sub_ctx, schema_value, instance, false, true);
+        bool is_valid = validate_subschema (sub_ctx, schema_value, instance, quit_on_first_error, false, true);
         sub_ctx.set_valid (!is_valid);
         if (is_valid) {
             sub_ctx.set_error ("Subschema evaluated true.");
@@ -458,9 +477,10 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_if (validation_context& ctx,
                                               jvalue& schema,
                                               jvalue& schema_value,
-                                              jvalue& instance)
+                                              jvalue& instance,
+                                              const bool quit_on_first_error)
     {
-        return validate_subschema (ctx, schema_value, instance);
+        return validate_subschema (ctx, schema_value, instance, quit_on_first_error);
     }
 
 
@@ -472,9 +492,10 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_then (validation_context& ctx,
                                                 jvalue& schema,
                                                 jvalue& schema_value,
-                                                jvalue& instance)
+                                                jvalue& instance,
+                                                const bool quit_on_first_error)
     {
-        return validate_subschema (ctx, schema_value, instance, true, false, true);
+        return validate_subschema (ctx, schema_value, instance, quit_on_first_error, true, false, true);
     }
 
 
@@ -486,9 +507,10 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_else (validation_context& ctx,
                                                 jvalue& schema,
                                                 jvalue& schema_value,
-                                                jvalue& instance)
+                                                jvalue& instance,
+                                                const bool quit_on_first_error)
     {
-        return validate_subschema (ctx, schema_value, instance, true, false, true);
+        return validate_subschema (ctx, schema_value, instance, quit_on_first_error, true, false, true);
     }
 
 
@@ -500,7 +522,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_dependentSchemas (validation_context& ctx,
                                                             jvalue& schema,
                                                             jvalue& schema_value,
-                                                            jvalue& instance)
+                                                            jvalue& instance,
+                                                            const bool quit_on_first_error)
     {
         bool all_valid = true;
         validation_context ctx_ds (ctx);
@@ -513,9 +536,12 @@ namespace ujson::schema {
             jvalue& subschema = schema_property.second;
 
             ctx_ds.push_schema_path (property_name);
-            if (validate_subschema(ctx_ds, subschema, instance) == false)
+            if (validate_subschema(ctx_ds, subschema, instance, quit_on_first_error) == false)
                 all_valid = false;
             ctx_ds.pop_schema_path ();
+
+            if (quit_on_first_error && all_valid==false)
+                break;
         }
 
         ctx_ds.set_valid (all_valid);
@@ -539,7 +565,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_prefixItems (validation_context& ctx,
                                                        jvalue& schema,
                                                        jvalue& schema_value,
-                                                       jvalue& instance)
+                                                       jvalue& instance,
+                                                       const bool quit_on_first_error)
     {
         bool all_valid = true;
         size_t items_in_schema_array = schema_value.size ();
@@ -556,11 +583,14 @@ namespace ujson::schema {
             ctx_pi.push_schema_path (index_str);
             ctx_pi.push_instance_path (index_str);
 
-            if (validate_subschema(ctx_pi, sub_schema, sub_instance) == false)
+            if (validate_subschema(ctx_pi, sub_schema, sub_instance, quit_on_first_error) == false)
                 all_valid = false;
 
             ctx_pi.pop_schema_path ();
             ctx_pi.pop_instance_path ();
+
+            if (quit_on_first_error && all_valid==false)
+                break;
         }
 
         ctx_pi.set_valid (all_valid);
@@ -591,7 +621,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_items (validation_context& ctx,
                                                  jvalue& schema,
                                                  jvalue& schema_value,
-                                                 jvalue& instance)
+                                                 jvalue& instance,
+                                                 const bool quit_on_first_error)
     {
         bool all_valid = true;
 
@@ -614,9 +645,12 @@ namespace ujson::schema {
         for (; i<num_items_in_instance; ++i) {
             schema_applied = true;
             ctx_items.push_instance_path (std::to_string(i));
-            if (validate_subschema(ctx_items, schema_value, instance[i]) == false)
+            if (validate_subschema(ctx_items, schema_value, instance[i], quit_on_first_error) == false)
                 all_valid = false;
             ctx_items.pop_instance_path ();
+
+            if (quit_on_first_error && all_valid==false)
+                break;
         }
 
         ctx_items.set_valid (all_valid);
@@ -643,7 +677,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_contains (validation_context& ctx,
                                                     jvalue& schema,
                                                     jvalue& schema_value,
-                                                    jvalue& instance)
+                                                    jvalue& instance,
+                                                    const bool quit_on_first_error)
     {
         jvalue annotation_value (j_array);
         bool all_valid = true;
@@ -670,7 +705,7 @@ namespace ujson::schema {
                     ctx_contains.push_instance_path (std::to_string(i));
                     validation_context sub_ctx (ctx_contains);
 
-                    if (validate_subschema(sub_ctx, schema_value, instance[i], false, true)) {
+                    if (validate_subschema(sub_ctx, schema_value, instance[i], quit_on_first_error, false, true)) {
                         some_valid = true;
                         annotation_value.append ((int)i);
                     }else{
@@ -708,7 +743,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_properties (validation_context& ctx,
                                                       jvalue& schema,
                                                       jvalue& schema_value,
-                                                      jvalue& instance)
+                                                      jvalue& instance,
+                                                      const bool quit_on_first_error)
     {
         bool all_valid = true;
         std::string ctx_instance_path = ctx.instance_path().str ();
@@ -717,6 +753,10 @@ namespace ujson::schema {
         validation_context ctx_props (ctx);
 
         for (auto& property : schema_value.obj()) {
+
+            if (quit_on_first_error && all_valid==false)
+                break;
+
             auto& property_name = property.first;
             auto& sub_schema = property.second;
             auto& sub_instance = instance.get (property_name);
@@ -727,12 +767,12 @@ namespace ujson::schema {
             ctx_props.push_instance_path (property_name);
 
             /*
-            if (validate_subschema(ctx_props, sub_schema, sub_instance))
+            if (validate_subschema(ctx_props, sub_schema, sub_instance, quit_on_first_error))
                 annotation.append (property_name);
             else
                 all_valid = false;
             */
-            if (!validate_subschema(ctx_props, sub_schema, sub_instance))
+            if (!validate_subschema(ctx_props, sub_schema, sub_instance, quit_on_first_error))
                 all_valid = false;
             annotation.append (property_name);
 
@@ -766,7 +806,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_patternProperties (validation_context& ctx,
                                                              jvalue& schema,
                                                              jvalue& schema_value,
-                                                             jvalue& instance)
+                                                             jvalue& instance,
+                                                             const bool quit_on_first_error)
     {
         std::cmatch cm;
         bool all_valid = true;
@@ -776,12 +817,17 @@ namespace ujson::schema {
         validation_context ctx_props (ctx);
 
         for (auto& schema_property : schema_value.obj()) {
+            if (quit_on_first_error && all_valid==false)
+                break;
+
             auto& property_pattern = schema_property.first;
             auto& sub_schema = schema_property.second;
 
             std::regex re (property_pattern, std::regex::ECMAScript);
 
             for (auto& instance_property : instance.obj()) {
+                if (quit_on_first_error && all_valid==false)
+                    break;
                 auto& property_name = instance_property.first;
                 if (! std::regex_search(property_name.c_str(), cm, re))
                     continue;
@@ -791,12 +837,12 @@ namespace ujson::schema {
 
                 auto& sub_instance = instance_property.second;
                 /*
-                if (validate_subschema(ctx_props, sub_schema, sub_instance))
+                if (validate_subschema(ctx_props, sub_schema, sub_instance, quit_on_first_error))
                     annotation.append (property_name);
                 else
                     all_valid = false;
                 */
-                if (!validate_subschema(ctx_props, sub_schema, sub_instance))
+                if (!validate_subschema(ctx_props, sub_schema, sub_instance, quit_on_first_error))
                     all_valid = false;
                 annotation.append (property_name);
 
@@ -831,7 +877,8 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_additionalProperties (validation_context& ctx,
                                                                 jvalue& schema,
                                                                 jvalue& schema_value,
-                                                                jvalue& instance)
+                                                                jvalue& instance,
+                                                                const bool quit_on_first_error)
     {
         bool all_valid = true;
         std::string ctx_instance_path = ctx.instance_path().str ();
@@ -869,6 +916,10 @@ namespace ujson::schema {
         unsigned num_checked = 0;
 
         for (auto& property : instance.obj()) {
+
+            if (quit_on_first_error && all_valid==false)
+                break;
+
             auto& property_name = property.first;
             auto& sub_instance = property.second;
 
@@ -879,7 +930,7 @@ namespace ujson::schema {
             ++num_checked;
             ctx_props.push_instance_path (property_name);
 
-            if (validate_subschema(ctx_props, schema_value, sub_instance))
+            if (validate_subschema(ctx_props, schema_value, sub_instance, quit_on_first_error))
                 annotation.append (property_name);
             else
                 all_valid = false;
@@ -913,18 +964,23 @@ namespace ujson::schema {
     bool jvocabulary_applicator::validate_propertyNames (validation_context& ctx,
                                                          jvalue& schema,
                                                          jvalue& schema_value,
-                                                         jvalue& instance)
+                                                         jvalue& instance,
+                                                         const bool quit_on_first_error)
     {
         bool all_valid = true;
 
         validation_context ctx_props (ctx);
 
         for (auto& entry : instance.obj()) {
+
+            if (quit_on_first_error && all_valid==false)
+                break;
+
             auto& property_name = entry.first;
             jvalue name_instance (property_name);
 
             ctx_props.push_instance_path (property_name);
-            if (validate_subschema(ctx_props, schema_value, name_instance) == false)
+            if (validate_subschema(ctx_props, schema_value, name_instance, quit_on_first_error) == false)
                 all_valid = false;
             ctx_props.pop_instance_path ();
         }

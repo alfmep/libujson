@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -34,7 +34,10 @@ namespace ujson::schema {
         jvocabulary_applicator (jschema& schema_arg);
 
         virtual void load (jvalue& schema, jvalue& load_ctx);
-        virtual bool validate (validation_context& ctx, jvalue& schema, jvalue& instance);
+        virtual bool validate (validation_context& ctx,
+                               jvalue& schema,
+                               jvalue& instance,
+                               const bool quit_on_first_error);
 
 
     private:
@@ -45,32 +48,51 @@ namespace ujson::schema {
 
         // 10.2. Keywords for Applying Subschemas in Place
         //     Applicator keywords for any instance
-        bool validate_allOf (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_anyOf (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_oneOf (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_not (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_if (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_then (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_else (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
+        bool validate_allOf (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                             jvalue& instance, const bool quit_on_first_error);
+        bool validate_anyOf (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                             jvalue& instance, const bool quit_on_first_error);
+        bool validate_oneOf (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                             jvalue& instance, const bool quit_on_first_error);
+        bool validate_not (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                           jvalue& instance, const bool quit_on_first_error);
+        bool validate_if (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                          jvalue& instance, const bool quit_on_first_error);
+        bool validate_then (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                            jvalue& instance, const bool quit_on_first_error);
+        bool validate_else (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                            jvalue& instance, const bool quit_on_first_error);
+
         //     Applicator keywords for objects
-        bool validate_dependentSchemas (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
+        bool validate_dependentSchemas (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                        jvalue& instance, const bool quit_on_first_error);
+
         //
         // 10.3. Keywords for Applying Subschemas to Child Instances
         //     Applicator keywords for arrays
-        bool validate_prefixItems (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_items (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_contains (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
+        bool validate_prefixItems (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                   jvalue& instance, const bool quit_on_first_error);
+        bool validate_items (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                             jvalue& instance, const bool quit_on_first_error);
+        bool validate_contains (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                jvalue& instance, const bool quit_on_first_error);
+
         //     Applicator keywords for objects
-        bool validate_properties (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_patternProperties (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_additionalProperties (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
-        bool validate_propertyNames (validation_context& ctx, jvalue& schema, jvalue& schema_value, jvalue& instance);
+        bool validate_properties (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                  jvalue& instance, const bool quit_on_first_error);
+        bool validate_patternProperties (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                         jvalue& instance, const bool quit_on_first_error);
+        bool validate_additionalProperties (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                            jvalue& instance, const bool quit_on_first_error);
+        bool validate_propertyNames (validation_context& ctx, jvalue& schema, jvalue& schema_value,
+                                     jvalue& instance, const bool quit_on_first_error);
 
         using kw_loader_t = void (jvocabulary_applicator::*) (jvalue&, jvalue&);
         using kw_validator_t = bool (jvocabulary_applicator::*) (validation_context&,
-                                                                      jvalue&,
-                                                                      jvalue&,
-                                                                      jvalue&);
+                                                                 jvalue&,
+                                                                 jvalue&,
+                                                                 jvalue&,
+                                                                 const bool);
         using keywords_t = std::map<std::string, std::tuple<jvalue_type, kw_loader_t, jvalue_type, kw_validator_t>>;
         static const keywords_t keywords;
     };

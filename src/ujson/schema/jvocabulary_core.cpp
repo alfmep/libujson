@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -136,7 +136,10 @@ namespace ujson::schema {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    bool jvocabulary_core::validate (validation_context& ctx, jvalue& schema, jvalue& instance)
+    bool jvocabulary_core::validate (validation_context& ctx,
+                                     jvalue& schema,
+                                     jvalue& instance,
+                                     const bool quit_on_first_error)
     {
         bool is_valid = true;
 
@@ -151,7 +154,7 @@ namespace ujson::schema {
         auto& ref_value = schema.get ("$ref");
         if (ref_value.valid()) {
             ctx.push_schema_path ("$ref");
-            if (!validate_ref (ctx, schema, ref_value, instance))
+            if (!validate_ref (ctx, schema, ref_value, instance, quit_on_first_error))
                 is_valid = false;
             ctx.pop_schema_path ();
         }
@@ -159,7 +162,7 @@ namespace ujson::schema {
         auto& dynref_value = schema.get ("$dynamicRef");
         if (dynref_value.valid()) {
             ctx.push_schema_path ("$dynamicRef");
-            if (!validate_dynamicRef (ctx, schema, dynref_value, instance))
+            if (!validate_dynamicRef (ctx, schema, dynref_value, instance, quit_on_first_error))
                 is_valid = false;
             ctx.pop_schema_path ();
         }
@@ -288,7 +291,8 @@ namespace ujson::schema {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     bool jvocabulary_core::validate_ref (validation_context& ctx, jvalue& schema,
-                                         jvalue& schema_value, jvalue& instance)
+                                         jvalue& schema_value, jvalue& instance,
+                                         const bool quit_on_first_error)
     {
         jvalue* target_schema = nullptr;
         bool new_ref_schema_loaded = false;
@@ -309,7 +313,8 @@ namespace ujson::schema {
                     throw invalid_schema (ctx.base_uri, ctx.abs_keyword_path.str(),
                                           "Keyword '$ref' referring to same schema.");
                 }else{
-                    valid = validate_subschema (sub_ctx, *target_schema, instance, false, false, true);
+                    valid = validate_subschema (sub_ctx, *target_schema, instance,
+                                                quit_on_first_error, false, false, true);
                 }
             }else{
                 if (invalid_ref_cb && !new_ref_schema_loaded) {
@@ -376,7 +381,8 @@ namespace ujson::schema {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     bool jvocabulary_core::validate_dynamicRef (validation_context& ctx, jvalue& schema,
-                                                jvalue& schema_value, jvalue& instance)
+                                                jvalue& schema_value, jvalue& instance,
+                                                const bool quit_on_first_error)
     {
         jvalue* target_schema = nullptr;
         validation_context sub_ctx (ctx);
@@ -397,7 +403,8 @@ namespace ujson::schema {
                   "Keyword '$dynamicRef' referring to same schema.");
                   }
                 */
-                valid = validate_subschema (sub_ctx, *target_schema, instance, false, false, true);
+                valid = validate_subschema (sub_ctx, *target_schema, instance,
+                                            quit_on_first_error, false, false, true);
             }else{
                 if (invalid_ref_cb && !new_ref_schema_loaded) {
                     new_ref_schema_loaded = invalid_ref_cb (root_schema,

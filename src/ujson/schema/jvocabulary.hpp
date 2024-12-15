@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -74,10 +74,15 @@ namespace ujson::schema {
          * @param ctx A validation context object.
          * @param schema A JSON (sub)schema.
          * @param instance The JSON instance to validate.
+         * @param quit_on_first_error If <code>true</code>,
+         *         quit validation on first error.
          * @return <code>true</code> if the validation was successful.
          *         <code>false</code> if not.
          */
-        virtual bool validate (validation_context& ctx, jvalue& schema, jvalue& instance) = 0;
+        virtual bool validate (validation_context& ctx,
+                               jvalue& schema,
+                               jvalue& instance,
+                               const bool quit_on_first_error) = 0;
 
         /**
          * Return the JSON vocabulary id.
@@ -102,6 +107,7 @@ namespace ujson::schema {
         bool validate_subschema (validation_context& ctx,
                                  jvalue& sub_schema,
                                  jvalue& instance,
+                                 const bool quit_on_first_error,
                                  const bool create_subcontext=true,
                                  const bool ignore_annotations=false,
                                  const bool invalidate_parent_if_invalid=false);

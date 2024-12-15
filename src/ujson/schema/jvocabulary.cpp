@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -88,6 +88,7 @@ namespace ujson::schema {
     bool jvocabulary::validate_subschema (validation_context& ctx,
                                           jvalue& sub_schema,
                                           jvalue& instance,
+                                          const bool quit_on_first_error,
                                           const bool create_subcontext,
                                           const bool ignore_annotations,
                                           const bool invalidate_parent_if_invalid)
@@ -99,7 +100,7 @@ namespace ujson::schema {
             sub_ctx.reset (&ctx, nulldeleter()); // Don't actually delete anything
 
         // Validate the subschema
-        bool is_valid = root_schema.validate (*sub_ctx, sub_schema, instance);
+        bool is_valid = root_schema.validate (*sub_ctx, sub_schema, instance, quit_on_first_error);
         sub_ctx->set_valid (is_valid);
 
         if (sub_ctx->parent) {
