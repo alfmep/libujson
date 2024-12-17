@@ -192,33 +192,44 @@ int main (int argc, char* argv[])
     appargs_t opt;
     parse_args (argc, argv, opt);
 
-    // Open json document
-    //
-    ifstream ifs;
-    if (!opt.filename.empty())
-        ifs.open (opt.filename);
-    istream& in = opt.filename.empty() ? cin : ifs;
+    try {
+        // Open json document
+        //
+        ifstream ifs;
+        ifs.exceptions (std::ifstream::failbit);
+        if (!opt.filename.empty())
+            ifs.open (opt.filename);
+        istream& in = opt.filename.empty() ? cin : ifs;
+        in.exceptions (std::ifstream::failbit);
 
-    if (opt.multi_doc) {
-        // Treat the input as a stream of
-        // JSON instances separated by line breaks.
-        return parse_multiple_instances (in, opt);
+        if (opt.multi_doc) {
+            // Treat the input as a stream of
+            // JSON instances separated by line breaks.
+            return parse_multiple_instances (in, opt);
+        }
+
+        // Read and parse json document
+        //
+        string buffer ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
+        ujson::jparser parser;
+        auto instance = parser.parse_string (buffer, opt.parse_strict, opt.allow_duplicates);
+        if (!instance.valid()) {
+            auto err = parser.get_error ();
+            cerr << "Parse error at " << (err.row+1) << ", " << err.col
+                 << ": " << parser_err_to_str(err.code) << endl;
+            exit (1);
+        }
+
+        // Print the parsed json instance
+        //
+        cout << instance.describe(opt.fmt) << endl;
+        return 0;
     }
-
-    // Read and parse json document
-    //
-    string buffer ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
-    ujson::jparser parser;
-    auto instance = parser.parse_string (buffer, opt.parse_strict, opt.allow_duplicates);
-    if (!instance.valid()) {
-        auto err = parser.get_error ();
-        cerr << "Parse error at " << (err.row+1) << ", " << err.col
-             << ": " << parser_err_to_str(err.code) << endl;
+    catch (std::ios_base::failure& io_error) {
+        if (opt.filename.empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << opt.filename << "': " << io_error.code().message() << endl;
         exit (1);
     }
-
-    // Print the parsed json instance
-    //
-    cout << instance.describe(opt.fmt) << endl;
-    return 0;
 }

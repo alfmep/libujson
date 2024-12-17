@@ -359,16 +359,26 @@ static ujson::jvalue get_instance (appargs_t& opt, const bool quiet=false)
 {
     ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
     ujson::jvalue document;
-    if (opt.args[0].empty()) {
-        string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
-        document = parser.parse_string (buffer,
-                                        opt.strict_parsing,
-                                        opt.allow_duplicates);
-    }else{
-        document = parser.parse_file (opt.args[0],
-                                      opt.strict_parsing,
-                                      opt.allow_duplicates);
+    try {
+        if (opt.args[0].empty()) {
+            string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+            document = parser.parse_string (buffer,
+                                            opt.strict_parsing,
+                                            opt.allow_duplicates);
+        }else{
+            document = parser.parse_file (opt.args[0],
+                                          opt.strict_parsing,
+                                          opt.allow_duplicates);
+        }
     }
+    catch (std::ios_base::failure& io_error) {
+        if (opt.args[0].empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << opt.args[0] << "': " << io_error.code().message() << endl;
+        exit (1);
+    }
+
     if (document.invalid()) {
         if (!quiet)
             cerr << "Parse error: " << parser.error() << endl;
@@ -427,15 +437,24 @@ static int cmd_verify (appargs_t& opt)
     int retval = 0;
     ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
     ujson::jvalue document;
-    if (opt.args[0].empty()) {
-        string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
-        document = parser.parse_string (buffer,
-                                        opt.strict_parsing,
-                                        opt.allow_duplicates);
-    }else{
-        document = parser.parse_file (opt.args[0],
-                                      opt.strict_parsing,
-                                      opt.allow_duplicates);
+    try {
+        if (opt.args[0].empty()) {
+            string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+            document = parser.parse_string (buffer,
+                                            opt.strict_parsing,
+                                            opt.allow_duplicates);
+        }else{
+            document = parser.parse_file (opt.args[0],
+                                          opt.strict_parsing,
+                                          opt.allow_duplicates);
+        }
+    }
+    catch (std::ios_base::failure& io_error) {
+        if (opt.args[0].empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << opt.args[0] << "': " << io_error.code().message() << endl;
+        exit (1);
     }
     if (document.invalid()) {
         if (!opt.quiet)
@@ -459,9 +478,16 @@ static int cmd_verify (appargs_t& opt)
         //
         bool got_root_schema = false;
         for (auto& schema_file : opt.schema_files) {
-            auto instance = parser.parse_file (schema_file,
-                                               opt.strict_parsing,
-                                               opt.allow_duplicates);
+            ujson::jvalue instance;
+            try {
+                instance = parser.parse_file (schema_file,
+                                              opt.strict_parsing,
+                                              opt.allow_duplicates);
+            }
+            catch (std::ios_base::failure& io_error) {
+                cerr << "Error reading schema file '" << schema_file << "': " << io_error.code().message() << endl;
+                exit (1);
+            }
             if (instance.invalid()) {
                 if (!opt.quiet) {
                     cerr << "Error parsing schema file '" << schema_file
@@ -618,12 +644,27 @@ static int cmd_patch (appargs_t& opt)
 
     // Read and parse patch file
     //
+    ujson::jvalue patch;
     if (opt.args.size() < 2)
         opt.args.emplace_back ("");
-    ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
-    ujson::jvalue patch = parser.parse_file (opt.args[1], opt.strict_parsing, opt.allow_duplicates);
-    if (patch.invalid()) {
-        cerr << "Patch definition parse error: " << parser.error() << endl;
+    try {
+        ujson::jparser parser (opt.max_depth, opt.max_asize, opt.max_osize);
+        if (opt.args[1].empty()) {
+            string buffer ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+            patch = parser.parse_string (buffer, opt.strict_parsing, opt.allow_duplicates);
+        }else{
+            patch = parser.parse_file (opt.args[1], opt.strict_parsing, opt.allow_duplicates);
+        }
+        if (patch.invalid()) {
+            cerr << "Patch definition parse error: " << parser.error() << endl;
+            return 1;
+        }
+    }
+    catch (std::ios_base::failure& io_error) {
+        if (opt.args[1].empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << opt.args[1] << "': " << io_error.code().message() << endl;
         return 1;
     }
 

@@ -57,11 +57,14 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << endl;
     out << "Print a value from a JSON document." << endl;
     out << endl;
-    out << "Usage: " << prog_name << " [OPTIONS] [FILE] [POINTER]" << endl;
+    out << "Usage: " << prog_name << " [OPTIONS] [FILE] POINTER" << endl;
     out << endl;
     out << "A POINTER is a JSON pointer as described in RFC 6901." << endl;
-    out << "If the value is not found in the JSON document, or on a parse error, "
-        << prog_name << " exits with code 1." << endl;
+    out << "If the value pointed to is not found in the JSON document," << endl;
+    out << "or the pointer is not a valid JSON pointer, or on a parse error," << endl;
+    out << prog_name << " exits with code 1." << endl;
+    out << endl;
+    out << "In no file name is given, a JSON document is read from standard input." << endl;
     out << endl;
     out << "Options:" <<endl;
     out << "  -c, --compact        If the JSON value is an object or an array, print it without whitespace." << endl;
@@ -155,7 +158,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         break;
 
     case 1:
-        args.filename = arguments[0];
+        args.pointer = arguments[0];
         break;
 
     case 2:
@@ -181,53 +184,68 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
 int main (int argc, char* argv[])
 {
     appargs_t opt;
-    parse_args (argc, argv, opt);
-
-    // Read json file or standard input
-    //
-    ifstream ifs;
-    if (!opt.filename.empty())
-        ifs.open (opt.filename);
-    istream& in = opt.filename.empty() ? cin : ifs;
-    string json_desc ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
-
-    // Parse json document
-    //
-    ujson::jparser parser;
-    auto instance = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
-    if (!instance.valid()) {
-        cerr << "Parse error: " << parser.error() << endl;
-        exit (1);
-    }
-
-    // Get the value
-    //
-    auto& value = ujson::find_jvalue (instance, opt.pointer);
     int retval = 0;
-    bool type_mismatch = false;
 
-    // Print the result
-    //
-    if (opt.jtype != ujson::j_invalid  &&  value.type() != opt.jtype) {
-        // The value is not of the type we required
-        type_mismatch = true;
-        std::cerr << "Type mismatch, value at \"" << (std::string)opt.pointer
-                  << "\" is of type \"" << jtype_to_str(value.type())
-                  << "\"" << std::endl;
-        value.type (ujson::j_invalid);
+    try {
+        parse_args (argc, argv, opt);
+
+        // Read json file or standard input
+        //
+        ifstream ifs;
+        ifs.exceptions (std::ifstream::failbit);
+        if (!opt.filename.empty())
+            ifs.open (opt.filename);
+        istream& in = opt.filename.empty() ? cin : ifs;
+        string json_desc ((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
+
+        // Parse json document
+        //
+        ujson::jparser parser;
+        auto instance = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
+        if (!instance.valid()) {
+            cerr << "Parse error: " << parser.error() << endl;
+            exit (1);
+        }
+
+        // Get the value
+        //
+        auto& value = ujson::find_jvalue (instance, opt.pointer);
+        bool type_mismatch = false;
+
+        // Print the result
+        //
+        if (opt.jtype != ujson::j_invalid  &&  value.type() != opt.jtype) {
+            // The value is not of the type we required
+            type_mismatch = true;
+            std::cerr << "Type mismatch, value at \"" << (std::string)opt.pointer
+                      << "\" is of type \"" << jtype_to_str(value.type())
+                      << "\"" << std::endl;
+            value.type (ujson::j_invalid);
+        }
+
+        if (value.valid()) {
+            if (opt.unescape && value.is_string())
+                cout << value.str() << endl;
+            else
+                cout << value.describe(opt.fmt) << endl;
+        }else{
+            retval = 1;
+        }
+
+        if (retval && !type_mismatch)
+            std::cerr << "Value at location \"" << (std::string)opt.pointer << "\" not found" << endl;
     }
-
-    if (value.valid()) {
-        if (opt.unescape && value.is_string())
-            cout << value.str() << endl;
+    catch (std::ios_base::failure& io_error) {
+        if (opt.filename.empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
         else
-            cout << value.describe(opt.fmt) << endl;
-    }else{
+            cerr << "Error reading file '" << opt.filename << "': " << io_error.code().message() << endl;
         retval = 1;
     }
-
-    if (retval && !type_mismatch)
-        std::cerr << "Value at location \"" << (std::string)opt.pointer << "\" not found" << endl;
+    catch (std::exception& e) {
+        cerr << "Error: " << e.what() << endl;
+        retval = 1;
+    }
 
     return retval;
 }

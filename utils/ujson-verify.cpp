@@ -181,11 +181,23 @@ static int verify_document (const std::string& filename,
 
     // Read json file
     //
-    std::ifstream ifs;
-    if (!filename.empty())
-        ifs.open (filename);
-    std::istream& in = filename.empty() ? std::cin : ifs;
-    string json_document ((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    string json_document;
+    try {
+        std::ifstream ifs;
+        ifs.exceptions (std::ifstream::failbit);
+        if (!filename.empty())
+            ifs.open (filename);
+        std::istream& in = filename.empty() ? std::cin : ifs;
+        in.exceptions (std::ifstream::failbit);
+        json_document = string ((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    }
+    catch (std::ios_base::failure& io_error) {
+        if (filename.empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << filename << "': " << io_error.code().message() << endl;
+        exit (1);
+    }
 
     // Parse file and check result
     auto instance = parser.parse_string (json_document, args.strict, args.allow_duplicates);
@@ -264,14 +276,14 @@ static bool load_schema (ujson::jparser& parser, ujson::jschema& schema, const a
     bool use_schema = false;
 
     for (auto& schema_file : args.schema_files) {
-        auto schema_def = parser.parse_file (schema_file, args.strict, args.allow_duplicates);
-        if (schema_def.invalid()) {
-            auto err = parser.get_error ();
-            cerr << "Error: Parse error in schema file '" << schema_file << "' at "
-                 << err.row << ", " << err.col << ": " << parser_err_to_str(err.code) << endl;
-            exit (1);
-        }
         try {
+            auto schema_def = parser.parse_file (schema_file, args.strict, args.allow_duplicates);
+            if (schema_def.invalid()) {
+                auto err = parser.get_error ();
+                cerr << "Error: Parse error in schema file '" << schema_file << "' at "
+                     << err.row << ", " << err.col << ": " << parser_err_to_str(err.code) << endl;
+                exit (1);
+            }
             if (use_schema == false) {
                 schema.reset (schema_def);
                 use_schema = true;
@@ -288,6 +300,10 @@ static bool load_schema (ujson::jparser& parser, ujson::jschema& schema, const a
                 if (!is.pointer.empty())
                     cerr << "Pointer : " << is.pointer << endl;
             }
+            exit (1);
+        }
+        catch (std::ios_base::failure& io_error) {
+            cerr << "Error reading schema file '" << schema_file << "': " << io_error.code().message() << endl;
             exit (1);
         }
     }

@@ -133,22 +133,18 @@ int main (int argc, char* argv[])
 
     // Read json files
     //
-    ifstream ifs[2];
-    string json_desc[2];
+    string json_buffer[2];
     for (auto i=0; i<2; ++i) {
-        // Open
-        ifs[i].open (opt.filename[i]);
-        if (ifs[i].fail()) {
-            cerr << "Can't open file \"" << opt.filename[i] << "\" - " << strerror(errno) << endl;
+        try {
+            ifstream ifs;
+            ifs.exceptions (std::ifstream::failbit);
+            ifs.open (opt.filename[i]);
+            json_buffer[i] = string ((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+        }
+        catch (std::ios_base::failure& io_error) {
+            cerr << "Error reading file '" << opt.filename[i] << "': " << io_error.code().message() << endl;
             exit (1);
         }
-        // Read
-        json_desc[i] = string ((istreambuf_iterator<char>(ifs[i])), istreambuf_iterator<char>());
-        if (ifs[i].fail()) {
-            cerr << "Error reading file \"" << opt.filename[i] << "\" - " << strerror(errno) << endl;
-            exit (1);
-        }
-        ifs[i].close ();
     }
 
     // Parse json files
@@ -156,7 +152,7 @@ int main (int argc, char* argv[])
     ujson::jparser parser;
     ujson::jvalue instance[2];
     for (auto i=0; i<2; ++i) {
-        instance[i] = parser.parse_string (json_desc[i], opt.strict, opt.allow_duplicates);
+        instance[i] = parser.parse_string (json_buffer[i], opt.strict, opt.allow_duplicates);
         if (!instance[i].valid()) {
             if (!opt.quiet)
                 cerr << "Error parsing " << opt.filename[i] << ": " << parser.error() << endl;

@@ -9,12 +9,14 @@ ujson-get \- Print a specific value from a JSON document to standard output
 
 .SH SYNOPSIS
 .B ujson-get
-[OPTIONS] [FILE] [POINTER]
+[OPTIONS] [FILE] POINTER
 
 
 .SH DESCRIPTION
-ujson-get prints a specific value in a JSON document. If the JSON document is correct and the value specified by the pointer is found, ujson-get prints the value and exits with code 0. If not found, or on parse error, an error message is printed to standard error and the exit code is 1.
+ujson-get prints a specific value in a JSON document, pointed to by a JSON pointer. If the value specified by the pointer is found, ujson-get prints the value and exits with code 0.
+If not found, or on parse error, or the pointer is not a valid JSON pointer, an error message is printed to standard error and the exit code is 1.
 
+If no file name is given, the JSON document is read from standard input.
 
 .SH OPTIONS
 .TP

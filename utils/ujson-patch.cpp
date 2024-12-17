@@ -162,29 +162,45 @@ int main (int argc, char* argv[])
     // Parse the JSON document
     //
     ujson::jparser parser;
-    auto instance = parser.parse_file (opt.document_filename, opt.strict, opt.allow_duplicates);
-    if (!instance.valid()) {
-        if (!opt.quiet)
-            cerr << "Parse error, " << opt.document_filename << ": " << parser.error() << endl;
+    ujson::jvalue instance;
+    try {
+        instance = parser.parse_file (opt.document_filename, opt.strict, opt.allow_duplicates);
+        if (!instance.valid()) {
+            if (!opt.quiet)
+                cerr << "Parse error, " << opt.document_filename << ": " << parser.error() << endl;
+            exit (1);
+        }
+    }
+    catch (std::ios_base::failure& io_error) {
+        cerr << "Error reading file '" << opt.document_filename << "': " << io_error.code().message() << endl;
         exit (1);
     }
 
     // Parse the JSON patch(es)
     //
     ujson::jvalue patch;
-    if (opt.patch_filename.empty()) {
-        string json_desc ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
-        patch = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
-    }else{
-        patch = parser.parse_file (opt.patch_filename, opt.strict, opt.allow_duplicates);
-    }
-    if (!patch.valid()) {
-        if (!opt.quiet) {
-            if (opt.patch_filename.empty())
-                cerr << "Parse error: <standard input>: " << parser.error() << endl;
-            else
-                cerr << "Parse error, " << opt.patch_filename << ": " << parser.error() << endl;
+    try {
+        if (opt.patch_filename.empty()) {
+            string json_desc ((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());
+            patch = parser.parse_string (json_desc, opt.strict, opt.allow_duplicates);
+        }else{
+            patch = parser.parse_file (opt.patch_filename, opt.strict, opt.allow_duplicates);
         }
+        if (!patch.valid()) {
+            if (!opt.quiet) {
+                if (opt.patch_filename.empty())
+                    cerr << "Parse error: <standard input>: " << parser.error() << endl;
+                else
+                    cerr << "Parse error, " << opt.patch_filename << ": " << parser.error() << endl;
+            }
+            exit (1);
+        }
+    }
+    catch (std::ios_base::failure& io_error) {
+        if (opt.patch_filename.empty())
+            cerr << "Error reading input: " << io_error.code().message() << endl;
+        else
+            cerr << "Error reading file '" << opt.patch_filename << "': " << io_error.code().message() << endl;
         exit (1);
     }
 
