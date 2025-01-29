@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -99,6 +99,10 @@ int main (int argc, char* argv[])
     cout << "jnum.num()     : " << jnum.num() << endl; // Here we lose precision
     cout << "jnum.describe(): " << jnum.describe() << endl << endl;
 #endif
+
+    ujson::jvalue p = 1'652'756'485;
+    cout << "p.num()     : " << p.num() << endl;
+    cout << "p.describe(): " << p.describe() << endl;
 
 
     cout << endl;

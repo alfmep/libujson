@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -1162,7 +1162,7 @@ namespace ujson {
             if (std::isinf(num()) || std::isnan(num()))
                 ss << "null";
             else
-                ss << num ();
+                ss << std::setprecision(std::numeric_limits<num_t>::digits10 + 1) << num();
 #endif
             break;
 
