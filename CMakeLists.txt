@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023-2025 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -22,7 +22,7 @@ cmake_minimum_required (VERSION 3.22)
 # Project name and info
 #
 project (libujson
-    VERSION 4.2.3
+    VERSION 4.2.4
     LANGUAGES CXX
     DESCRIPTION "A JSON C++ library and utility applications for handling JSON documents."
     HOMEPAGE_URL https://github.com/alfmep/libujson
