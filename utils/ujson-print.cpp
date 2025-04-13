@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -33,16 +33,18 @@ static constexpr const char* prog_name = "ujson-print";
 
 struct appargs_t {
     ujson::desc_format_t fmt;
+    string filename;
     bool parse_strict;
     bool allow_duplicates;
     bool multi_doc;
-    string filename;
+    bool multi_doc_exit_on_error;
 
     appargs_t () {
         fmt = fmt::fmt_pretty;
         parse_strict = false;
         allow_duplicates = true;
         multi_doc = false;
+        multi_doc_exit_on_error = false;
     }
 };
 
@@ -72,7 +74,9 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
     out << "  -n, --no-duplicates   Don't allow objects with duplicate member names." << endl;
     out << "  -m, --multi-doc       Parse multiple JSON instances." << endl;
     out << "                        The input is treated as a stream of JSON " << endl;
-    out << "                        instances, separated by line breaks." << endl;
+    out << "                        instances separated by line breaks." << endl;
+    out << "      --exit-on-error   When option '-m' is used, exit on first error" << endl;
+    out << "                        instead of continue parsing new input lines." << endl;
 #if (UJSON_HAS_CONSOLE_COLOR)
     out << "  -o, --color           Print in color if the output is to a tty." << endl;
 #endif
@@ -87,6 +91,7 @@ static void print_usage_and_exit (std::ostream& out, int exit_code)
 //------------------------------------------------------------------------------
 static void parse_args (int argc, char* argv[], appargs_t& args)
 {
+    constexpr int opt_id_exit_on_error = 500;
     optlist_t options = {
         { 'c', "compact",      opt_t::none, 0},
         { 'e', "escape-slash", opt_t::none, 0},
@@ -97,6 +102,7 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
         { 's', "strict",       opt_t::none, 0},
         { 'n', "no-duplicates",opt_t::none, 0},
         { 'm', "multi-doc",    opt_t::none, 0},
+        {   0, "exit-on-error",opt_t::none, opt_id_exit_on_error},
         { 'o', "color",        opt_t::none, 0},
         { 'v', "version",      opt_t::none, 0},
         { 'h', "help",         opt_t::none, 0},
@@ -131,6 +137,9 @@ static void parse_args (int argc, char* argv[], appargs_t& args)
             break;
         case 'm':
             args.multi_doc = true;
+            break;
+        case opt_id_exit_on_error:
+            args.multi_doc_exit_on_error = true;
             break;
         case 'o':
 #if (UJSON_HAS_CONSOLE_COLOR)
@@ -174,14 +183,18 @@ static int parse_multiple_instances (istream& in,appargs_t& opt)
     ujson::jparser parser;
     std::string line;
 
+    in.exceptions (std::ifstream::goodbit); // Don't throw exception on failure
     while (getline(in, line)) {
         auto instance = parser.parse_string (line, opt.parse_strict, opt.allow_duplicates);
-        if (instance.valid())
+        if (instance.valid()) {
             cout << instance.describe(opt.fmt) << endl;
-        else
-            cerr << "Error: " << parser.error() << endl;
+        }else{
+            cerr << "Parse error: " << parser.error() << endl;
+            if (opt.multi_doc_exit_on_error)
+                return 1;
+        }
     }
-    return in.fail() ? 1 : 0;
+    return (in.fail() && !in.eof()) ? 1 : 0;
 }
 
 
@@ -196,11 +209,15 @@ int main (int argc, char* argv[])
         // Open json document
         //
         ifstream ifs;
-        ifs.exceptions (std::ifstream::failbit);
-        if (!opt.filename.empty())
+        if (!opt.filename.empty()) {
             ifs.open (opt.filename);
+            if (!ifs) {
+                cerr << "Error: Can't open file" << endl;
+                return 1;
+            }
+        }
         istream& in = opt.filename.empty() ? cin : ifs;
-        in.exceptions (std::ifstream::failbit);
+        in.exceptions (std::ifstream::failbit); // Throw exception on failure
 
         if (opt.multi_doc) {
             // Treat the input as a stream of
@@ -217,7 +234,7 @@ int main (int argc, char* argv[])
             auto err = parser.get_error ();
             cerr << "Parse error at " << (err.row+1) << ", " << err.col
                  << ": " << parser_err_to_str(err.code) << endl;
-            exit (1);
+            return 1;
         }
 
         // Print the parsed json instance
@@ -227,9 +244,9 @@ int main (int argc, char* argv[])
     }
     catch (std::ios_base::failure& io_error) {
         if (opt.filename.empty())
-            cerr << "Error reading input: " << io_error.code().message() << endl;
+            cerr << "Error reading input stream" << endl;
         else
-            cerr << "Error reading file '" << opt.filename << "': " << io_error.code().message() << endl;
-        exit (1);
+            cerr << "Error reading file" << endl;
+        return 1;
     }
 }

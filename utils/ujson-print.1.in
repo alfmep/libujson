@@ -45,7 +45,10 @@ Parse the JSON document in strict mode.
 Don't allow objects with duplicate member names.
 .TP
 .B -m, --multi-doc
-Parse multiple JSON instances. The input is treated as a stream of JSON instances, separated by line breaks.
+Parse multiple JSON instances. The input is treated as a stream of JSON instances separated by line breaks.
+.TP
+.B --exit-on-error
+When option '-m' is used, exit on first error instead of continue parsing new input lines.
 .TP
 .B -o, --color
 Print in color if the output is to a tty.
