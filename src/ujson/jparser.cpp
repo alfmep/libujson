@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -869,21 +869,31 @@ pair:           STRING COLON value
             //
             // Parse state stack not empty
             //
-            switch (parse_state.top()) {
-            case ps_array:
-            case ps_elements:
-                // We have an unterminated array
-                error (jparser::err::unterminated_array, row, col);
-                break;
+            bool found_error_state = false;
+            while (parse_state.empty()==false && found_error_state==false) {
+                switch (parse_state.top()) {
+                case ps_array:
+                case ps_elements:
+                    // We have an unterminated array
+                    error (jparser::err::unterminated_array, row, col);
+                    found_error_state = true;
+                    break;
 
-            case ps_object:
-            case ps_members:
-            case ps_pair:
-                // We have an unterminated object
-                error (jparser::err::unterminated_object, row, col);
-                break;
+                case ps_object:
+                case ps_members:
+                case ps_pair:
+                    // We have an unterminated object
+                    error (jparser::err::unterminated_object, row, col);
+                    found_error_state = true;
+                    break;
 
-            default:
+                case ps_value:
+                case ps_str_value:
+                    parse_state.pop ();
+                    break;
+                }
+            }
+            if (found_error_state == false) {
 #if (PARSE_DEBUG)
                 cerr << "Internal error here: " << __LINE__ << endl;
 #endif
