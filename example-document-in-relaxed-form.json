@@ -1,7 +1,7 @@
 /*
  * This is an example of a JSON document in a format supported by libujson when parsing in relaxed mode.
  *
- * C-style comments are allowed and ignored when parsing a JSON document.
+ * C/C++-style comments are allowed and ignored by libujson when parsing a JSON document in relaxed mode.
  * So no comments will be written when using the API to print JSON instances.
  *
  */
@@ -14,12 +14,13 @@
 
     "note_2": "A normal object member name enclosed in double quotes",
 
-    note_3:   "This is a string value on " // This can be used to
-              "more than one line that, "  // make it more readable.
-              "when parsed, will be one "
-              "single long line.",
+    note_3:   "This is a string value on " // This can be used to have input
+              "more than one line that, "  // JSON documents in a more readable format.
+              "when parsed, will be one "  // But when using libujson to print a
+              "single long line.",         // JSON instance, strings will be
+                                           // printed as a single string on one line.
 
-    array: [1,2,3,4,5,6,7,8,9,],  // The array definition can end with a separator (,)
+    array_2: [1,2,3,4,5,6,7,8,9,],  // An array definition can end with a separator (,)
 
     // Object member names not in format [_a-zA-Z][_a-zA-Z0-9]* must still be enclosed by double quotes.
     "~tilde": "Other value",
