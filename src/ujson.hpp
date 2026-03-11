@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023,2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -30,6 +30,7 @@ namespace ujson {}
 #include <ujson/utils.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>
+#include <ujson/jtoken.hpp>
 #include <ujson/jtokenizer.hpp>
 #include <ujson/jparser.hpp>
 #include <ujson/invalid_schema.hpp>

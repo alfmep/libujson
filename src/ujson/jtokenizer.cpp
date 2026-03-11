@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -44,43 +44,6 @@ namespace ujson::parser {
         ns_exp,
         ns_frac,
     };
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    std::string jtoken_type_to_string (const jtoken::type_t type)
-    {
-        switch (type) {
-        case jtoken::tk_lcbrack:
-            return "LCBRACK";
-        case jtoken::tk_rcbrack:
-            return "RCBRACK";
-        case jtoken::tk_lbrack:
-            return "LBRACK";
-        case jtoken::tk_rbrack:
-            return "RBRACK";
-        case jtoken::tk_separator:
-            return "SEPARATOR";
-        case jtoken::tk_colon:
-            return "COLON";
-        case jtoken::tk_null:
-            return "NULL";
-        case jtoken::tk_true:
-            return "TRUE";
-        case jtoken::tk_false:
-            return "FALSE";
-        case jtoken::tk_string:
-            return "STRING";
-        case jtoken::tk_number:
-            return "NUMBER";
-        case jtoken::tk_identifier:
-            return "IDENTIFIER";
-        case jtoken::tk_comment:
-            return "COMMENT";
-        default:
-            return "INVALID";
-        }
-    }
 
 
     //--------------------------------------------------------------------------

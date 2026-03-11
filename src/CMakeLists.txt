@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023,2025 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -92,6 +92,7 @@ target_sources (ujson PRIVATE
     ujson/jvalue.cpp
     ujson/jpointer.cpp
     ujson/utils.cpp
+    ujson/jtoken.cpp
     ujson/jtokenizer.cpp
     ujson/jparser.cpp
     ujson/jschema.cpp
@@ -118,6 +119,7 @@ set (PUBLIC_HEADER_FILES
     ujson/jvalue.hpp
     ujson/jpointer.hpp
     ujson/utils.hpp
+    ujson/jtoken.hpp
     ujson/jtokenizer.hpp
     ujson/jparser.hpp
     ujson/jschema.hpp
