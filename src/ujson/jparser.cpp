@@ -438,6 +438,9 @@ pair:           STRING COLON value
         try {
             parsed_string.append (unescape(token.data));
         }
+        catch (std::bad_alloc& ba) {
+            throw ba;
+        }
         catch (...) {
             error (jparser::err::invalid_string, token.row, token.col);
         }
@@ -578,6 +581,9 @@ pair:           STRING COLON value
                     parse_state.push (ps_str_value);
                 }
             }
+            catch (std::bad_alloc& ba) {
+                throw ba;
+            }
             catch (...) {
                 error (jparser::err::invalid_string, token.row, token.col);
             }
@@ -646,6 +652,9 @@ pair:           STRING COLON value
         try {
             parse_pairs.top().name = unescape (token.data);
             parse_pairs.top().has_name = true;
+        }
+        catch (std::bad_alloc& ba) {
+            throw ba;
         }
         catch (...) {
             error (jparser::err::invalid_string, token.row, token.col);
@@ -974,6 +983,8 @@ pair:           STRING COLON value
     jparser::jparser ()
     {
         parse_context = new parser_t;
+        if (parse_context == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -984,6 +995,8 @@ pair:           STRING COLON value
                       unsigned max_object_size)
     {
         parse_context = new parser_t;
+        if (parse_context == nullptr)
+            throw std::bad_alloc ();
         limits (max_depth, max_array_size, max_object_size);
     }
 

@@ -215,6 +215,8 @@ namespace ujson {
         : jtype {j_object}
     {
         v.jobj = new json_object (o);
+        if (v.jobj == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -224,6 +226,8 @@ namespace ujson {
         : jtype {j_object}
     {
         v.jobj = new json_object (std::forward<json_object&&>(o));
+        if (v.jobj == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -233,6 +237,8 @@ namespace ujson {
         : jtype {j_array}
     {
         v.jarray = new json_array (a);
+        if (v.jarray == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -242,6 +248,8 @@ namespace ujson {
         : jtype {j_array}
     {
         v.jarray = new json_array (std::forward<json_array&&>(a));
+        if (v.jarray == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -251,6 +259,8 @@ namespace ujson {
         : jtype {j_string}
     {
         v.jstr = new std::string (s);
+        if (v.jstr == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -260,6 +270,8 @@ namespace ujson {
         : jtype {j_string}
     {
         v.jstr = new std::string (std::forward<std::string&&>(s));
+        if (v.jstr == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -269,6 +281,8 @@ namespace ujson {
         : jtype {j_string}
     {
         v.jstr = new std::string ((s==nullptr?"":s));
+        if (v.jstr == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -279,6 +293,8 @@ namespace ujson {
         : jtype {j_number}
     {
         v.jnum = new num_t (n);
+        if (v.jnum == nullptr)
+            throw std::bad_alloc ();
     }
 
 
@@ -288,6 +304,8 @@ namespace ujson {
         : jtype {j_number}
     {
         v.jnum = new num_t (std::forward<mpf_class&&>(n));
+        if (v.jnum == nullptr)
+            throw std::bad_alloc ();
     }
 #endif
 
@@ -301,6 +319,8 @@ namespace ujson {
         std::stringstream ss;
         ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << n;
         v.jnum = new num_t (ss.str());
+        if (v.jnum == nullptr)
+            throw std::bad_alloc ();
 #else
         v.jnum = n;
 #endif
@@ -314,6 +334,8 @@ namespace ujson {
     {
 #if UJSON_HAVE_GMPXX
         v.jnum = new num_t (n);
+        if (v.jnum == nullptr)
+            throw std::bad_alloc ();
 #else
         v.jnum = static_cast<num_t> (n);
 #endif
@@ -327,6 +349,8 @@ namespace ujson {
     {
 #if UJSON_HAVE_GMPXX
         v.jnum = new num_t (n);
+        if (v.jnum == nullptr)
+            throw std::bad_alloc ();
 #else
         v.jnum = static_cast<num_t> (n);
 #endif
@@ -744,19 +768,27 @@ namespace ujson {
         switch (jtype) {
         case j_object:
             v.jobj = new json_object;
+            if (v.jobj == nullptr)
+                throw std::bad_alloc ();
             break;
 
         case j_array:
             v.jarray = new json_array;
+            if (v.jarray == nullptr)
+                throw std::bad_alloc ();
             break;
 
         case j_string:
             v.jstr = new std::string;
+            if (v.jstr == nullptr)
+                throw std::bad_alloc ();
             break;
 
         case j_number:
 #if UJSON_HAVE_GMPXX
             v.jnum = new num_t (0);
+            if (v.jnum == nullptr)
+                throw std::bad_alloc ();
 #else
             v.jnum = 0.0;
 #endif

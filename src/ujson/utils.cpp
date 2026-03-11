@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019,2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019,2021-2023,2025 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -205,7 +205,11 @@ namespace ujson {
                 }
             }
             return *value;
-        }catch (...) {
+        }
+        catch (std::bad_alloc& ba) {
+            throw ba;
+        }
+        catch (...) {
             invalid_jvalue.type (j_invalid);
             return invalid_jvalue;
         }
@@ -280,6 +284,9 @@ namespace ujson {
         try {
             result = unescape (in);
             ok = true;
+        }
+        catch (std::bad_alloc& ba) {
+            throw ba;
         }
         catch (...) {
             ok = false;
@@ -381,6 +388,8 @@ namespace ujson {
                 }
                 try {
                     result.append (utf16_to_utf8(u16_str));
+                }catch (std::bad_alloc& ba) {
+                    throw ba;
                 }catch (...) {
                     throw std::invalid_argument ("Invalid JSON escape sequence");
                 }
@@ -751,6 +760,9 @@ namespace ujson {
             }else{
                 retval = patch_invalid;
             }
+        }
+        catch (std::bad_alloc& ba) {
+            throw ba;
         }
         catch (json_type_error&) {
             retval = patch_invalid;
