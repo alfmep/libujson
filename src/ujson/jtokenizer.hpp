@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023,2025 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2025,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -79,25 +79,17 @@ namespace ujson::parser {
 
 
     private:
-        enum str_state_t : unsigned;
-        enum num_state_t : unsigned;
-
         const char* buf_pos;
         const char* buf_end;
         const char* token_pos;
         size_t row;
         size_t col;
-
         jtoken token;
-        num_state_t num_state;
-        str_state_t str_state;
-        size_t ch_count;
-
         bool strict;
 
-        void set_token_at_pos (jtoken::type_t type, size_t size, jtoken::error_t err=jtoken::ok);
         void set_token (jtoken::type_t type, size_t size, jtoken::error_t err=jtoken::ok);
-        void scan_token (jtoken::type_t type, const char* const name, size_t name_size);
+        void scan_reserved_name (jtoken::type_t type, const char* const name, size_t name_size);
+        void scan_identifier ();
         void scan_string ();
         void scan_number ();
         void scan_comment ();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -81,16 +81,28 @@ int main (int argc, char* argv[])
     }
 
     bool strict = false;
-    std::string file_name = argv[1];
-    if (argc > 2) {
-        std::string option = std::string (argv[1]);
+    bool count_only = false;
+    std::string file_name;
+
+    for (int i=1; i<argc; ++i) {
+        std::string option = std::string (argv[i]);
         if (option=="-s" || option=="--strict") {
             strict = true;
-        }else{
-            cerr << "Usage: jtokens [-s,--strict] <json-file>" << endl;
+        }
+        else if (option=="-c" || option=="--count") {
+            count_only = true;
+        }
+        else if (file_name.empty()) {
+            file_name = option;
+        }
+        else {
+            cerr << "Usage: jtokens [-s,--strict] [-c,--count] <json-file>" << endl;
             return 1;
         }
-        file_name = argv[2];
+    }
+    if (file_name.empty()) {
+        cerr << "Usage: jtokens [-s,--strict] [-c,--count] <json-file>" << endl;
+        return 1;
     }
 
     ifstream in (file_name);
@@ -104,15 +116,26 @@ int main (int argc, char* argv[])
 
     jtokenizer tokenizer (json_doc, strict);
     const jtoken* token;
-    while ((token = tokenizer.next_token()) != nullptr) {
-        cout << "Token: " << left << setw(10) << jtoken_type_to_string(token->type)
-             << " size: " << setw(2) << right << token->data.size()
-             << ", at (" << setw(2) << right << (token->row+1) << ',' << setw(3) << right << token->col << ')';
-        cout << ",\t data: ==>" << token->data << "<==";
-        if (token->type == jtoken::tk_invalid)
-            cout << " error: " << token_err_to_str(token->err_code);
-        cout << endl;
-    }
+    unsigned long count = 0;
+    bool got_error = false;
 
-    return 0;
+    while ((token = tokenizer.next_token()) != nullptr) {
+        if (count_only  &&  token->type != jtoken::tk_invalid) {
+            ++count;
+        }else{
+            cout << "Token: " << left << setw(10) << jtoken_type_to_string(token->type)
+                 << " size: " << setw(2) << right << token->data.size()
+                 << ", at (" << setw(2) << right << (token->row+1) << ',' << setw(3) << right << token->col << ')';
+            cout << ",\t data: ==>" << token->data << "<==";
+            if (token->type == jtoken::tk_invalid) {
+                cout << " error: " << token_err_to_str(token->err_code);
+                got_error = true;
+            }
+            cout << endl;
+        }
+    }
+    if (count_only)
+        cout << count << endl;
+
+    return got_error ? 1 : 0;
 }
