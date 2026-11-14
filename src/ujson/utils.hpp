@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2020-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2020-2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -19,10 +19,16 @@
 #ifndef UJSON_UTILS_HPP
 #define UJSON_UTILS_HPP
 
+#include <ujson/config.hpp>
 #include <ujson/jvalue.hpp>
 #include <ujson/jpointer.hpp>
 #include <string>
 #include <string_view>
+#if (UJSON_HAS_STD_ENDIAN)
+#  include <bit>
+#else
+#  include <arpa/inet.h>
+#endif
 
 
 namespace ujson {
@@ -41,14 +47,60 @@ namespace ujson {
     };
 
 
+#if (UJSON_HAS_STD_ENDIAN)
     /**
-     * Convert an UTF-16 string to an UTF-8 string.
-     * @param u16 An UTF-16 encoded string.
-     * @return An UTF-8 encoded string.
+     * Check if the native endianess is big-endian.
+     * Return <code>true</code> if the native endianess is big-endian.
+     */
+    static constexpr bool is_native_endian_big () {
+        return std::endian::native == std::endian::big;
+    }
+    /**
+     * Check if the native endianess is little-endian.
+     * Return <code>true</code> if the native endianess is little-endian.
+     */
+    static constexpr bool is_native_endian_little () {
+        return std::endian::native == std::endian::little;
+    }
+#else
+    /**
+     * Check if the native endianess is big-endian.
+     * Return <code>true</code> if the native endianess is big-endian.
+     */
+    static constexpr bool is_native_endian_big () {
+        return (short)42 == htons(42);
+    }
+    /**
+     * Check if the native endianess is little-endian.
+     * Return <code>true</code> if the native endianess is little-endian.
+     */
+    static constexpr bool is_native_endian_little () {
+        return (short)42 != htons(42);
+    }
+#endif
+
+
+    /**
+     * Convert a UTF-16 string to a UTF-8 string.
+     * The endianess of the UTF-16 string is assumed to be little-endian.
+     * @param u16 A UTF-16 little-endian encoded string.
+     * @return A UTF-8 encoded string.
      * @throws std::invalid_argument If the input string contains
      *                               invalid UTF-16 characters.
      */
     std::string utf16_to_utf8 (const std::u16string u16);
+
+    /**
+     * Convert a UTF-16 string to a UTF-8 string.
+     * @param u16 A UTF-16 encoded string.
+     * @param big_endian If <code>true</code>, the endianess of the
+     *                   input string is big-endian. If <code>false</code>,
+     *                   it is little-endian.
+     * @return A UTF-8 encoded string.
+     * @throws std::invalid_argument If the input string contains
+     *                               invalid UTF-16 characters.
+     */
+    std::string utf16_to_utf8 (const std::u16string u16, bool big_endian);
 
     /**
      * Get the name of a JSON type.

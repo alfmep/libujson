@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -31,6 +31,23 @@
 
 /* Define to 1 if console colors are supported */
 #define UJSON_HAS_CONSOLE_COLOR @UJSON_HAS_CONSOLE_COLOR@
+
+
+#if (__cplusplus >= 201907L)
+#  define UJSON_HAS_STD_ENDIAN 1
+#else
+#  define UJSON_HAS_STD_ENDIAN 0
+#endif
+
+
+#if (__cplusplus >= 202110L)
+#  define UJSON_HAS_STD_BYTESWAP 1
+#else
+#  define UJSON_HAS_STD_BYTESWAP 0
+#endif
+
+
+
 
 
 #endif

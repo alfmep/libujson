@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019,2021-2023,2025 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019,2021-2023,2025,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -27,39 +27,79 @@
 #include <ujson/jparser.hpp>
 #include <ujson/jpointer.hpp>
 
-
 namespace ujson {
+
+
+#if ! (UJSON_HAS_STD_BYTESWAP)
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    static inline void swap_u16 (uint8_t* val)
+    {
+        val[0] = val[0] ^ val[1];
+        val[1] = val[0] ^ val[1];
+        val[0] = val[0] ^ val[1];
+    }
+#endif
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     std::string utf16_to_utf8 (const std::u16string u16_str)
     {
-        std::string result;
+        return utf16_to_utf8 (u16_str, false);
+    }
 
-        for (auto u16=u16_str.begin(); u16!=u16_str.end(); ++u16) {
-            if (*u16 <= 0x7F) {
-                result.push_back ((char)*u16);
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string utf16_to_utf8 (const std::u16string u16_str, bool big_endian)
+    {
+        std::string result;
+        bool swap_bytes = false;
+        if ((big_endian && is_native_endian_little()) ||
+            (!big_endian && is_native_endian_big()))
+        {
+            swap_bytes = true;
+        }
+
+        uint16_t u16;
+        for (auto ch=u16_str.begin(); ch!=u16_str.end(); ++ch) {
+#if (UJSON_HAS_STD_BYTESWAP)
+            u16 = swap_bytes ? std::byteswap(*ch) : *ch;
+#else
+            u16 = *ch;
+            if (swap_bytes)
+                swap_u16 ((uint8_t*)&u16);
+#endif
+            if (u16 <= 0x7F) {
+                result.push_back ((char)u16);
             }
-            else if (*u16 <= 0x07FF) {
-                result.push_back (0xC0 | (char)(*u16 >> 6));
-                result.push_back (0x80 | (char)(*u16 & 0x3F));
+            else if (u16 <= 0x07FF) {
+                result.push_back (0xC0 | (char)(u16 >> 6));
+                result.push_back (0x80 | (char)(u16 & 0x3F));
             }
             else {
                 char32_t code_point = 0;
 
                 // Convert from UTF-16 to code point
                 //
-                if (*u16 <= 0xD7FF  ||  (*u16 >= 0xE000  &&  *u16 <= 0xFFFF)) {
-                    code_point = (char32_t) *u16;
+                if (u16 <= 0xD7FF  ||  (u16 >= 0xE000  &&  u16 <= 0xFFFF)) {
+                    code_point = (char32_t) u16;
                 }
-                else if (*u16 <= 0xDBFF) {
-                    code_point = (*u16 - 0xD800) << 10;
-                    ++u16;
-                    if (u16 == u16_str.end()  ||  *u16 < 0xDC00  ||  *u16 > 0xDFFF) {
+                else if (u16 <= 0xDBFF) {
+                    code_point = (u16 - 0xD800) << 10;
+                    if (++ch == u16_str.end())
                         throw std::invalid_argument ("Invalid UTF-16");
-                    }
-                    code_point += *u16 + (0x10000 - 0xDC00);
+#if (UJSON_HAS_STD_BYTESWAP)
+                    u16 = swap_bytes ? std::byteswap(*ch) : *ch;
+#else
+                    u16 = *ch;
+                    if (swap_bytes)
+                        swap_u16 ((uint8_t*)&u16);
+#endif
+                    if (u16 < 0xDC00  ||  u16 > 0xDFFF)
+                        throw std::invalid_argument ("Invalid UTF-16");
+                    code_point += u16 + (0x10000 - 0xDC00);
                 }
                 else {
                     throw std::invalid_argument ("Invalid UTF-16");
