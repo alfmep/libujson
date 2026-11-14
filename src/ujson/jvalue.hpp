@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -29,8 +29,8 @@
 #include <ujson/multimap_list.hpp>
 #include <ujson/json_type_error.hpp>
 #include <ujson/config.hpp>
-#if UJSON_HAVE_GMPXX
-#  include <gmpxx.h>
+#if (UJSON_HAVE_GMPXX)
+  #include <gmpxx.h>
 #endif
 
 
@@ -54,24 +54,15 @@ namespace ujson {
      */
     enum desc_format_t : uint16_t {
         /**
-         * If no flag is set, the output will be without any whitespace.
+         * If no flag is set, the output will be without
+         * any whitespace, as compact as possible.
          */
         fmt_none         = 0x00,
 
-#if (UJSON_HAS_CONSOLE_COLOR)
         /**
          * If set, whitespaces (line brake and indentation) are used
          * to make the description more readable.
-         * All flags below, except fmt_color,
-         * depends on this flag being set.
          */
-#else
-        /**
-         * If set, whitespaces (line brake and indentation) are used
-         * to make the description more readable.
-         * All flags below depends on this flag being set.
-         */
-#endif
         fmt_pretty       = 0x01,
 
         /**
@@ -82,7 +73,7 @@ namespace ujson {
         fmt_sep_elements = 0x02,
 
         /**
-         * If set, the properties of JSON objects will be
+         * If set, the attributes of JSON objects will be
          * printed sorted by name, and not in natural order
          * (the order they were inserted).
          */
@@ -97,6 +88,7 @@ namespace ujson {
         /**
          * If set, indent using TAB instead of four
          * space(' ') characters for each indentation depth.
+         * This flag is only relevant if flag fmt_pretty is set.
          */
         fmt_tabs         = 0x10,
 
@@ -105,58 +97,61 @@ namespace ujson {
          * Make the output more readable by color
          * coding the syntax using escape codes for
          * console colors.
-         * @note When using this flag, the resulting output
-         *       string can <b>NOT</b> be used as a valid
-         *       JSON instance, since it may contain escape
-         *       codes for colors.
+         * @warning When using this flag, the resulting output
+         *          string may <i>NOT</i> be used as a valid
+         *          JSON instance, since it may contain escape
+         *          codes for colors.
          */
 #endif
         fmt_color        = 0x20,
 
         /**
-         * If set, print any object member name without
-         * enclosing double quotes if the object member
+         * If set, print any object attribute name without
+         * enclosing double quotes if the object attribute
          * name is in the following format: [_a-zA-Z][_a-zA-Z0-9]*
+         * @warning The resulting string may <i>not</i> be compatible
+         *          with the JSON definition as described in RFC8259.
          */
         fmt_relaxed      = 0x40,
 
         /**
          * If set, print all array items on the same line.
          * Note that objects in the array may still be split on multiple lines.
+         * This flag is only relevant if flag fmt_pretty is set.
          */
         fmt_compact_array= 0x80,
 
         fmt_mask         = 0xff,
     };
     /**  Bitwise OR (desc_format_t | desc_format_t). */
-    inline desc_format_t operator| (const desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t operator| (const desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t) ((const uint16_t)lhs | (const uint16_t)rhs);
     }
     /**  Bitwise OR assignment (desc_format_t lhs |= desc_format_t lhs). */
-    inline desc_format_t& operator|= (desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t& operator|= (desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t&) ((uint16_t&)lhs |= (const uint16_t&)rhs);
     }
 
     /**  Bitwise AND (desc_format_t & desc_format_t). */
-    inline desc_format_t operator& (const desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t operator& (const desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t) ((const uint16_t)lhs & (const uint16_t)rhs);
     }
     /**  Bitwise AND assignment (desc_format_t lhs &= desc_format_t lhs). */
-    inline desc_format_t& operator&= (desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t& operator&= (desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t&) ((uint16_t&)lhs &= (const uint16_t&)rhs);
     }
 
     /**  Bitwise XOR (desc_format_t ^ desc_format_t). */
-    inline desc_format_t operator^ (const desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t operator^ (const desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t) ((const uint16_t)lhs ^ (const uint16_t)rhs);
     }
     /**  Bitwise XOR assignment (desc_format_t lhs ^= desc_format_t lhs). */
-    inline desc_format_t& operator^= (desc_format_t& lhs, const desc_format_t& rhs) {
+    constexpr desc_format_t& operator^= (desc_format_t& lhs, const desc_format_t& rhs) {
         return (desc_format_t&) ((uint16_t&)lhs ^= (const uint16_t&)rhs);
     }
 
     /**  Bitwise NOT (~desc_format_t). */
-    inline desc_format_t operator~ (const desc_format_t& a) {
+    constexpr desc_format_t operator~ (const desc_format_t& a) {
         return (desc_format_t) ~(const uint16_t&)a & fmt_mask;
     }
 
@@ -234,7 +229,7 @@ namespace ujson {
      * A jvalue associated with a string,
      * representing a JSON object attribute.
      */
-    using json_pair = std::pair<std::string, jvalue>;
+    using json_pair = std::pair<const std::string, jvalue>;
 
     /**
      * A representation of a JSON object.
@@ -411,14 +406,14 @@ namespace ujson {
          *            Always use <code>nullptr</code> as parameter
          *            to create a JSON null type, and not a pointer
          *            with value 0.
-         * \par Exampe:
+         * \par Example:
          * \code
-         * ...
-         * char* ptr = nullptr;
-         * ujson::jvalue value1 (ptr); // Creates an empty JSON string (ujson::j_string)
-         * ...
-         * ujson::jvalue value2 (nullptr); // Creates a JSON null value (ujson::j_null)
-         * ...
+         *
+         *     char* ptr = nullptr;
+         *     ujson::jvalue value1 (ptr); // Creates an empty JSON string (ujson::j_string)
+         *
+         *     ujson::jvalue value2 (nullptr); // Creates a JSON null value (ujson::j_null)
+         *
          * \endcode
          */
         jvalue (const std::nullptr_t nil);
@@ -575,14 +570,14 @@ namespace ujson {
          *            with value 0.
          * \par Exampe:
          * \code
-         * ujson::jvalue value1;
-         * ujson::jvalue value2;
-         * ...
-         * char* ptr = nullptr;
-         * value1 = ptr; // Makes value1 an empty JSON string (ujson::j_string)
-         * ...
-         * value2 = nullptr; // Makes value2 a JSON null value (ujson::j_null)
-         * ...
+         *     ujson::jvalue value1;
+         *     ujson::jvalue value2;
+         *
+         *     char* ptr = nullptr;
+         *     value1 = ptr; // Makes value1 an empty JSON string (ujson::j_string)
+         *
+         *     value2 = nullptr; // Makes value2 a JSON null value (ujson::j_null)
+         *
          * \endcode
          */
         jvalue& operator= (const std::nullptr_t nil) { type(j_null); return *this; }
@@ -669,6 +664,20 @@ namespace ujson {
         json_object& obj ();
 
         /**
+         * Get a const reference to the ujson::json_object instance
+         * used by this jvalue instance to represent a JSON object.
+         * @return A const reference to a ujson::json_object.
+         * @throw ujson::json_type_error If this is not a JSON object.
+         *        The type of JSON value can be checked using method jvalue::type().
+         * @note The jvalue instance uses an instance of a ujson::json_object
+         *       to represent a JSON object. If any method is called on this
+         *       jvalue instance that changes the JSON type from an object
+         *       into some other JSON type, the reference returned by this
+         *       method will be invalid and should not be used.
+         */
+        const json_object& obj () const;
+
+        /**
          * Assign a json_object to this jvalue, making this a JSON object.
          * Set the value type of this instance to ujson::j_object and
          * copy the contents of the supplied json_object to this object.
@@ -706,6 +715,20 @@ namespace ujson {
         json_array& array ();
 
         /**
+         * Get a const reference to the ujson::json_array instance
+         * used by this jvalue instance to represent a JSON array.
+         * @return A const reference to a ujson::json_array.
+         * @throw ujson::json_type_error If this is not a JSON array.
+         *        The type of JSON value can be checked using method jvalue::type().
+         * @note The jvalue instance uses an instance of a ujson::json_array
+         *       to represent a JSON array. If any method is called on this
+         *       jvalue instance that changes the JSON type from an array
+         *       into some other JSON type, the reference returned by this
+         *       method will be invalid and should not be used.
+         */
+        const json_array& array () const;
+
+        /**
          * Assign a json_array to this jvalue, making this a JSON array.
          * Set the value type of this instance to ujson::j_array and
          * copy the content of the supplied json_array to this object.
@@ -740,6 +763,19 @@ namespace ujson {
          *       method will be invalid and should not be used.
          */
         std::string& str ();
+
+        /**
+         * Get a const reference to the string value if this is a JSON string.
+         * @return A const reference to a std::string.
+         * @throw ujson::json_type_error If this is not a JSON string.
+         *        The type of JSON value can be checked using method jvalue::type().
+         * @note The jvalue instance uses an instance of a std::string
+         *       to represent a JSON string. If any method is called on this
+         *       jvalue instance that changes the JSON type from a string
+         *       into some other JSON type, the reference returned by this
+         *       method will be invalid and should not be used.
+         */
+        const std::string& str () const;
 
         /**
          * Assing a string to this jvalue, making it a JSON string.
@@ -794,6 +830,24 @@ namespace ujson {
          *       GNU MP - C++ Class Interface</a>
          */
         mpf_class& mpf ();
+
+        /**
+         * Return a const reference a mpf_class
+         *        representing the JSON number value.
+         * @return A const reference to a mpf_class instance.
+         * @note The jvalue instance uses an instance of a mpf_class
+         *       to represent a JSON number. If any method is called on this
+         *       jvalue instance that changes the JSON type from an object
+         *       into some other JSON type, the reference returned by this
+         *       method will be invalid and should not be used.
+         * @throw ujson::json_type_error If this is not a JSON number.
+         *        The type of JSON value can be checked using
+         *        method jvalue::type().
+         * @see <a href=https://gmplib.org/manual/index
+         *       rel="noopener noreferrer" target="_blank">
+         *       GNU MP - C++ Class Interface</a>
+         */
+        const mpf_class& mpf () const;
 #endif
 #if UJSON_HAVE_GMPXX
         /**
@@ -958,6 +1012,27 @@ namespace ujson {
         jvalue& get (const std::string& name);
 
         /**
+         * Get a JSON object attribute.
+         * Return a const reference to the JSON value associated
+         * with a specified name in the JSON object.<br/>
+         * If no value associated with the specified name is found,
+         * a reference to an invalid static jvalue is returned.
+         * This invalid jvalue has jvalue_type ujson::j_invalid,
+         * and will be resetted by libujson at any time, so don't
+         * use it for anything else but checking the return value.
+         * @param name The name of the object attribute we want.
+         * @return A reference to the value mapped to the given name.
+         *         Or a reference to a static invalid jvalue if not found.
+         * @throw ujson::json_type_error If this is not a JSON object.
+         *        The type of JSON value can be checked using method jvalue::type().
+         * @note The JSON specification allows multiple object attributes
+         *       with the same name. If a JSON object contains more than
+         *       one attribute with the name searched for, the last value
+         *       in the JSON object with that name will be returned.
+         */
+        const jvalue& get (const std::string& name) const;
+
+        /**
          * Get a JSON object attribute and assume there is only
          * one attribute with the specified name.
          * The JSON specification allows multiple object attributes
@@ -983,6 +1058,31 @@ namespace ujson {
         jvalue& get_unique (const std::string& name);
 
         /**
+         * Get a JSON object attribute and assume there is only
+         * one attribute with the specified name.
+         * The JSON specification allows multiple object attributes
+         * with the same name. This method assumes there are no
+         * multiples of an attribute and will throw an exception
+         * if there are.<br/>
+
+         * This method will return a reference to the JSON value
+         * associated with a specified name in the JSON object.<br/>
+         * If no value associated with the specified name is found,
+         * a reference to an invalid static jvalue is returned.
+         * This invalid jvalue has jvalue_type ujson::j_invalid,
+         * and will be resetted by libujson at any time, so don't
+         * use it for anything else but checking the return value.
+         * @param name The name of the object attribute we want.
+         * @return A const reference to the value mapped to the given name.
+         *         Or a reference to a static invalid jvalue if not found.
+         * @throw ujson::json_type_error
+         *         - If this is not a JSON object.
+         * @throw std::logic_error
+         *         - If there are multiple attributes with the same name.
+         */
+        const jvalue& get_unique (const std::string& name) const;
+
+        /**
          * Access a JSON object attribute.
          * The named object attribute will be created if not
          * found in the object. The newly created jvalue will
@@ -1004,10 +1104,23 @@ namespace ujson {
          * @param n The index of the object in the array we want to access.
          * @return A reference to a jvalue in the JSON array.
          * @throw ujson::json_type_error If this is not a JSON array.
-         *        The type of JSON value can be checked using method jvalue::type().
+         *        The type of JSON value can be checked using
+         *        method jvalue::type().
          * @throw std::out_of_range If the index is out of range.
          */
         jvalue& operator[] (const size_t n);
+
+        /**
+         * Access a JSON array entry.
+         * Returns a const reference to the n'th value in the JSON array.
+         * @param n The index of the object in the array we want to access.
+         * @return A const reference to a jvalue in the JSON array.
+         * @throw ujson::json_type_error If this is not a JSON array.
+         *        The type of JSON value can be checked using
+         *        method jvalue::type().
+         * @throw std::out_of_range If the index is out of range.
+         */
+        const jvalue& operator[] (const size_t n) const;
 
         /**
          * Return the number of JSON values in an array or an object.
@@ -1134,9 +1247,28 @@ namespace ujson {
          * @param fmt Flags describing the format of the resulting
          *            output string.
          * @return A string in JSON format defining this JSON intance.
-         * @note If flag <code>fmt_color</code> is set, the resulting
-         *       string can <b>NOT</b> be used as a valid JSON instance,
-         *       since it may contain escape codes for console colors.
+         * @warning If flag <code>ujson::fmt_color</code> is set, the resulting
+         *          string may <i>NOT</i> be used as a valid JSON instance,
+         *          since it may contain escape codes for console colors.
+         *          <br/>
+         *          Example of how to safely print out a color encoded JSON
+         *          instance that can also be redirected to a file or pipe:<br/>
+         *          \code
+         *          #include <stdio.h>
+         *          #include <unistd.h>
+         *          #include <ujson.hpp>
+         *          ...
+         *          ujson::jvalue value;
+         *          ...
+         *          if (isatty(fileno(stdout))) {
+         *              // Output is a console
+         *              std::cout << value.describe(ujson::fmt_pretty | ujson::fmt_color) << std::endl;
+         *          }else{
+         *              // Output is redirected to a file or pipe
+         *              std::cout << value.describe(ujson::fmt_pretty) << std::endl;
+         *          }
+         *          ...
+         *          \endcode
          * @see desc_format_t
          */
         inline std::string describe (desc_format_t fmt=fmt_none) const {
@@ -1150,11 +1282,31 @@ namespace ujson {
          * @param starting_indent_depth Start the output with
          *                              this indentation depth.
          *                              Only relevant if flag
-         *                              <code>fmt_pretty</code> is set.
+         *                              <code>ujson::fmt_pretty</code>
+         *                              is set.
          * @return A string in JSON format defining this JSON intance.
-         * @note If flag <code>fmt_color</code> is set, the resulting
-         *       string can <b>NOT</b> be used as a valid JSON instance,
-         *       since it may contain escape codes for console colors.
+         * @warning If flag <code>ujson::fmt_color</code> is set, the resulting
+         *          string may <i>NOT</i> be used as a valid JSON instance,
+         *          since it may contain escape codes for console colors.
+         *          <br/>
+         *          Example of how to safely print out a color encoded JSON
+         *          instance that can also be redirected to a file or pipe:<br/>
+         *          \code
+         *          #include <stdio.h>
+         *          #include <unistd.h>
+         *          #include <ujson.hpp>
+         *          ...
+         *          ujson::jvalue value;
+         *          ...
+         *          if (isatty(fileno(stdout))) {
+         *              // Output is a console
+         *              std::cout << value.describe(ujson::fmt_pretty | ujson::fmt_color) << std::endl;
+         *          }else{
+         *              // Output is redirected to a file or pipe
+         *              std::cout << value.describe(ujson::fmt_pretty) << std::endl;
+         *          }
+         *          ...
+         *          \endcode
          * @see desc_format_t
          */
         std::string describe (desc_format_t fmt,

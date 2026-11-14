@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2025 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -530,6 +530,16 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    const json_object& jvalue::obj () const
+    {
+        if (jtype != j_object)
+            throw ujson::json_type_error ("Not a JSON object");
+        return *v.jobj;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void jvalue::obj (const json_object& o)
     {
         type (j_object);
@@ -549,6 +559,16 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     json_array& jvalue::array ()
+    {
+        if (jtype != j_array)
+            throw ujson::json_type_error ("Not a JSON array");
+        return *v.jarray;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const json_array& jvalue::array () const
     {
         if (jtype != j_array)
             throw ujson::json_type_error ("Not a JSON array");
@@ -586,6 +606,16 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    const std::string& jvalue::str () const
+    {
+        if (jtype != j_string)
+            throw ujson::json_type_error ("Not a JSON string");
+        return *v.jstr;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void jvalue::str (const std::string& s)
     {
         type (j_string);
@@ -606,6 +636,16 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     mpf_class& jvalue::mpf ()
+    {
+        if (jtype != j_number)
+            throw ujson::json_type_error ("Not a JSON number");
+        return *v.jnum;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const mpf_class& jvalue::mpf () const
     {
         if (jtype != j_number)
             throw ujson::json_type_error ("Not a JSON number");
@@ -849,7 +889,53 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
+    const jvalue& jvalue::get (const std::string& name) const
+    {
+        if (type() != j_object) {
+            // This is not a json object
+            throw ujson::json_type_error ("Not a JSON object");
+        }
+
+        auto entry = find_last_in_jobj (name, *v.jobj);
+        if (entry != v.jobj->send())
+            return entry->second;
+
+        // Name not found, return an invalid json value
+        invalid_jvalue.type (j_invalid);
+        return invalid_jvalue;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     jvalue& jvalue::get_unique (const std::string& name)
+    {
+        if (type() != j_object) {
+            // This is not a json object
+            throw ujson::json_type_error ("Not a JSON object");
+        }
+
+        auto items = v.jobj->equal_range (name);
+        if (items.first == items.second) {
+            // Name not found, return an invalid json value
+            invalid_jvalue.type (j_invalid);
+            return invalid_jvalue;
+        }
+
+        auto& value = items.first->second;
+
+        // Check if there are more attributes with the same name
+        ++items.first;
+        if (items.first != items.second)
+            throw std::logic_error ("JSON object member name not unique");
+
+        return value;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const jvalue& jvalue::get_unique (const std::string& name) const
     {
         if (type() != j_object) {
             // This is not a json object
@@ -896,6 +982,20 @@ namespace ujson {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue& jvalue::operator[] (const size_t index)
+    {
+        if (type() != j_array)
+            throw ujson::json_type_error ("Not a JSON array");
+
+        if (index >= v.jarray->size())
+            throw std::out_of_range ("Array index out of range");
+
+        return v.jarray->operator[] (index);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    const jvalue& jvalue::operator[] (const size_t index) const
     {
         if (type() != j_array)
             throw ujson::json_type_error ("Not a JSON array");
@@ -1189,7 +1289,7 @@ namespace ujson {
 
         case j_number:
 #if UJSON_HAVE_GMPXX
-            num_t_to_str (const_cast<jvalue*>(this)->mpf(), ss);
+            num_t_to_str (*v.jnum, ss);
 #else
             if (std::isinf(num()) || std::isnan(num()))
                 ss << "null";

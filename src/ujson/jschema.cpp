@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -40,12 +40,12 @@ namespace ujson {
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static std::string carefully_get_schema_id (jvalue& schema,
+    static std::string carefully_get_schema_id (const jvalue& schema,
                                                 const std::string& default_id="")
     {
         std::string id (default_id);
         if (schema.type() == j_object) {
-            auto& value = schema.get ("$id");
+            const auto& value = schema.get ("$id");
             if (value.type() == j_string)
                 id = value.str ();
         }
@@ -157,7 +157,7 @@ namespace ujson {
 
         auto ref_schema = referenced_schema;
 
-        std::string ref_schema_id = carefully_get_schema_id (const_cast<jvalue&>(ref_schema));
+        std::string ref_schema_id = carefully_get_schema_id (ref_schema);
         bool add_alias = false;
         if (ref_schema_id.empty()) {
             if (alias.empty()) {

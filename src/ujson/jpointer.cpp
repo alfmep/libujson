@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022,2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -83,7 +83,7 @@ namespace ujson {
     jpointer::jpointer (const json_array& array_of_tokens)
     {
         for (auto& token : array_of_tokens)
-            push_back (const_cast<jvalue&>(token).str());
+            push_back (token.str());
     }
 
 
@@ -122,7 +122,7 @@ namespace ujson {
     {
         clear ();
         for (auto& token : array_of_tokens)
-            push_back (const_cast<jvalue&>(token).str());
+            push_back (token.str());
         return *this;
     }
 
