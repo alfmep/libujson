@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020,2022 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2020,2022,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -25,7 +25,8 @@
 #include <vector>
 #include <stdexcept>
 #include <functional>
-
+#include <algorithm>
+#include <memory>
 
 namespace ujson {
 
@@ -55,12 +56,22 @@ namespace ujson {
      *    - <b>crsbegin()</b> Same as <b>rbegin()</b> but the iterated items are read-only.
      *    - <b>crsend()</b>   Const Iterator to the end. Used with iterator <b>crsbegin()</b>.
      */
-    template<class Key, class T, class CompareKey=std::less<Key>, class CompareValue=std::less<T>>
+    template<class Key,
+             class T,
+             class CompareKey = std::less<Key>,
+             class CompareMapped = std::less<T>,
+             class ValueAllocator = std::allocator<std::pair<const Key, T>>,
+             class KeyRefAllocator = std::allocator<std::pair<const std::reference_wrapper<const Key>,
+                                                              typename std::list<std::pair<const Key, T>>::iterator>>
+             >
     class multimap_list {
     private:
-        using ItemList = std::list<std::pair<const Key, T>>;
+        using ItemList = std::list<std::pair<const Key, T>, ValueAllocator>;
         using KeyRef = std::reference_wrapper<const Key>;
-        using KeyRefMap = std::multimap<KeyRef, typename ItemList::iterator, CompareKey>;
+        using KeyRefMap = std::multimap<KeyRef,
+                                        typename ItemList::iterator,
+                                        CompareKey,
+                                        KeyRefAllocator>;
 
     public:
         using key_type = Key;                       /**< Key type. */
@@ -69,24 +80,26 @@ namespace ujson {
         using size_type = size_t;                   /**< Size type. */
         using difference_type = ptrdiff_t;          /**< Difference type. */
         using key_compare = CompareKey;             /**< Key compare type. */
-        using mapped_compare = CompareValue;        /**< Mapped value compare type. */
+        using mapped_compare = CompareMapped;       /**< Mapped value compare type. */
         using reference = value_type&;              /**< Reference type to a value. */
         using const_reference = const value_type&;  /**< Const reference type to a value. */
 
         /**
          * Comparison functor that compares a key-value pair.
          */
-        struct value_type_compare {
+        struct value_compare {
+            key_compare key_comp;
+            mapped_compare value_comp;
             /**
              * Return <code>true</code> is lhs is <em>less than</em> rhs (lhs < rhs).
              */
             bool operator() (const value_type& lhs, const value_type& rhs) {
-                if (key_compare{}(lhs.first, rhs.first))
+                if (key_comp(lhs.first, rhs.first))
                     return true;
-                else if (key_compare{}(rhs.first, lhs.first))
+                else if (key_comp(rhs.first, lhs.first))
                     return false;
                 else
-                    return mapped_compare{}(lhs.second, rhs.second);
+                    return value_comp(lhs.second, rhs.second);
             }
         };
 
@@ -115,11 +128,9 @@ namespace ujson {
          * @param ml The multimap_list object to copy.
          */
         multimap_list (const multimap_list& ml) {
-            std::lock (mutex, ml.mutex);
-            std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-            std::lock_guard<std::mutex> lg2 (ml.mutex, std::adopt_lock);
+            std::scoped_lock lock (mutex, ml.mutex);
             for (auto& item : ml.items)
-                push_back_impl (item.first, item.second);
+                push_back_impl (item);
         }
 
 
@@ -129,9 +140,7 @@ namespace ujson {
          * @param ml The multimap_list object to move.
          */
         multimap_list (multimap_list&& ml) {
-            std::lock (mutex, ml.mutex);
-            std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-            std::lock_guard<std::mutex> lg2 (ml.mutex, std::adopt_lock);
+            std::scoped_lock lock (mutex, ml.mutex);
             items = std::move (ml.items);
             keys  = std::move (ml.keys);
         }
@@ -151,7 +160,7 @@ namespace ujson {
             : keys (comp)
             {
                 for (auto i=first; i!=last; ++i)
-                    push_back (*i);
+                    push_back_impl (*i);
             }
 
 
@@ -166,7 +175,7 @@ namespace ujson {
             : keys (comp)
             {
                 for (auto& entry : ilist)
-                    push_back (entry);
+                    push_back_impl (entry);
             }
 
 
@@ -181,19 +190,33 @@ namespace ujson {
          * Make this object a copy of another multimap_list object.
          * @param rhs The object to copy.
          */
-        multimap_list& operator= (const multimap_list& rhs)
-            {
-                if (&rhs != this) {
-                    std::lock (mutex, rhs.mutex);
-                    std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-                    std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-                    items.clear ();
-                    keys.clear ();
-                    for (auto& item : rhs.items)
-                        push_back_impl (item.first, item.second);
-                }
-                return *this;
+        multimap_list& operator= (const multimap_list& rhs) {
+            if (&rhs != this) {
+                std::scoped_lock lock (mutex, rhs.mutex);
+                items.clear ();
+                keys.clear ();
+                for (auto& item : rhs.items)
+                    push_back_impl (item);
             }
+            return *this;
+        }
+
+
+        /**
+         * Move operator.
+         * Move the contents of another multimap_list to this object.
+         * @param rhs The object to move to this object.
+         */
+        multimap_list& operator= (multimap_list&& rhs) {
+            if (&rhs != this) {
+                std::scoped_lock lock (mutex, rhs.mutex);
+                items.clear ();
+                keys.clear ();
+                items = std::move (rhs.items);
+                keys  = std::move (rhs.keys);
+            }
+            return *this;
+        }
 
 
         /**
@@ -206,29 +229,9 @@ namespace ujson {
             items.clear ();
             keys.clear ();
             for (auto& entry : ilist)
-                push_back_impl (entry.first, entry.second);
+                push_back_impl (entry);
             return *this;
         }
-
-
-        /**
-         * Move operator.
-         * Move the contents of another multimap_list to this object.
-         * @param rhs The object to move to this object.
-         */
-        multimap_list& operator= (multimap_list&& rhs)
-            {
-                if (&rhs != this) {
-                    std::lock (mutex, rhs.mutex);
-                    std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-                    std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-                    items.clear ();
-                    keys.clear ();
-                    items = std::move (rhs.items);
-                    keys  = std::move (rhs.keys);
-                }
-                return *this;
-            }
 
 
         /**
@@ -252,6 +255,15 @@ namespace ujson {
 
 
         /**
+         * Return the maximum number of entries the container is able to hold.
+         * @return The maximum number of entries the container is able to hold.
+         */
+        size_type max_size () const noexcept {
+            return std::min (items.max_size(), keys.max_size());
+        }
+
+
+        /**
          * Clear the container.
          */
         void clear () noexcept {
@@ -262,7 +274,132 @@ namespace ujson {
 
 
     private:
-        template<class VType, class ItemListIter, class KeyRefMapIter>
+        //----------------------------------------------------------------------
+        // Const Iterator
+        //----------------------------------------------------------------------
+        template<class VType, class ItemListConstIter, class KeyRefMapConstIter>
+        class const_iterator_impl {
+        public:
+            using iterator_category = std::bidirectional_iterator_tag;
+            using value_type = const VType;
+            using difference_type = ptrdiff_t;
+            using pointer = const VType*;
+            using reference = const VType&;
+
+            const_iterator_impl () = default;
+            ~const_iterator_impl () = default;
+            //----------------------------------------------------------------------
+            const_iterator_impl (const const_iterator_impl& iter) {
+                sorted = iter.sorted;
+                if (sorted)
+                    si = iter.si;
+                else
+                    i = iter.i;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl (ItemListConstIter iter) {
+                sorted = false;
+                i = iter;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl (KeyRefMapConstIter sorted_iter) {
+                sorted = true;
+                si = sorted_iter;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl& operator= (const const_iterator_impl& iter) {
+                if (this != &iter) {
+                    sorted = iter.sorted;
+                    if (sorted)
+                        si = iter.si;
+                    else
+                        i = iter.i;
+                }
+                return *this;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl operator++ () {
+                // ++obj
+                if (sorted)
+                    ++si;
+                else
+                    ++i;
+                return *this;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl operator++ (int) {
+                // obj++
+                const_iterator_impl retval (*this);
+                if (sorted)
+                    ++si;
+                else
+                    ++i;
+                return retval;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl operator-- () {
+                // --obj
+                if (sorted)
+                    --si;
+                else
+                    --i;
+                return *this;
+            }
+            //----------------------------------------------------------------------
+            const_iterator_impl operator-- (int) {
+                // obj--
+                const_iterator_impl retval (*this);
+                if (sorted)
+                    --si;
+                else
+                    --i;
+                return retval;
+            }
+            //----------------------------------------------------------------------
+            reference operator*() const {
+                if (sorted)
+                    return *(si->second);
+                else
+                    return *i;
+            }
+            //----------------------------------------------------------------------
+            pointer operator->() const {
+                if (sorted)
+                    return &(*(si->second));
+                else
+                    return &(*i);
+            }
+            //----------------------------------------------------------------------
+            bool operator== (const const_iterator_impl& rhs) const {
+                if (sorted != rhs.sorted) {
+                    throw std::logic_error (
+                            (sorted ?
+                             "Can't compare sorted with unsorted iterator" :
+                             "Can't compare unsorted with sorted iterator"));
+                }
+                return sorted ? si==rhs.si : i==rhs.i;
+            }
+            //----------------------------------------------------------------------
+            bool operator!= (const const_iterator_impl& rhs) const {
+                return ! this->operator==(rhs);
+            }
+        private:
+            friend class multimap_list;
+            ItemListConstIter i;
+            KeyRefMapConstIter si;
+            bool sorted;
+        }; // class const_iterator_impl
+
+
+        //----------------------------------------------------------------------
+        // Iterator
+        //----------------------------------------------------------------------
+        template<class VType,
+                 class ItemListConstIter,
+                 class KeyRefMapConstIter,
+                 class ItemListIter,
+                 class KeyRefMapIter
+                 >
         class iterator_impl {
         public:
             using iterator_category = std::bidirectional_iterator_tag;
@@ -270,6 +407,7 @@ namespace ujson {
             using difference_type = ptrdiff_t;
             using pointer = VType*;
             using reference = VType&;
+            using const_iterator = const_iterator_impl<VType, ItemListConstIter, KeyRefMapConstIter>;
 
             iterator_impl () = default;
             ~iterator_impl () = default;
@@ -290,6 +428,24 @@ namespace ujson {
             iterator_impl (KeyRefMapIter sorted_iter) {
                 sorted = true;
                 si = sorted_iter;
+            }
+            //----------------------------------------------------------------------
+            iterator_impl& operator= (const iterator_impl& iter) {
+                if (this != &iter) {
+                    sorted = iter.sorted;
+                    if (sorted)
+                        si = iter.si;
+                    else
+                        i = iter.i;
+                }
+                return *this;
+            }
+            //----------------------------------------------------------------------
+            operator const_iterator() const {
+                if (sorted)
+                    return const_iterator ((KeyRefMapConstIter)si);
+                else
+                    return const_iterator ((ItemListConstIter)i);
             }
             //----------------------------------------------------------------------
             iterator_impl operator++ () {
@@ -330,29 +486,18 @@ namespace ujson {
                 return retval;
             }
             //----------------------------------------------------------------------
-            VType& operator*() {
+            reference operator*() const {
                 if (sorted)
                     return *(si->second);
                 else
                     return *i;
             }
             //----------------------------------------------------------------------
-            VType* operator->() {
+            pointer operator->() const {
                 if (sorted)
                     return &(*(si->second));
                 else
                     return &(*i);
-            }
-            //----------------------------------------------------------------------
-            iterator_impl& operator= (const iterator_impl& rhs) {
-                if (&rhs != this) {
-                    sorted = rhs.sorted;
-                    if (sorted)
-                        si = rhs.si;
-                    else
-                        i = rhs.i;
-                }
-                return *this;
             }
             //----------------------------------------------------------------------
             bool operator== (const iterator_impl& rhs) const {
@@ -370,19 +515,23 @@ namespace ujson {
             }
         private:
             friend class multimap_list;
-            bool sorted;
             ItemListIter i;
             KeyRefMapIter si;
+            bool sorted;
         }; // class iterator_impl
 
     public:
-        using iterator               = iterator_impl<value_type,
-                                                     typename ItemList::iterator,
-                                                     typename KeyRefMap::iterator>; /**< An iterator. */
-        using const_iterator         = iterator_impl<const value_type,
-                                                     typename ItemList::const_iterator,
-                                                     typename KeyRefMap::const_iterator>; /**< A const iterator. */
-        using reverse_iterator       = std::reverse_iterator<iterator>; /**< A reverse iterator. */
+        using iterator = iterator_impl<value_type,
+                                       typename ItemList::const_iterator,
+                                       typename KeyRefMap::const_iterator,
+                                       typename ItemList::iterator,
+                                       typename KeyRefMap::iterator
+                                       >; /**< An iterator. */
+        using const_iterator = const_iterator_impl<value_type,
+                                                   typename ItemList::const_iterator,
+                                                   typename KeyRefMap::const_iterator
+                                                   >; /**< A const iterator. */
+        using reverse_iterator = std::reverse_iterator<iterator>; /**< A reverse iterator. */
         using const_reverse_iterator = std::reverse_iterator<const_iterator>; /**< A const reverse iterator. */
 
 
@@ -392,6 +541,17 @@ namespace ujson {
          * @return A reference to the first item in the container.
          */
         reference front () {
+            std::lock_guard<std::mutex> lock (mutex);
+            return *(begin());
+        }
+
+
+        /**
+         * Return a const reference to the first item in the container.
+         * The return value is undefined if the container is empty.
+         * @return A const reference to the first item in the container.
+         */
+        const_reference front () const {
             std::lock_guard<std::mutex> lock (mutex);
             return *(begin());
         }
@@ -408,10 +568,36 @@ namespace ujson {
         }
 
 
+        /**
+         * Return a const reference to the last item in the container.
+         * The return value is undefined if the container is empty.
+         * @return A const reference to the last item in the container.
+         */
+        const_reference back () const {
+            std::lock_guard<std::mutex> lock (mutex);
+            return *(rbegin());
+        }
+
+
     private:
-        void push_back_impl (const key_type& key, const mapped_type& value) {
-            items.push_back (std::make_pair(key, value));
-            auto i = (++items.rbegin()).base ();
+        inline void push_back_impl (const key_type& key, const mapped_type& value) {
+            items.emplace_back (std::make_pair(key, value));
+            auto i = --(items.end());
+            keys.emplace_hint (keys.end(), std::cref(i->first), i);
+        }
+        inline void push_back_impl (const key_type& key, mapped_type&& value) {
+            items.emplace_back (std::make_pair(key, std::forward<mapped_type>(value)));
+            auto i = --(items.end());
+            keys.emplace_hint (keys.end(), std::cref(i->first), i);
+        }
+        inline void push_back_impl (const value_type& entry) {
+            items.push_back (entry);
+            auto i = --(items.end());
+            keys.emplace_hint (keys.end(), std::cref(i->first), i);
+        }
+        inline void push_back_impl (value_type&& entry) {
+            items.emplace_back (std::forward<value_type>(entry));
+            auto i = --(items.end());
             keys.emplace_hint (keys.end(), std::cref(i->first), i);
         }
 
@@ -424,8 +610,17 @@ namespace ujson {
          */
         void push_back (const key_type& key, const mapped_type& value) {
             std::lock_guard<std::mutex> lock (mutex);
-            push_back_impl (std::forward<const key_type&>(key),
-                            std::forward<const mapped_type&>(value));
+            push_back_impl (key, value);
+        }
+
+        /**
+         * Add an element to the end of the list.
+         * @param key The key to add.
+         * @param value The mapped value to add.
+         */
+        void push_back (const key_type& key, mapped_type&& value) {
+            std::lock_guard<std::mutex> lock (mutex);
+            push_back_impl (key, std::forward<mapped_type>(value));
         }
 
 
@@ -434,7 +629,8 @@ namespace ujson {
          * @param entry A key and a value to add to the list.
          */
         void push_back (const value_type& entry) {
-            push_back (entry.first, entry.second);
+            std::lock_guard<std::mutex> lock (mutex);
+            push_back_impl (entry);
         }
 
 
@@ -444,9 +640,7 @@ namespace ujson {
          */
         void push_back (value_type&& entry) {
             std::lock_guard<std::mutex> lock (mutex);
-            items.push_back (std::forward<value_type&&>(entry));
-            auto i = (++items.rbegin()).base ();
-            keys.emplace_hint (keys.end(), std::cref(i->first), i);
+            push_back_impl (std::forward<value_type>(entry));
         }
 
 
@@ -457,7 +651,20 @@ namespace ujson {
          */
         void push_front (const key_type& key, const mapped_type& value) {
             std::lock_guard<std::mutex> lock (mutex);
-            items.push_front (std::make_pair(key, value));
+            items.emplace_front (std::make_pair(key, value));
+            auto i = items.begin ();
+            keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+        }
+
+
+        /**
+         * Prepend an element to beginning of the list.
+         * @param key The key to add.
+         * @param value The mapped value to add.
+         */
+        void push_front (const key_type& key, mapped_type&& value) {
+            std::lock_guard<std::mutex> lock (mutex);
+            items.emplace_front (key, std::forward<mapped_type>(value));
             auto i = items.begin ();
             keys.emplace_hint (keys.begin(), std::cref(i->first), i);
         }
@@ -481,27 +688,29 @@ namespace ujson {
          */
         void push_front (value_type&& entry) {
             std::lock_guard<std::mutex> lock (mutex);
-            items.push_front (std::forward<value_type&&>(entry));
+            items.emplace_front (std::forward<value_type>(entry));
             auto i = items.begin ();
             keys.emplace_hint (keys.begin(), std::cref(i->first), i);
         }
 
-
     private:
         typename KeyRefMap::iterator get_key_pos_hint (const key_type& key,
-                                                       typename ItemList::iterator item_pos_hint)
+                                                       const_iterator& pos)
             {
-                typename KeyRefMap::iterator k_pos = keys.end ();
-                auto range = keys.equal_range (key);
-                for (auto pos=range.first; pos!=range.second; ++pos) {
-                    if (pos->second == item_pos_hint) {
-                        k_pos = pos;
-                        break;
+                key_compare k_less;
+                if (k_less(key, pos.i->first)) {
+                    return keys.end ();
+                }else if (k_less(pos.i->first, key)) {
+                    return keys.begin ();
+                }else{
+                    auto kir = keys.equal_range (key);
+                    for (auto ki=kir.first; ki!=kir.second; ++ki) {
+                        if (ki->second == pos.i)
+                            return ki;
                     }
                 }
-                return k_pos;
+                return keys.begin ();
             }
-
 
     public:
         /**
@@ -511,13 +720,60 @@ namespace ujson {
          * @param value The mapped value to add.
          * @return Iterator pointing to the inserted entry.
          */
-        iterator insert (iterator pos, const key_type& key, const mapped_type& value) {
+        iterator insert (const_iterator pos, const key_type& key, const mapped_type& value) {
             std::lock_guard<std::mutex> lock (mutex);
-            typename ItemList::iterator i_pos = pos.sorted ? pos.si->second : pos.i;
-            auto i = items.insert (i_pos, std::make_pair(key, value));
-            keys.emplace_hint (get_key_pos_hint(i->first, i_pos),
-                               std::cref(i->first), i);
-            return iterator (i);
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, key, value);
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                return iterator (si);
+            }else{
+                typename ItemList::iterator i;
+                if (pos.i == items.cbegin()) {
+                    items.emplace_front (key, value);
+                    i = items.begin ();
+                    keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+                }else if (pos.i == items.cend()) {
+                    push_back_impl (key, value);
+                    i = --items.end();
+                }else{
+                    i = items.emplace (pos.i, key, value);
+                    keys.emplace_hint (get_key_pos_hint(key, pos),
+                                       std::cref(i->first), i);
+                }
+                return iterator (i);
+            }
+        }
+
+
+        /**
+         * Insert an element at a specified location in the container.
+         * @param pos The element will be inserted before this position.
+         * @param key The key to add.
+         * @param value The mapped value to add.
+         * @return Iterator pointing to the inserted entry.
+         */
+        iterator insert (const_iterator pos, const key_type& key, mapped_type&& value) {
+            std::lock_guard<std::mutex> lock (mutex);
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, key, std::forward<mapped_type>(value));
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                return iterator (si);
+            }else{
+                typename ItemList::iterator i;
+                if (pos.i == items.cbegin()) {
+                    items.emplace_front (key, std::forward<mapped_type>(value));
+                    i = items.begin ();
+                    keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+                }else if (pos.i == items.cend()) {
+                    push_back_impl (key, std::forward<mapped_type>(value));
+                    i = --items.end();
+                }else{
+                    i = items.emplace (pos.i, key, std::forward<mapped_type>(value));
+                    keys.emplace_hint (get_key_pos_hint(key, pos),
+                                       std::cref(i->first), i);
+                }
+                return iterator (i);
+            }
         }
 
 
@@ -527,13 +783,28 @@ namespace ujson {
          * @param entry The key-value pair to insert.
          * @return Iterator pointing to the inserted entry.
          */
-        iterator insert (iterator pos, const value_type& entry) {
+        iterator insert (const_iterator pos, const value_type& entry) {
             std::lock_guard<std::mutex> lock (mutex);
-            typename ItemList::iterator i_pos = pos.sorted ? pos.si->second : pos.i;
-            auto i = items.insert (i_pos, entry);
-            keys.emplace_hint (get_key_pos_hint(i->first, i_pos),
-                               std::cref(i->first), i);
-            return iterator (i);
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, entry);
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                return iterator (si);
+            }else{
+                typename ItemList::iterator i;
+                if (pos.i == items.cbegin()) {
+                    items.push_front (entry);
+                    i = items.begin ();
+                    keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+                }else if (pos.i == items.cend()) {
+                    push_back_impl (entry);
+                    i = --items.end();
+                }else{
+                    i = items.emplace (pos.i, entry);
+                    keys.emplace_hint (get_key_pos_hint(entry.first, pos),
+                                       std::cref(i->first), i);
+                }
+                return iterator (i);
+            }
         }
 
 
@@ -543,13 +814,28 @@ namespace ujson {
          * @param entry The key-value pair to insert.
          * @return Iterator pointing to the inserted entry.
          */
-        iterator insert (iterator pos, value_type&& entry) {
+        iterator insert (const_iterator pos, value_type&& entry) {
             std::lock_guard<std::mutex> lock (mutex);
-            typename ItemList::iterator i_pos = pos.sorted ? pos.si->second : pos.i;
-            auto i = items.insert (i_pos, std::forward<value_type&&>(entry));
-            keys.emplace_hint (get_key_pos_hint(i->first, i_pos),
-                               std::cref(i->first), i);
-            return iterator (i);
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, std::forward<value_type>(entry));
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                return iterator (si);
+            }else{
+                typename ItemList::iterator i;
+                if (pos.i == items.cbegin()) {
+                    items.emplace_front (std::forward<value_type>(entry));
+                    i = items.begin ();
+                    keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+                }else if (pos.i == items.cend()) {
+                    push_back_impl (std::forward<value_type>(entry));
+                    i = --items.end();
+                }else{
+                    i = items.emplace (pos.i, std::forward<value_type>(entry));
+                    keys.emplace_hint (get_key_pos_hint(entry.first, pos),
+                                       std::cref(i->first), i);
+                }
+                return iterator (i);
+            }
         }
 
 
@@ -558,25 +844,62 @@ namespace ujson {
          * @param pos The elements will be inserted before this position.
          * @param first An iterator to the first element to insert.
          * @param last The position after the last element to insert.
-         * @return Iterator pointing to the first element inserted,
-         *         or <code>pos</code> if the initializer list is empty.
+         * @return Iterator pointing to the first element inserted.
          */
         template<class InputIt>
-        iterator insert (iterator pos, InputIt first, InputIt last) {
-            if (first == last)
-                return pos;
+        iterator insert (const_iterator pos, InputIt first, InputIt last) {
             std::lock_guard<std::mutex> lock (mutex);
-            typename ItemList::iterator i_pos = pos.sorted ? pos.si->second : pos.i;
-            auto i = items.insert (i_pos, *first);
-            auto retval = iterator (i);
-            auto key_pos_hint = get_key_pos_hint (i->first, i_pos);
-            ++first;
-            for (auto entry=first; entry!=last; ++entry) {
-                i = items.insert (i, *entry);
-                keys.emplace_hint (key_pos_hint, std::cref(i->first), i);
-                ++i;
+            if (first == last) {
+                if (pos.sorted)
+                    return iterator (keys.end());
+                else
+                    return iterator (items.end());
             }
-            return retval;
+
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, *first);
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                ++first;
+                while (first != last) {
+                    auto ui = items.emplace (pos.si->second, *first);
+                    keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                    ++first;
+                }
+                return iterator (si);
+            }else{
+                typename ItemList::iterator ui;
+                if (pos.i == items.cend()) {
+                    ui = items.insert (items.end(), first, last);
+                    auto i = ui;
+                    do {
+                        keys.emplace_hint (keys.end(), std::cref(i->first), i);
+                        ++first;
+                        ++i;
+                    }while (first != last);
+                    return iterator (ui);
+                }
+                typename KeyRefMap::iterator hint;
+                if (pos.i == items.cbegin()) {
+                    ui = items.insert (items.cbegin(), first, last);
+                    hint = keys.begin ();
+                }else{
+                    ui = items.insert (pos.i, first, last);
+                    auto kir = keys.equal_range (pos->first);
+                    for (auto ki=kir.first; ki!=kir.second; ++ki) {
+                        if (ki->second == pos.i) {
+                            hint = ki;
+                            break;
+                        }
+                    }
+                }
+                auto i = ui;
+                do {
+                    keys.emplace_hint (hint, std::cref(i->first), i);
+                    ++first;
+                    ++i;
+                }while (first != last);
+                return iterator (ui);
+            }
         }
 
 
@@ -587,26 +910,11 @@ namespace ujson {
          * @return Iterator pointing to the first element inserted,
          *         or <code>pos</code> if the initializer list is empty.
          */
-        iterator insert (iterator pos, std::initializer_list<value_type> ilist) {
+        iterator insert (const_iterator pos, std::initializer_list<value_type> ilist) {
             return insert (pos, ilist.begin(), ilist.end());
         }
 
 
-    private:
-        //--------------------------------------------------------------------------
-        // Assume mutex is locked
-        //--------------------------------------------------------------------------
-        template<class ...Args>
-        iterator emplace_impl (iterator pos, Args&&... args) {
-            typename ItemList::iterator i_pos = pos.sorted ? pos.si->second : pos.i;
-            auto i = items.emplace (i_pos, std::make_pair(std::forward<Args&&>(args)...));
-            keys.emplace_hint (get_key_pos_hint(i->first, i_pos),
-                               std::cref(i->first), i);
-            return iterator (i);
-        }
-
-
-    public:
         /**
          * Create an element at a specified location in the container.
          * The element is constructed in-place at the specified location.
@@ -615,9 +923,29 @@ namespace ujson {
          * @return Iterator pointing to the created element.
          */
         template<class ...Args>
-        iterator emplace (iterator pos, Args&&... args) {
+        iterator emplace (const_iterator pos, Args&&... args) {
             std::lock_guard<std::mutex> lock (mutex);
-            return emplace_impl (pos, std::forward<Args&&>(args)...);
+            if (pos.sorted) {
+                auto ui = items.emplace (pos.si->second, std::forward<Args>(args)...);
+                auto si = keys.emplace_hint (pos.si, std::cref(ui->first), ui);
+                return iterator (si);
+            }else{
+                typename ItemList::iterator i;
+                if (pos.i == items.cbegin()) {
+                    items.emplace_front (std::forward<Args>(args)...);
+                    i = items.begin ();
+                    keys.emplace_hint (keys.begin(), std::cref(i->first), i);
+                }else if (pos.i == items.cend()) {
+                    items.emplace_back (std::forward<Args>(args)...);
+                    i = --items.end();
+                    keys.emplace_hint (keys.end(), std::cref(i->first), i);
+                }else{
+                    i = items.emplace (pos.i, std::forward<Args>(args)...);
+                    keys.emplace_hint (get_key_pos_hint(i->first, pos),
+                                       std::cref(i->first), i);
+                }
+                return iterator (i);
+            }
         }
 
 
@@ -629,7 +957,10 @@ namespace ujson {
         template<class ...Args>
         reference emplace_front (Args&&... args) {
             std::lock_guard<std::mutex> lock (mutex);
-            return *(emplace_impl(begin(), std::forward<Args&&>(args)...));
+            auto& retval = items.emplace_front (std::forward<Args>(args)...);
+            auto items_begin = items.begin ();
+            keys.emplace_hint (keys.begin(), std::cref(items_begin->first), items_begin);
+            return retval;
         }
 
 
@@ -641,7 +972,10 @@ namespace ujson {
         template<class ...Args>
         reference emplace_back (Args&&... args) {
             std::lock_guard<std::mutex> lock (mutex);
-            return *(emplace_impl(end(), std::forward<Args&&>(args)...));
+            auto& retval = items.emplace_back (std::forward<Args>(args)...);
+            auto items_last = --(items.end());
+            keys.emplace_hint (keys.end(), std::cref(items_last->first), items_last);
+            return retval;
         }
 
 
@@ -649,14 +983,11 @@ namespace ujson {
         //--------------------------------------------------------------------------
         // Assume mutex is locked
         //--------------------------------------------------------------------------
-        template<class Iter>
-        Iter erase_impl (Iter pos) {
-            Iter next = pos;
-            ++next;
+        inline iterator erase_impl (const_iterator pos) {
             if (pos.sorted) {
                 // KeyRefMap
                 items.erase (pos.si->second);
-                keys.erase (pos.si);
+                return iterator (keys.erase(pos.si));
             }else{
                 // ItemList
                 auto range = keys.equal_range (pos.i->first);
@@ -666,19 +997,8 @@ namespace ujson {
                         break;
                     }
                 }
-                items.erase (pos.i);
+                return iterator (items.erase(pos.i));
             }
-            return next;
-        }
-        //--------------------------------------------------------------------------
-        // Assume mutex is locked
-        //--------------------------------------------------------------------------
-        template<class Iter>
-        Iter erase_impl (Iter first, Iter last) {
-            auto next = first;
-            while (next != last)
-                erase_impl (next++);
-            return next;
         }
     public:
 
@@ -688,7 +1008,7 @@ namespace ujson {
          * @param pos The position of the element to erase.
          * @return Iterator following the removed element.
          */
-        iterator erase (iterator pos) {
+        iterator erase (const_iterator pos) {
             std::lock_guard<std::mutex> lock (mutex);
             if (pos.sorted && pos == send()) {
                 return send ();
@@ -701,43 +1021,29 @@ namespace ujson {
 
 
         /**
-         * Erase an entry at the specified position.
-         * @param pos The position of the element to erase.
-         * @return Iterator following the removed element.
-         */
-        const_iterator erase (const_iterator pos) {
-            std::lock_guard<std::mutex> lock (mutex);
-            if (pos.sorted && pos == csend()) {
-                return csend ();
-            }
-            else if (!pos.sorted && pos == cend()) {
-                return cend ();
-            }
-            return erase_impl (pos);
-        }
-
-
-        /**
          * Erase a range of entries from the container.
          * @param first The position of the first entry to erase.
          * @param last The position after the last entry to erase.
          * @return Iterator following the last removed element.
          */
-        iterator erase (iterator first, iterator last) {
+        iterator erase (const_iterator first, const_iterator last) {
             std::lock_guard<std::mutex> lock (mutex);
-            return erase_impl (first, last);
-        }
-
-
-        /**
-         * Erase a range of entries from the container.
-         * @param first The position of the first entry to erase.
-         * @param last The position after the last entry to erase.
-         * @return Iterator following the last removed element.
-         */
-        const_iterator erase (const_iterator first, const_iterator last) {
-            std::lock_guard<std::mutex> lock (mutex);
-            return erase_impl (first, last);
+            if (first.sorted) {
+                for (auto i=first; i!=last; ++i)
+                    items.erase (i.si->second);
+                return iterator (keys.erase(first.si, last.si));
+            }else{
+                for (auto pos=first; pos!=last; ++pos) {
+                    auto range = keys.equal_range (pos.i->first);
+                    for (auto i=range.first; i!=range.second; ++i) {
+                        if (i->second == pos.i) {
+                            keys.erase (i);
+                            break;
+                        }
+                    }
+                }
+                return iterator (items.erase(first.i, last.i));
+            }
         }
 
 
@@ -784,9 +1090,7 @@ namespace ujson {
          * @param other The other container to swap content with.
          */
         void swap (multimap_list& other) {
-            std::lock (mutex, other.mutex);
-            std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-            std::lock_guard<std::mutex> lg2 (other.mutex, std::adopt_lock);
+            std::scoped_lock lock (mutex, other.mutex);
             items.swap (other.items);
             keys.swap (other.keys);
         }
@@ -819,12 +1123,32 @@ namespace ujson {
 
 
         /**
+         * Find the first entry with a specific key.
+         * @param key The key to search for.
+         * @return Iterator to the first entry with the key,
+         *         or end() if no entry with the specified key.
+         */
+        const_iterator find (const key_type& key) const {
+            std::lock_guard<std::mutex> lock (mutex);
+            auto si = keys.find (key);
+            if (si == keys.end())
+                return end ();
+            else
+                return const_iterator (si->second);
+        }
+
+
+        /**
          * Check if there is at least one entry with a specific key.
          * @return <code>true</code> if there is an entry with the key.
          */
         bool contains (const key_type& key) const {
             std::lock_guard<std::mutex> lock (mutex);
+#if (__cplusplus >= 202002L)
+            return keys.contains (key);
+#else
             return keys.find(key) != keys.end();
+#endif
         }
 
 
@@ -855,7 +1179,7 @@ namespace ujson {
         /**
          * Return the position of the first element with
          * a key <em>not less</em> than the pecified key.
-         * @return Iterator to an element,
+         * @return A sorted iterator to an element,
          *         or <code>send()</code> if none found.
          */
         iterator lower_bound (const key_type& key) {
@@ -867,8 +1191,8 @@ namespace ujson {
         /**
          * Return the position of the first element with
          * a key <em>not less</em> than the pecified key.
-         * @return Iterator to an element,
-         *         or <code>send()</code> if none found.
+         * @return A sorted const_iterator to an element,
+         *         or <code>csend()</code> if none found.
          */
         const_iterator lower_bound (const key_type& key) const {
             std::lock_guard<std::mutex> lock (mutex);
@@ -877,9 +1201,9 @@ namespace ujson {
 
 
         /**
-         * Return the position of the first element
-         * with a key <em>greater</em> than the pecified key.
-         * @return Iterator to an element,
+         * Return the position of the first element with
+         * a key <em>greater</em> than the pecified key.
+         * @return A sorted iterator to an element,
          *         or <code>send()</code> if none found.
          */
         iterator upper_bound (const key_type& key) {
@@ -889,10 +1213,10 @@ namespace ujson {
 
 
         /**
-         * Return the position of the first element
-         * with a key <em>greater</em> than the pecified key.
-         * @return Iterator to an element,
-         *         or <code>send()</code> if none found.
+         * Return the position of the first element with
+         * a key <em>greater</em> than the pecified key.
+         * @return A sorted const_iterator to an element,
+         *         or <code>csend()</code> if none found.
          */
         const_iterator upper_bound (const key_type& key) const {
             std::lock_guard<std::mutex> lock (mutex);
@@ -900,71 +1224,127 @@ namespace ujson {
         }
 
 
-        /**
-         * Check if two containers are equal.
-         * Two containers are equal if:<br/>
-         * <ul>
-         *   <li>They have the same number of elements.</li>
-         *   <li>All key-value elements in one container are present in the other.</li>
-         * </ul>
-         * The key-value elements need not be in the same order in the two containers.
-         * @param rhs The other container to compare with.
-         * @return <code>true</code> if the containers are equivalent.
-         */
-        bool operator== (const multimap_list& rhs) const {
-            if (this == &rhs)
-                return true;
-            std::lock (mutex, rhs.mutex);
-            std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-            std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-            if (items.size() != rhs.items.size())
-                return false;
-
-            auto lhs_i = sbegin ();
-            auto rhs_i = rhs.sbegin ();
-            key_compare key_less;
-            mapped_compare value_less;
-            while (lhs_i != send()) {
-                if ( key_less(lhs_i->first, rhs_i->first) ||
-                     key_less(rhs_i->first, lhs_i->first) ||
-                     value_less(lhs_i->second, rhs_i->second) ||
-                     value_less(rhs_i->second, lhs_i->second))
-                {
+    private:
+        inline bool equals_impl (const multimap_list& rhs) const {
+            // if (items.size() != rhs.items.size())
+            //     return false;
+            auto lhs_i = csbegin ();
+            auto rhs_i = rhs.csbegin ();
+            auto lhs_i_end = csend ();
+            auto rhs_i_end = rhs.csend ();
+            value_compare less;
+            while (lhs_i != lhs_i_end  &&  rhs_i != rhs_i_end) {
+                if (less(*lhs_i, *rhs_i) || less(*rhs_i, *lhs_i))
                     return false;
-                }
                 ++lhs_i;
                 ++rhs_i;
             }
-            return true;
+            return lhs_i==lhs_i_end && rhs_i==rhs_i_end;
+        }
+
+
+    public:
+        /**
+         * Check if two containers are equal using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs == rhs).
+         * @param rhs The right-hand-side of the comparison (lhs == rhs).
+         * @return <code>true</code> if the left-hand-side
+         *         is equal to the right-hand-side,
+         *         otherwise <code>false</code>.
+         */
+        friend bool operator== (const multimap_list& lhs, const multimap_list& rhs) {
+            if (&lhs == &rhs)
+                return true;
+            std::scoped_lock lock (lhs.mutex, rhs.mutex);
+            return lhs.equals_impl (rhs);
         }
 
 
         /**
-         * Check if two containers are not equal.
-         * @param rhs The container to compare. The right-hand-side of '!='.
-         * @return <code>true</code> if the other container
-         *         is equal to this, otherwise <code>false</code>.
+         * Check if two containers are not equal using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs != rhs).
+         * @param rhs The right-hand-side of the comparison (lhs != rhs).
+         * @return <code>true</code> if the left-hand-side
+         *         is not equal to the right-hand-side,
+         *         otherwise <code>false</code>.
          */
-        bool operator!= (const multimap_list& rhs) const {
-            return ! this->operator==(rhs);
+        inline friend bool operator!= (const multimap_list& lhs, const multimap_list& rhs) {
+            return ! (lhs == rhs);
         }
 
 
         /**
-         * Compare the contents of two containers lexicographically.<br/>
-         * The two containers are compared using sorted keys.
-         * @param rhs The other container to compare with. The right-hand side of '<'.
-         * @return <code>true</code> if this container is lexicographically less than the other.
+         * Compare the contents of two containers
+         * lexicographically using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs < rhs).
+         * @param rhs The right-hand-side of the comparison (lhs < rhs).
+         * @return <code>true</code> if <code>lhs</code> is
+         *         lexicographically less than <code>rhs</code>.
          */
-        bool operator< (const multimap_list& rhs) const {
-            if (this == &rhs)
+        friend bool operator< (const multimap_list& lhs, const multimap_list& rhs) {
+            if (&lhs == &rhs)
                 return false;
-            std::lock (mutex, rhs.mutex);
-            std::lock_guard<std::mutex> lg1 (mutex, std::adopt_lock);
-            std::lock_guard<std::mutex> lg2 (rhs.mutex, std::adopt_lock);
-            return std::lexicographical_compare (sbegin(), send(),
+            std::scoped_lock lock (lhs.mutex, rhs.mutex);
+            return std::lexicographical_compare (lhs.sbegin(), lhs.send(),
                                                  rhs.sbegin(), rhs.send(),
-                                                 value_type_compare{});
+                                                 value_compare{});
+        }
+
+
+        /**
+         * Compare the contents of two containers
+         * lexicographically using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs <= rhs).
+         * @param rhs The right-hand-side of the comparison (lhs <= rhs).
+         * @return <code>true</code> if <code>lhs</code> is
+         *         lexicographically less than or equal to <code>rhs</code>.
+         */
+        friend bool operator<= (const multimap_list& lhs, const multimap_list& rhs) {
+            if (&lhs == &rhs)
+                return true;
+            std::scoped_lock lock (lhs.mutex, rhs.mutex);
+            return lhs.equals_impl(rhs) ||
+                std::lexicographical_compare (lhs.sbegin(), lhs.send(),
+                                              rhs.sbegin(), rhs.send(),
+                                              value_compare{});
+        }
+
+
+        /**
+         * Compare the contents of two containers
+         * lexicographically using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs > rhs).
+         * @param rhs The right-hand-side of the comparison (lhs > rhs).
+         * @return <code>true</code> if <code>lhs</code> is
+         *         lexicographically greater than <code>rhs</code>.
+         */
+        friend bool operator> (const multimap_list& lhs, const multimap_list& rhs) {
+            if (&lhs == &rhs)
+                return false;
+            std::scoped_lock lock (lhs.mutex, rhs.mutex);
+            return std::lexicographical_compare (rhs.sbegin(), rhs.send(),
+                                                 lhs.sbegin(), lhs.send(),
+                                                 value_compare{});
+        }
+
+
+        /**
+         * Compare the contents of two containers
+         * lexicographically using sorted keys.
+         * @param lhs The left-hand-side of the comparison (lhs >= rhs).
+         * @param rhs The right-hand-side of the comparison (lhs >= rhs).
+         * @return <code>true</code> if <code>lhs</code> is
+         *         lexicographically greater than or equal to
+         *         <code>rhs</code>.
+         */
+        friend bool operator>= (const multimap_list& lhs, const multimap_list& rhs) {
+            if (&lhs == &rhs)
+                return true;
+            std::scoped_lock lock (lhs.mutex, rhs.mutex);
+            return lhs.equals_impl(rhs) ||
+                std::lexicographical_compare (rhs.sbegin(), rhs.send(),
+                                              lhs.sbegin(), lhs.send(),
+                                              value_compare{});
         }
 
 
@@ -1174,5 +1554,4 @@ namespace ujson {
 
 
 }
-
 #endif
