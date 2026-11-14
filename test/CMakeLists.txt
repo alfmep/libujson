@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023,2024,2026 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -25,6 +25,8 @@ include_directories (
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../src>
 )
+
+add_compile_options (-Wno-unused-function)
 
 
 #
@@ -78,3 +80,11 @@ add_custom_command (OUTPUT ${SCHEMA_TEST_SCRIPT_DST}
     DEPENDS ${SCHEMA_TEST_SCRIPT_SRC}
     )
 add_custom_target (schema-test-script ALL DEPENDS ${SCHEMA_TEST_SCRIPT_DST})
+
+
+
+add_executable (test-multimap_list test-multimap_list.cpp)
+target_compile_options (test-multimap_list PRIVATE
+    "$<${gcc_like_cxx}:-Og>"
+    "-DDEBUG"
+)
