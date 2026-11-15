@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023-2025 Dan Arrhenius <dan@ultramarin.se>
+# Copyright (C) 2023-2026 Dan Arrhenius <dan@ultramarin.se>
 #
 # This file is part of ujson.
 #
@@ -28,9 +28,14 @@ project (libujson
     HOMEPAGE_URL https://github.com/alfmep/libujson
     )
 
-# C++ standard
+# C++ standard. By default, use C++-20
 #
-set (CMAKE_CXX_STANDARD 17)
+if (NOT CMAKE_CXX_STANDARD)
+    set (CMAKE_CXX_STANDARD 20)
+endif()
+if (CMAKE_CXX_STANDARD LESS 17)
+    message (FATAL_ERROR "Minimum C++ version 17 required!")
+endif()
 
 
 # Default GNU installation directories
@@ -67,6 +72,16 @@ if (UNIX)
 endif()
 
 set (PREDEFINED_IN_DOXYGEN "")
+
+
+# Support for std::formatter (only in C++20 and above)
+#
+if (CMAKE_CXX_STANDARD LESS 20)
+    set (UJSON_HAS_STD_FORMATTER "0")
+else()
+    set (UJSON_HAS_STD_FORMATTER "1")
+    set (PREDEFINED_IN_DOXYGEN "${PREDEFINED_IN_DOXYGEN} UJSON_HAS_STD_FORMATTER=1")
+endif()
 
 
 # Support for console color codes

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2023,2025 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2023,2025,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -25,6 +25,13 @@
 namespace ujson {}
 
 #include <ujson/config.hpp>
+#if (UJSON_HAS_STD_FORMATTER)
+/**
+ * Standard namespace.
+ */
+namespace std {}
+#endif
+
 #include <ujson/multimap_list.hpp>
 #include <ujson/json_type_error.hpp>
 #include <ujson/utils.hpp>

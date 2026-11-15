@@ -32,6 +32,9 @@
 #if (UJSON_HAVE_GMPXX)
   #include <gmpxx.h>
 #endif
+#if (UJSON_HAS_STD_FORMATTER)
+  #include <format>
+#endif
 
 
 namespace ujson {
@@ -1270,6 +1273,7 @@ namespace ujson {
          *          ...
          *          \endcode
          * @see desc_format_t
+         * @see std::formatter<ujson::jvalue, char>
          */
         inline std::string describe (desc_format_t fmt=fmt_none) const {
             return describe (fmt, 0);
@@ -1308,6 +1312,7 @@ namespace ujson {
          *          ...
          *          \endcode
          * @see desc_format_t
+         * @see std::formatter<ujson::jvalue, char>
          */
         std::string describe (desc_format_t fmt,
                               unsigned starting_indent_depth) const;
@@ -1396,4 +1401,91 @@ namespace ujson {
 
 
 }
+
+
+#if (UJSON_HAS_STD_FORMATTER)
+namespace std {
+    /**
+     * A formatter for ujson::jvalue objects.
+     * The following format options are available:<br/>
+     *  * \b &nbsp;p &nbsp;&nbsp;Sets the flag ujson::fmt_pretty.
+     *  * \b &nbsp;s &nbsp;&nbsp;Sets the flag ujson::fmt_sorted.
+     *  * \b &nbsp;e &nbsp;&nbsp;Sets the flag ujson::fmt_escape_slash.
+     *  * \b &nbsp;t &nbsp;&nbsp;Sets the flag ujson::fmt_tabs.
+     *  * \b &nbsp;o &nbsp;&nbsp;Sets the flag ujson::fmt_color.
+     *  * \b &nbsp;r &nbsp;&nbsp;Sets the flag ujson::fmt_relaxed.
+     *  * \b &nbsp;a &nbsp;&nbsp;Sets the flag ujson::fmt_compact_array.
+     *
+     * Example:<br/>
+     * <pre>
+     *     ujson::jvalue value;
+     *     ...
+     *     std::println("{}", value);
+     *     std::println("{:ps}", value);
+     *     std::cout << std::format("{:po}", value) << std::endl;
+     *     ...
+     * </pre>
+     * Is equivalent to:
+     * <pre>
+     *     ujson::jvalue value;
+     *     ...
+     *     std::cout << value.describe() << std::endl;
+     *     std::cout << value.describe(ujson::fmt_pretty | ujson::fmt_sorted) << std::endl;
+     *     std::cout << value.describe(ujson::fmt_pretty | ujson::fmt_color) << std::endl;
+     *     ...
+     * </pre>
+     * @warning The flag \b o (ujson::fmt_color) is mainly used
+     *          for color coded output on a console.<br/>
+     *          When using this flag the output may contain escape
+     *          character sequences that will cause parse errors
+     *          if parsed as a JSON document.<br/>
+     *          <br/>
+     *          Example of how to safely print out a color encoded JSON
+     *          instance that can also be redirected to a file or pipe:<br/>
+     *          \code
+     *          #include <stdio.h>
+     *          #include <unistd.h>
+     *          #include <ujson.hpp>
+     *          ...
+     *          ujson::jvalue value;
+     *          ...
+     *          if (isatty(fileno(stdout)))
+     *              std::println("{:po}", value); // Output is a console, print color-coded
+     *          else
+     *              std::println("{:p}", value);  // Output is redirected to a file or pipe
+     *          ...
+     *          \endcode
+     */
+    template<>
+    struct formatter<ujson::jvalue, char> {
+
+        ujson::desc_format_t fmt = ujson::fmt_none;
+
+        constexpr auto parse (std::format_parse_context& ctx) {
+            auto it = ctx.begin();
+            while (it != ctx.end()  &&  *it != '}') {
+                switch (*it) {
+                case 'a': fmt = fmt | ujson::fmt_compact_array; break;
+                case 'e': fmt = fmt | ujson::fmt_escape_slash;  break;
+                case 'o': fmt = fmt | ujson::fmt_color;         break;
+                case 'p': fmt = fmt | ujson::fmt_pretty;        break;
+                case 'r': fmt = fmt | ujson::fmt_relaxed;       break;
+                case 's': fmt = fmt | ujson::fmt_sorted;        break;
+                case 't': fmt = fmt | ujson::fmt_tabs;          break;
+                default:
+                    throw std::format_error("Invalid format args for ujson::jvalue");
+                }
+                ++it;
+            }
+            return it;
+        }
+
+        auto format (const ujson::jvalue& v, std::format_context& ctx) const {
+            return std::format_to (ctx.out(), "{}", v.describe(fmt));
+        }
+    };
+}
+#endif
+
+
 #endif

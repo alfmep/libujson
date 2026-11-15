@@ -32,6 +32,8 @@
 /* Define to 1 if console colors are supported */
 #define UJSON_HAS_CONSOLE_COLOR @UJSON_HAS_CONSOLE_COLOR@
 
+/* Define to 1 if std::format is supported (requires C++ 20) */
+#define UJSON_HAS_STD_FORMATTER @UJSON_HAS_STD_FORMATTER@
 
 #if (__cplusplus >= 201907L)
 #  define UJSON_HAS_STD_ENDIAN 1
