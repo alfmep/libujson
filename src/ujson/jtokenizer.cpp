@@ -388,6 +388,7 @@ namespace ujson::parser {
                     set_token (jtoken::tk_number, buf_pos-token_pos);
                     return;
                 }
+                break;
 
             case ns_integer:
                 if ( ! is_digit(ch)) {

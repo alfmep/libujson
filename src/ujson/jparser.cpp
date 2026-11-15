@@ -215,13 +215,13 @@ namespace ujson {
                            bool strict_parsing=false,
                            bool allow_duplicates_in_obj=true);
 
-        const jparser::err error_code () const {
+        jparser::err error_code () const {
             return err_code;
         }
-        const unsigned error_row () const {
+        unsigned error_row () const {
             return err_row;
         }
-        const unsigned error_col () const {
+        unsigned error_col () const {
             return err_col;
         }
 

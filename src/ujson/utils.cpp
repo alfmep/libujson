@@ -474,7 +474,7 @@ namespace ujson {
 
                 // Convert from UTF-16 to code point
                 //
-                if (u16 <= 0xD7FF  ||  (u16 >= 0xE000  &&  u16 <= 0xFFFF)) {
+                if (u16 <= 0xD7FF  ||  (u16 >= 0xE000  /*&&  u16 <= 0xFFFF*/)) {
                     code_point = (char32_t) u16;
                 }
                 else if (u16 <= 0xDBFF) {

@@ -50,12 +50,26 @@ set (msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
 add_compile_options (
     "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-pipe;-Wall>>"
     "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
-    )
+)
 if (CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug")
-    # If build type is debug, add flag -Og for GCC et al.
+    # Build test applications and add flag -Og for GCC et al.
+    set (BUILD_TESTS ON)
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Og;-g;-Wextra>>")
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Wno-unused-parameter>>")
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Werror>>")
+elseif (CMAKE_BUILD_TYPE MATCHES "^[Mm]em[Dd]ebug")
+    # Build test applications, add flag -Og for GCC et al. and enable address sanitizer
+    set (BUILD_TESTS ON)
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Og;-g;-Wextra>>")
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Wno-unused-parameter>>")
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Werror>>")
+    add_compile_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-fsanitize=address>>")
+    add_link_options ("$<${gcc_like_cxx}:$<BUILD_INTERFACE:-fsanitize=address;-static-libasan>>")
+elseif (CMAKE_BUILD_TYPE STREQUAL "")
+    # Default build type, optimize using -O2
     add_compile_options (
-        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Og>>"
-        )
+        "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-O2>>"
+    )
 endif()
 
 

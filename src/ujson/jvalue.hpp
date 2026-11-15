@@ -128,7 +128,7 @@ namespace ujson {
     };
     /**  Bitwise OR (desc_format_t | desc_format_t). */
     constexpr desc_format_t operator| (const desc_format_t& lhs, const desc_format_t& rhs) {
-        return (desc_format_t) ((const uint16_t)lhs | (const uint16_t)rhs);
+        return (desc_format_t) ((uint16_t)lhs | (uint16_t)rhs);
     }
     /**  Bitwise OR assignment (desc_format_t lhs |= desc_format_t lhs). */
     constexpr desc_format_t& operator|= (desc_format_t& lhs, const desc_format_t& rhs) {
@@ -137,7 +137,7 @@ namespace ujson {
 
     /**  Bitwise AND (desc_format_t & desc_format_t). */
     constexpr desc_format_t operator& (const desc_format_t& lhs, const desc_format_t& rhs) {
-        return (desc_format_t) ((const uint16_t)lhs & (const uint16_t)rhs);
+        return (desc_format_t) ((uint16_t)lhs & (uint16_t)rhs);
     }
     /**  Bitwise AND assignment (desc_format_t lhs &= desc_format_t lhs). */
     constexpr desc_format_t& operator&= (desc_format_t& lhs, const desc_format_t& rhs) {
@@ -146,7 +146,7 @@ namespace ujson {
 
     /**  Bitwise XOR (desc_format_t ^ desc_format_t). */
     constexpr desc_format_t operator^ (const desc_format_t& lhs, const desc_format_t& rhs) {
-        return (desc_format_t) ((const uint16_t)lhs ^ (const uint16_t)rhs);
+        return (desc_format_t) ((uint16_t)lhs ^ (uint16_t)rhs);
     }
     /**  Bitwise XOR assignment (desc_format_t lhs ^= desc_format_t lhs). */
     constexpr desc_format_t& operator^= (desc_format_t& lhs, const desc_format_t& rhs) {
@@ -548,7 +548,7 @@ namespace ujson {
          * Make this a value of type ujson::j_number.
          * @param number The new number value.
          */
-        jvalue& operator= (const int number) {num(static_cast<const long>(number)); return *this;}
+        jvalue& operator= (const int number) {num(static_cast<long>(number)); return *this;}
 
         /**
          * Assignment operator.
