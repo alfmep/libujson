@@ -35,22 +35,26 @@ using std::endl;
 #endif
 
 
-namespace ujson {
-
+namespace { // Anonymous namespace
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static std::string carefully_get_schema_id (const jvalue& schema,
-                                                const std::string& default_id="")
+    std::string carefully_get_schema_id (const ujson::jvalue& schema,
+                                         const std::string& default_id="")
     {
         std::string id (default_id);
-        if (schema.type() == j_object) {
+        if (schema.type() == ujson::j_object) {
             const auto& value = schema.get ("$id");
-            if (value.type() == j_string)
+            if (value.type() == ujson::j_string)
                 id = value.str ();
         }
         return id;
     }
+
+} // Anonymous namespace
+
+
+namespace ujson {
 
 
     //--------------------------------------------------------------------------

@@ -27,19 +27,410 @@
 #include <ujson/jparser.hpp>
 #include <ujson/jpointer.hpp>
 
-namespace ujson {
 
+namespace { // Anonymous namespace
 
 #if ! (UJSON_HAS_STD_BYTESWAP)
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static inline void swap_u16 (uint8_t* val)
+    inline void swap_u16 (uint8_t* val)
     {
         val[0] = val[0] ^ val[1];
         val[1] = val[0] ^ val[1];
         val[0] = val[0] ^ val[1];
     }
 #endif
+
+
+    //--------------------------------------------------------------------------
+    // Check if valid array index, defined as [0]|[1-9][0-9]*
+    //--------------------------------------------------------------------------
+    bool is_array_index (const std::string& str)
+    {
+        static std::regex re ("[0]|[1-9][0-9]*", std::regex::ECMAScript);
+        std::cmatch cm;
+        return std::regex_match (str.c_str(), cm, re);
+    }
+
+
+    //--------------------------------------------------------------------------
+    // Assumes ch is in range [0-9a-zA-Z]
+    //--------------------------------------------------------------------------
+    unsigned char ch_to_hex (unsigned char ch)
+    {
+        if (ch <= '9')
+            return ch - '0';
+        else
+            return (ch|0x20) - 'W'; // Set lowercase and subtract ('a'-10)
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    struct pointer_info_t {
+        ujson::jvalue* instance;  // Instance containing the item pointed to
+        ujson::jvalue* container; // Conainter of the item ponted to. If nullptr: root instance, or invalid pointer
+        ujson::jvalue* item;      // Item pointed io. If nullptr, no such item
+        std::string path;         // Path to the container of the item.
+        std::string name;         // Name of the item pointed to.
+        ssize_t index;            // Index of the item pointed to, if container is an array, else -1
+        bool added;               // An item was added.
+        pointer_info_t () {
+            reset ();
+        }
+        void reset () {
+            instance = container = item = nullptr;
+            path = name = "";
+            index = -1;
+            added = false;
+        }
+    };
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result get_pointer_info (pointer_info_t& pi,
+                                           ujson::jvalue& instance,
+                                           const std::string& pointer,
+                                           bool add=false)
+    {
+        pi.reset ();
+        pi.instance = &instance;
+        ujson::jpatch_result retval = ujson::patch_ok;
+
+        if (pointer.empty()) {
+            pi.item = pi.instance;
+            return ujson::patch_ok;
+        }
+        if (pointer[0] != '/') {
+            pi.reset ();
+            return ujson::patch_invalid;
+        }
+
+        auto last_sep_pos = pointer.find_last_of ("/");
+        pi.path = pointer.substr (0, last_sep_pos);
+        pi.name = pointer.substr (last_sep_pos+1);
+
+        pi.container = &find_jvalue (instance, pi.path);
+        if (pi.container->invalid()) {
+            pi.reset ();
+            return ujson::patch_noent;
+        }
+
+        pi.item = &find_jvalue (instance, pointer);
+        if (!pi.item->valid()) {
+            pi.item = nullptr;
+            retval = ujson::patch_noent;
+            if (pi.container->type() == ujson::j_array) {
+                if (pi.name=="-") {
+                    retval = ujson::patch_ok;
+                    pi.index = pi.container->size ();
+                    if (add) {
+                        pi.item = &pi.container->append(ujson::jvalue(ujson::j_null));
+                        pi.added = true;
+                        retval = ujson::patch_ok;
+                    }
+                }else if (add) {
+                    if (is_array_index(pi.name)) {
+                        ssize_t i = stol (pi.name);
+                        if (i == (ssize_t)pi.container->size()) {
+                            pi.index = i;
+                            pi.name.clear ();
+                            pi.item = &pi.container->append(ujson::jvalue(ujson::j_null));
+                            pi.added = true;
+                            retval = ujson::patch_ok;
+                        }
+                    }
+                }
+            }else if (add) {
+                // j_object
+                pi.item = &pi.container->add(pi.name, ujson::jvalue(ujson::j_null));
+                pi.added = true;
+                retval = ujson::patch_ok;
+            }
+        }
+        else if (pi.container->type() == ujson::j_array) {
+            pi.index = stol (pi.name);
+            pi.name.clear ();
+        }
+
+        if (retval != ujson::patch_ok)
+            pi.reset ();
+
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_add_impl (ujson::jvalue& instance,
+                                                   const std::string& pointer,
+                                                   ujson::jvalue& value)
+    {
+        if (pointer.empty()) {
+            instance = value;
+            return ujson::patch_ok;
+        }
+
+        pointer_info_t pi;
+        auto retval = get_pointer_info (pi, instance, pointer, true);
+        if (retval == ujson::patch_ok) {
+            if (pi.container->type()==ujson::j_array && pi.added==false) {
+                auto& a = pi.container->array ();
+                a.insert (a.begin() + pi.index, value);
+            }else{
+                *pi.item = value;
+            }
+        }
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_add (ujson::jvalue& instance,
+                                              const std::string& pointer,
+                                              ujson::jvalue& op)
+    {
+        auto& value = op.get_unique ("value");
+        if (value.valid())
+            return patch_operation_add_impl (instance, pointer, value);
+        else
+            return ujson::patch_invalid;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_remove (ujson::jvalue& instance,
+                                                 const std::string& pointer,
+                                                 ujson::jvalue& op)
+    {
+        if (pointer.empty()) {
+            instance.type (ujson::j_null);
+            return ujson::patch_ok;
+        }
+
+        pointer_info_t pi;
+        ujson::jpatch_result retval = get_pointer_info (pi, instance, pointer);
+        if (retval != ujson::patch_ok)
+            return retval;
+
+        retval = ujson::patch_noent;
+        if (pi.item) {
+            if (pi.container->type() == ujson::j_object)
+                pi.container->remove (pi.name);
+            else
+                pi.container->remove (pi.index);
+            retval = ujson::patch_ok;
+        }
+        else if (pi.container &&
+                 pi.container->type() == ujson::j_array &&
+                 pi.name == "-")
+        {
+            if (pi.container->size() > 0) {
+                pi.container->array().pop_back ();
+                retval = ujson::patch_ok;
+            }
+        }
+
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_replace (ujson::jvalue& instance,
+                                                  const std::string& pointer,
+                                                  ujson::jvalue& op)
+    {
+        auto& value = op.get_unique ("value");
+        if (!value.valid())
+            return ujson::patch_invalid;
+
+        pointer_info_t pi;
+        auto retval = get_pointer_info (pi, instance, pointer);
+        if (retval != ujson::patch_ok)
+            return retval;
+
+        if (pi.item) {
+            *pi.item = value;
+        }
+        else if (pi.container->type() == ujson::j_array) {
+            if (pi.container->size() > 0) {
+                (*pi.container)[pi.container->size()-1] = value;
+            }else{
+                retval = ujson::patch_noent;
+            }
+        }
+        else {
+            *pi.container = value;
+        }
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_replace (ujson::jvalue& instance,
+                                                  const std::string& pointer,
+                                                  ujson::jvalue&& value)
+    {
+        pointer_info_t pi;
+        auto retval = get_pointer_info (pi, instance, pointer);
+        if (retval != ujson::patch_ok)
+            return retval;
+
+        if (pi.item) {
+            *pi.item = std::forward<ujson::jvalue> (value);
+        }
+        else if (pi.container->type() == ujson::j_array) {
+            if (pi.container->size() > 0) {
+                (*pi.container)[pi.container->size()-1] = std::forward<ujson::jvalue> (value);
+            }else{
+                retval = ujson::patch_noent;
+            }
+        }
+        else {
+            *pi.container = std::forward<ujson::jvalue> (value);
+        }
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_move (ujson::jvalue& instance,
+                                               const std::string& dst_pointer,
+                                               ujson::jvalue& op)
+    {
+        auto& from = op.get_unique ("from");
+        if (from.type() != ujson::j_string) {
+            return ujson::patch_invalid;
+        }
+        auto& src_pointer = from.str ();
+
+        if (dst_pointer.find(src_pointer)==0) {
+            if (src_pointer.size() == dst_pointer.size()) {
+                return ujson::patch_ok;
+            }
+            // Error - Move a contaner into one of its child entries
+            return ujson::patch_invalid;
+        }
+
+
+        pointer_info_t src_pi;
+        pointer_info_t dst_pi;
+        ujson::jpatch_result retval = ujson::patch_ok;
+        retval = get_pointer_info (src_pi, instance, src_pointer);
+        if (retval != ujson::patch_ok)
+            return retval;
+        retval = get_pointer_info (dst_pi, instance, dst_pointer, true);
+        if (retval != ujson::patch_ok)
+            return retval;
+
+        if (dst_pi.added)
+            retval = get_pointer_info (src_pi, instance, src_pointer);
+        if (retval != ujson::patch_ok)
+            return retval;
+
+
+        ujson::jvalue tmp (std::move(*src_pi.item));
+        src_pi.item->type (ujson::j_null);
+
+        retval = patch_operation_remove (instance, src_pointer, op);
+        if (retval == ujson::patch_ok)
+            retval = patch_operation_replace (instance, dst_pointer, std::move(tmp));
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_copy (ujson::jvalue& instance,
+                                               const std::string& dst_pointer,
+                                               ujson::jvalue& op)
+    {
+        auto& from = op.get_unique ("from");
+        if (from.type() != ujson::j_string)
+            return ujson::patch_invalid;
+
+        const auto& src_pointer = from.str ();
+
+        pointer_info_t src_pi;
+        auto retval = get_pointer_info (src_pi, instance, src_pointer);
+        if (retval == ujson::patch_ok) {
+            ujson::jvalue copy (src_pi.item ? *src_pi.item : *src_pi.container);
+            retval = patch_operation_add_impl (instance, dst_pointer, copy);
+        }
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation_test (ujson::jvalue& instance,
+                                               const std::string& path,
+                                               ujson::jvalue& op)
+    {
+        auto& test_value = op.get_unique ("value");
+        if (!test_value.valid())
+            return ujson::patch_invalid;
+
+        ujson::jpatch_result retval = ujson::patch_ok;
+        auto& value = find_jvalue (instance, path);
+        if (!value.valid()) {
+            retval = ujson::patch_noent;
+        }else{
+            retval = value == test_value ? ujson::patch_ok : ujson::patch_fail;
+        }
+        return retval;
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jpatch_result patch_operation (ujson::jvalue& instance, ujson::jvalue& op)
+    {
+        using patch_op_cb = ujson::jpatch_result (*) (ujson::jvalue&, const std::string&, ujson::jvalue&);
+        static const std::map<const std::string, const patch_op_cb> patch_ops {{
+                {"add",     patch_operation_add},
+                {"copy",    patch_operation_copy},
+                {"move",    patch_operation_move},
+                {"remove",  patch_operation_remove},
+                {"replace", patch_operation_replace},
+                {"test",    patch_operation_test},
+            }};
+
+        ujson::jpatch_result retval = ujson::patch_ok;
+        try {
+            // Get the patch operation and path
+            auto& op_type = op.get_unique("op").str ();
+            auto& path = op.get_unique("path").str ();
+
+            auto entry = patch_ops.find (op_type);
+            if (entry != patch_ops.end()) {
+                retval = entry->second (instance, path, op);
+            }else{
+                retval = ujson::patch_invalid;
+            }
+        }
+        catch (std::bad_alloc& ba) {
+            throw ba;
+        }
+        catch (ujson::json_type_error&) {
+            retval = ujson::patch_invalid;
+        }
+        catch (...) {
+            retval = ujson::patch_noent;
+        }
+        return retval;
+    }
+
+} // Anonymous namespace
+
+
+namespace ujson {
 
 
     //--------------------------------------------------------------------------
@@ -210,17 +601,6 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
-    // Check if valid array index, defined as [0]|[1-9][0-9]*
-    //--------------------------------------------------------------------------
-    static bool is_array_index (const std::string& str)
-    {
-        static std::regex re ("[0]|[1-9][0-9]*", std::regex::ECMAScript);
-        std::cmatch cm;
-        return std::regex_match (str.c_str(), cm, re);
-    }
-
-
-    //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     jvalue& find_jvalue (jvalue& instance, const jpointer& pointer)
     {
@@ -253,18 +633,6 @@ namespace ujson {
             invalid_jvalue.type (j_invalid);
             return invalid_jvalue;
         }
-    }
-
-
-    //--------------------------------------------------------------------------
-    // Assumes ch is in range [0-9a-zA-Z]
-    //--------------------------------------------------------------------------
-    static unsigned char ch_to_hex (unsigned char ch)
-    {
-        if (ch <= '9')
-            return ch - '0';
-        else
-            return (ch|0x20) - 'W'; // Set lowercase and subtract ('a'-10)
     }
 
 
@@ -452,365 +820,6 @@ namespace ujson {
                 throw std::invalid_argument ("Invalid JSON escape sequence");
         }
         return result;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    struct pointer_info_t {
-        jvalue* instance;  // Instance containing the item pointed to
-        jvalue* container; // Conainter of the item ponted to. If nullptr: root instance, or invalid pointer
-        jvalue* item;      // Item pointed io. If nullptr, no such item
-        std::string path;  // Path to the container of the item.
-        std::string name;  // Name of the item pointed to.
-        ssize_t index;     // Index of the item pointed to, if container is an array, else -1
-        bool added;        // An item was added.
-        pointer_info_t () {
-            reset ();
-        }
-        void reset () {
-            instance = container = item = nullptr;
-            path = name = "";
-            index = -1;
-            added = false;
-        }
-    };
-    static jpatch_result get_pointer_info (pointer_info_t& pi,
-                                           jvalue& instance,
-                                           const std::string& pointer,
-                                           bool add=false)
-    {
-        pi.reset ();
-        pi.instance = &instance;
-        jpatch_result retval = patch_ok;
-
-        if (pointer.empty()) {
-            pi.item = pi.instance;
-            return patch_ok;
-        }
-        if (pointer[0] != '/') {
-            pi.reset ();
-            return patch_invalid;
-        }
-
-        auto last_sep_pos = pointer.find_last_of ("/");
-        pi.path = pointer.substr (0, last_sep_pos);
-        pi.name = pointer.substr (last_sep_pos+1);
-
-        pi.container = &find_jvalue (instance, pi.path);
-        if (pi.container->invalid()) {
-            pi.reset ();
-            return patch_noent;
-        }
-
-        pi.item = &find_jvalue (instance, pointer);
-        if (!pi.item->valid()) {
-            pi.item = nullptr;
-            retval = patch_noent;
-            if (pi.container->type() == j_array) {
-                if (pi.name=="-") {
-                    retval = patch_ok;
-                    pi.index = pi.container->size ();
-                    if (add) {
-                        pi.item = &pi.container->append(jvalue(j_null));
-                        pi.added = true;
-                        retval = patch_ok;
-                    }
-                }else if (add) {
-                    if (is_array_index(pi.name)) {
-                        ssize_t i = stol (pi.name);
-                        if (i == (ssize_t)pi.container->size()) {
-                            pi.index = i;
-                            pi.name.clear ();
-                            pi.item = &pi.container->append(jvalue(j_null));
-                            pi.added = true;
-                            retval = patch_ok;
-                        }
-                    }
-                }
-            }else if (add) {
-                // j_object
-                pi.item = &pi.container->add(pi.name, jvalue(j_null));
-                pi.added = true;
-                retval = patch_ok;
-            }
-        }
-        else if (pi.container->type() == j_array) {
-            pi.index = stol (pi.name);
-            pi.name.clear ();
-        }
-
-        if (retval != patch_ok)
-            pi.reset ();
-
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_add_impl (jvalue& instance,
-                                                   const std::string& pointer,
-                                                   jvalue& value)
-    {
-        if (pointer.empty()) {
-            instance = value;
-            return patch_ok;
-        }
-
-        pointer_info_t pi;
-        auto retval = get_pointer_info (pi, instance, pointer, true);
-        if (retval == patch_ok) {
-            if (pi.container->type()==j_array && pi.added==false) {
-                auto& a = pi.container->array ();
-                a.insert (a.begin() + pi.index, value);
-            }else{
-                *pi.item = value;
-            }
-        }
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_add (jvalue& instance,
-                                              const std::string& pointer,
-                                              jvalue& op)
-    {
-        auto& value = op.get_unique ("value");
-        if (value.valid())
-            return patch_operation_add_impl (instance, pointer, value);
-        else
-            return patch_invalid;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_remove (jvalue& instance,
-                                                 const std::string& pointer,
-                                                 jvalue& op)
-    {
-        if (pointer.empty()) {
-            instance.type (j_null);
-            return patch_ok;
-        }
-
-        pointer_info_t pi;
-        jpatch_result retval = get_pointer_info (pi, instance, pointer);
-        if (retval != patch_ok)
-            return retval;
-
-        retval = patch_noent;
-        if (pi.item) {
-            if (pi.container->type() == j_object)
-                pi.container->remove (pi.name);
-            else
-                pi.container->remove (pi.index);
-            retval = patch_ok;
-        }
-        else if (pi.container &&
-                 pi.container->type() == j_array &&
-                 pi.name == "-")
-        {
-            if (pi.container->size() > 0) {
-                pi.container->array().pop_back ();
-                retval = patch_ok;
-            }
-        }
-
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_replace (jvalue& instance,
-                                                  const std::string& pointer,
-                                                  jvalue& op)
-    {
-        auto& value = op.get_unique ("value");
-        if (!value.valid())
-            return patch_invalid;
-
-        pointer_info_t pi;
-        auto retval = get_pointer_info (pi, instance, pointer);
-        if (retval != patch_ok)
-            return retval;
-
-        if (pi.item) {
-            *pi.item = value;
-        }
-        else if (pi.container->type() == j_array) {
-            if (pi.container->size() > 0) {
-                (*pi.container)[pi.container->size()-1] = value;
-            }else{
-                retval = patch_noent;
-            }
-        }
-        else {
-            *pi.container = value;
-        }
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_replace (jvalue& instance,
-                                                  const std::string& pointer,
-                                                  jvalue&& value)
-    {
-        pointer_info_t pi;
-        auto retval = get_pointer_info (pi, instance, pointer);
-        if (retval != patch_ok)
-            return retval;
-
-        if (pi.item) {
-            *pi.item = std::forward<jvalue&&> (value);
-        }
-        else if (pi.container->type() == j_array) {
-            if (pi.container->size() > 0) {
-                (*pi.container)[pi.container->size()-1] = std::forward<jvalue&&> (value);
-            }else{
-                retval = patch_noent;
-            }
-        }
-        else {
-            *pi.container = std::forward<jvalue&&> (value);
-        }
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_move (jvalue& instance,
-                                               const std::string& dst_pointer,
-                                               jvalue& op)
-    {
-        auto& from = op.get_unique ("from");
-        if (from.type() != j_string) {
-            return patch_invalid;
-        }
-        auto& src_pointer = from.str ();
-
-        if (dst_pointer.find(src_pointer)==0) {
-            if (src_pointer.size() == dst_pointer.size()) {
-                return patch_ok;
-            }
-            // Error - Move a contaner into one of its child entries
-            return patch_invalid;
-        }
-
-
-        pointer_info_t src_pi;
-        pointer_info_t dst_pi;
-        jpatch_result retval = patch_ok;
-        retval = get_pointer_info (src_pi, instance, src_pointer);
-        if (retval != patch_ok)
-            return retval;
-        retval = get_pointer_info (dst_pi, instance, dst_pointer, true);
-        if (retval != patch_ok)
-            return retval;
-
-        if (dst_pi.added)
-            retval = get_pointer_info (src_pi, instance, src_pointer);
-        if (retval != patch_ok)
-            return retval;
-
-
-        jvalue tmp (std::move(*src_pi.item));
-        src_pi.item->type (j_null);
-
-        retval = patch_operation_remove (instance, src_pointer, op);
-        if (retval == patch_ok)
-            retval = patch_operation_replace (instance, dst_pointer, std::move(tmp));
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_copy (jvalue& instance,
-                                               const std::string& dst_pointer,
-                                               jvalue& op)
-    {
-        auto& from = op.get_unique ("from");
-        if (from.type() != j_string)
-            return patch_invalid;
-
-        const auto& src_pointer = from.str ();
-
-        pointer_info_t src_pi;
-        auto retval = get_pointer_info (src_pi, instance, src_pointer);
-        if (retval == patch_ok) {
-            jvalue copy (src_pi.item ? *src_pi.item : *src_pi.container);
-            retval = patch_operation_add_impl (instance, dst_pointer, copy);
-        }
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation_test (jvalue& instance,
-                                               const std::string& path,
-                                               jvalue& op)
-    {
-        auto& test_value = op.get_unique ("value");
-        if (!test_value.valid())
-            return patch_invalid;
-
-        jpatch_result retval = patch_ok;
-        auto& value = find_jvalue (instance, path);
-        if (!value.valid()) {
-            retval = patch_noent;
-        }else{
-            retval = value == test_value ? patch_ok : patch_fail;
-        }
-        return retval;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jpatch_result patch_operation (jvalue& instance, jvalue& op)
-    {
-        using patch_op_cb = jpatch_result (*) (jvalue&, const std::string&, jvalue&);
-        static const std::map<const std::string, const patch_op_cb> patch_ops {{
-                {"add",     patch_operation_add},
-                {"copy",    patch_operation_copy},
-                {"move",    patch_operation_move},
-                {"remove",  patch_operation_remove},
-                {"replace", patch_operation_replace},
-                {"test",    patch_operation_test},
-            }};
-
-        jpatch_result retval = patch_ok;
-        try {
-            // Get the patch operation and path
-            auto& op_type = op.get_unique("op").str ();
-            auto& path = op.get_unique("path").str ();
-
-            auto entry = patch_ops.find (op_type);
-            if (entry != patch_ops.end()) {
-                retval = entry->second (instance, path, op);
-            }else{
-                retval = patch_invalid;
-            }
-        }
-        catch (std::bad_alloc& ba) {
-            throw ba;
-        }
-        catch (json_type_error&) {
-            retval = patch_invalid;
-        }
-        catch (...) {
-            retval = patch_noent;
-        }
-        return retval;
     }
 
 

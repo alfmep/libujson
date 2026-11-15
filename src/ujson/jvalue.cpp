@@ -29,6 +29,8 @@
 #include <cmath>
 
 
+namespace { // Anonymous namespace
+
 #if (UJSON_HAS_CONSOLE_COLOR)
 #  define COLOR_NORMAL "\033[0m"
 #  define COLOR_BOLD "\033[1m"
@@ -41,32 +43,32 @@
 #  define COLOR_CYAN "\033[36m"
 #  define COLOR_GRAY "\033[90m"
 
-static constexpr const char* const color_normal = COLOR_NORMAL;
-static constexpr const char* const color_string = COLOR_RED;
-//static constexpr const char* const color_string = COLOR_GREEN;
+    static constexpr const char* const color_normal = COLOR_NORMAL;
+    static constexpr const char* const color_string = COLOR_RED;
+    //static constexpr const char* const color_string = COLOR_GREEN;
 
-//static constexpr const char* const color_boolean = COLOR_GREEN COLOR_BOLD;
-static constexpr const char* const color_boolean = COLOR_CYAN COLOR_BOLD;
-static constexpr const char* const color_boolean_true = COLOR_GREEN COLOR_BOLD;
-static constexpr const char* const boolean_false_color = COLOR_RED COLOR_BOLD;
+    //static constexpr const char* const color_boolean = COLOR_GREEN COLOR_BOLD;
+    static constexpr const char* const color_boolean = COLOR_CYAN COLOR_BOLD;
+    static constexpr const char* const color_boolean_true = COLOR_GREEN COLOR_BOLD;
+    static constexpr const char* const boolean_false_color = COLOR_RED COLOR_BOLD;
 
-static constexpr const char* const null_color = COLOR_MAGENTA COLOR_BOLD;
-static constexpr const char* const attribute_color = COLOR_BLUE;
+    static constexpr const char* const null_color = COLOR_MAGENTA COLOR_BOLD;
+    static constexpr const char* const attribute_color = COLOR_BLUE;
 
-static constexpr const char* const object_color = ""; //COLOR_BOLD;
-static constexpr const char* const array_color = ""; //COLOR_BOLD;
+    static constexpr const char* const object_color = ""; //COLOR_BOLD;
+    static constexpr const char* const array_color = ""; //COLOR_BOLD;
 #else
-static constexpr const char* const color_normal = "";
-static constexpr const char* const color_string = "";
-//static constexpr const char* const color_string = "";
-//static constexpr const char* const color_boolean = "";
-static constexpr const char* const color_boolean = "";
-static constexpr const char* const color_boolean_true = "";
-static constexpr const char* const boolean_false_color = "";
-static constexpr const char* const null_color = "";
-static constexpr const char* const attribute_color = "";
-static constexpr const char* const object_color = "";
-static constexpr const char* const array_color = "";
+    static constexpr const char* const color_normal = "";
+    static constexpr const char* const color_string = "";
+    //static constexpr const char* const color_string = "";
+    //static constexpr const char* const color_boolean = "";
+    static constexpr const char* const color_boolean = "";
+    static constexpr const char* const color_boolean_true = "";
+    static constexpr const char* const boolean_false_color = "";
+    static constexpr const char* const null_color = "";
+    static constexpr const char* const attribute_color = "";
+    static constexpr const char* const object_color = "";
+    static constexpr const char* const array_color = "";
 #endif
 
 #if (UJSON_HAS_CONSOLE_COLOR)
@@ -76,14 +78,10 @@ static constexpr const char* const array_color = "";
 #endif
 
 
-namespace ujson {
-
-
-    jvalue invalid_jvalue (j_invalid);
-
-
 #if UJSON_HAVE_GMPXX
-    static void num_t_to_str (const mpf_class& n, std::stringstream& ss)
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void num_t_to_str (const mpf_class& n, std::stringstream& ss)
     {
         mp_exp_t e;
         std::string str = n.get_str (e);
@@ -137,23 +135,13 @@ namespace ujson {
             }
         }
     }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    std::string to_string (const mpf_class& number)
-    {
-        std::stringstream ss;
-        num_t_to_str (number, ss);
-        return ss.str ();
-    }
 #endif
 
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static json_object::iterator find_last_in_jobj (const std::string& key,
-                                                    json_object& jobj)
+    ujson::json_object::iterator find_last_in_jobj (const std::string& key,
+                                                    ujson::json_object& jobj)
     {
         auto range = jobj.equal_range (key);
         auto first = range.first;
@@ -172,6 +160,42 @@ namespace ujson {
         }
         return last;
     }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    inline void put_indent (std::stringstream& ss,
+                            ujson::desc_format_t fmt,
+                            unsigned depth)
+    {
+        ss << std::endl;
+        for (unsigned n=0; n<depth; ++n) {
+            if (fmt & ujson::fmt_tabs)
+                ss << '\t';
+            else
+                ss << "    ";
+        }
+    }
+
+} // Anonymous namespace
+
+
+namespace ujson {
+
+
+    jvalue invalid_jvalue (j_invalid);
+
+
+#if UJSON_HAVE_GMPXX
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    std::string to_string (const mpf_class& number)
+    {
+        std::stringstream ss;
+        num_t_to_str (number, ss);
+        return ss.str ();
+    }
+#endif
 
 
     //--------------------------------------------------------------------------
@@ -1243,22 +1267,6 @@ namespace ujson {
             fmt = fmt_none;
         }
         return describe (fmt);
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    inline static void put_indent (std::stringstream& ss,
-                                   desc_format_t fmt,
-                                   unsigned depth)
-    {
-        ss << std::endl;
-        for (unsigned n=0; n<depth; ++n) {
-            if (fmt & fmt_tabs)
-                ss << '\t';
-            else
-                ss << "    ";
-        }
     }
 
 

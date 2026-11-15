@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -35,6 +35,68 @@ using std::cerr;
 using std::endl;
 #define PREFIX __FUNCTION__ << ',' << __LINE__ << ": "
 #endif
+
+
+namespace { // Anonymous namespace
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+#if UJSON_HAVE_GMPXX
+    bool is_integer (const mpf_class& value)
+    {
+        return mpf_integer_p(value.get_mpf_t()) != 0;
+    }
+#else
+    bool is_integer (const double value)
+    {
+        double i;
+        // We don't count NaN or infinity as an integer
+        if (!std::isinf(value) && !std::isnan(value))
+            return modf(value, &i) == (double)0.0;
+        else
+            return false;
+    }
+#endif
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool is_integer (const ujson::jvalue& instance)
+    {
+#if UJSON_HAVE_GMPXX
+        return instance.type()==ujson::j_number && is_integer(instance.mpf());
+#else
+        return instance.type()==ujson::j_number && is_integer(instance.num());
+#endif
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool is_non_negative_integer (const ujson::jvalue& value)
+    {
+        if (value.type() != ujson::j_number)
+            return false;
+#if UJSON_HAVE_GMPXX
+        return is_integer(value.mpf())  &&  value.mpf() >= 0;
+#else
+        return is_integer(value.num())  &&  value.num() >= 0;
+#endif
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    size_t simple_utf8_len (const std::string& str)
+    {
+        size_t retval = 0;
+        for (size_t i=0; i<str.length(); ++i)
+            if ((str[i] & 0xc0) != 0x80)
+                ++retval;
+        return retval;
+    }
+
+} // Anonymous namespace
 
 
 namespace ujson::schema {
@@ -136,52 +198,6 @@ namespace ujson::schema {
                         &jvocabulary_validation::load_dependentRequired,
                         &jvocabulary_validation::validate_dependentRequired)},
         }};
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-#if UJSON_HAVE_GMPXX
-    static bool is_integer (const mpf_class& value)
-    {
-        return mpf_integer_p(value.get_mpf_t()) != 0;
-    }
-#else
-    static bool is_integer (const double value)
-    {
-        double i;
-        // We don't count NaN or infinity as an integer
-        if (!std::isinf(value) && !std::isnan(value))
-            return modf(value, &i) == (double)0.0;
-        else
-            return false;
-    }
-#endif
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static bool is_integer (jvalue& instance)
-    {
-#if UJSON_HAVE_GMPXX
-        return instance.type()==j_number && is_integer(instance.mpf());
-#else
-        return instance.type()==j_number && is_integer(instance.num());
-#endif
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static bool is_non_negative_integer (jvalue& value)
-    {
-        if (value.type() != j_number)
-            return false;
-#if UJSON_HAVE_GMPXX
-        return is_integer(value.mpf())  &&  value.mpf() >= 0;
-#else
-        return is_integer(value.num())  &&  value.num() >= 0;
-#endif
-    }
 
 
     //--------------------------------------------------------------------------
@@ -642,18 +658,6 @@ namespace ujson::schema {
         if (!valid)
             error_msg = std::string("Number less than or equal to ") + schema_value.describe();
         return valid;
-    }
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static size_t simple_utf8_len (const std::string& str)
-    {
-        size_t retval = 0;
-        for (size_t i=0; i<str.length(); ++i)
-            if ((str[i] & 0xc0) != 0x80)
-                ++retval;
-        return retval;
     }
 
 

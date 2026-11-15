@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -29,98 +29,103 @@
 
 using namespace std;
 
-static constexpr const char* prog_name = "ujson-cmp";
 
-struct appargs_t {
-    bool strict;
-    bool allow_duplicates;
-    bool quiet;
-    string filename[2];
+namespace { // Anonymous namespace
 
-    appargs_t () {
-        strict = false;
-        allow_duplicates = true;
-        quiet = false;
-    }
-};
+    static constexpr const char* prog_name = "ujson-cmp";
 
+    struct appargs_t {
+        bool strict;
+        bool allow_duplicates;
+        bool quiet;
+        string filename[2];
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static void print_usage_and_exit (std::ostream& out, int exit_code)
-{
-    out << endl
-        << "Check if two JSON instances are equal." << endl
-        << endl
-        << "Usage: " << prog_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
-        << endl
-        << "Options:" <<endl
-        << "  -s, --strict         Parse JSON documents in strict mode." << endl
-        << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl
-        << "  -q, --quiet          Silent mode, don't write anything to standard output." << endl
-        << "  -v, --version        Print version and exit." << endl
-        << "  -h, --help           Print this help message and exit." << endl
-        << endl;
-        exit (exit_code);
-}
-
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static void parse_args (int argc, char* argv[], appargs_t& args)
-{
-    optlist_t options = {
-        {'r', "relaxed",       opt_t::none, 0},
-        {'s', "strict",        opt_t::none, 0},
-        {'n', "no-duplicates", opt_t::none, 0},
-        {'q', "quiet",         opt_t::none, 0},
-        {'v', "version",       opt_t::none, 0},
-        {'h', "help",          opt_t::none, 0},
+        appargs_t () {
+            strict = false;
+            allow_duplicates = true;
+            quiet = false;
+        }
     };
 
-    option_parser opt (argc, argv);
-    while (int id=opt(options)) {
-        switch (id) {
-        case 'r':
-            args.strict = false;
-            break;
-        case 's':
-            args.strict = true;
-            break;
-        case 'n':
-            args.allow_duplicates = false;
-            break;
-        case 'q':
-            args.quiet = true;
-            break;
-        case 'v':
-            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
-            exit (0);
-            break;
-        case 'h':
-            print_usage_and_exit (std::cout, 0);
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void print_usage_and_exit (std::ostream& out, int exit_code)
+    {
+        out << endl
+            << "Check if two JSON instances are equal." << endl
+            << endl
+            << "Usage: " << prog_name << " [OPTIONS] [FILE_1] [FILE_2]" << endl
+            << endl
+            << "Options:" <<endl
+            << "  -s, --strict         Parse JSON documents in strict mode." << endl
+            << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl
+            << "  -q, --quiet          Silent mode, don't write anything to standard output." << endl
+            << "  -v, --version        Print version and exit." << endl
+            << "  -h, --help           Print this help message and exit." << endl
+            << endl;
+        exit (exit_code);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void parse_args (int argc, char* argv[], appargs_t& args)
+    {
+        optlist_t options = {
+            {'r', "relaxed",       opt_t::none, 0},
+            {'s', "strict",        opt_t::none, 0},
+            {'n', "no-duplicates", opt_t::none, 0},
+            {'q', "quiet",         opt_t::none, 0},
+            {'v', "version",       opt_t::none, 0},
+            {'h', "help",          opt_t::none, 0},
+        };
+
+        option_parser opt (argc, argv);
+        while (int id=opt(options)) {
+            switch (id) {
+            case 'r':
+                args.strict = false;
+                break;
+            case 's':
+                args.strict = true;
+                break;
+            case 'n':
+                args.allow_duplicates = false;
+                break;
+            case 'q':
+                args.quiet = true;
+                break;
+            case 'v':
+                std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
+                exit (0);
+                break;
+            case 'h':
+                print_usage_and_exit (std::cout, 0);
+                break;
+            default:
+                cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+                exit (1);
+            }
+        }
+
+        auto& arguments = opt.arguments ();
+        switch (arguments.size()) {
+        case 0:
+        case 1:
+            cerr << "Missing filename(s)" << endl;
+            exit (1);
+        case 2:
+            args.filename[0] = arguments[0];
+            args.filename[1] = arguments[1];
             break;
         default:
-            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+            cerr << "Too many arguments" << endl;
             exit (1);
         }
     }
 
-    auto& arguments = opt.arguments ();
-    switch (arguments.size()) {
-    case 0:
-    case 1:
-        cerr << "Missing filename(s)" << endl;
-        exit (1);
-    case 2:
-        args.filename[0] = arguments[0];
-        args.filename[1] = arguments[1];
-        break;
-    default:
-        cerr << "Too many arguments" << endl;
-        exit (1);
-    }
-}
+} // Anonymous namespace
 
 
 //------------------------------------------------------------------------------

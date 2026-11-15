@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2022-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -35,10 +35,47 @@ using std::endl;
 #endif
 
 
+namespace { // Anonymous namespace
+
+    const std::regex uri_regex ("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?", std::regex::awk);
+
+
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    inline char hex_to_ch (char hex)
+    {
+        if (hex <= '9')
+            return hex - '0';
+        else if (hex <= 'F')
+            return hex - 'A';
+        else
+            return hex - 'a';
+    }
+
+
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    std::string uri_unescape (const std::string& uri)
+    {
+        std::string retval;
+
+        for (unsigned i=0; i<uri.size(); ++i) {
+            if (uri[i] == '%'  &&  i<(uri.size()-2) && isxdigit(uri[i+1]) && isxdigit(uri[i+2])) {
+                char ch = hex_to_ch (uri[++i]);
+                ch <<= 4;
+                ch |= hex_to_ch (uri[++i]);
+                retval.push_back (ch);
+            }else{
+                retval.push_back (uri[i]);
+            }
+        }
+        return retval;
+    }
+
+} // Anonymous namespace
+
+
 namespace ujson::schema {
-
-
-    static const std::regex uri_regex ("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?", std::regex::awk);
 
 
     // Functor used when we create a std::shared_ptr<validation_context>
@@ -147,39 +184,6 @@ namespace ujson::schema {
     std::map<std::string, std::string>& jvocabulary::id_aliases ()
     {
         return root_schema.id_alias;
-    }
-
-
-    //------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------
-    static inline char hex_to_ch (char hex)
-    {
-        if (hex <= '9')
-            return hex - '0';
-        else if (hex <= 'F')
-            return hex - 'A';
-        else
-            return hex - 'a';
-    }
-
-
-    //------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------
-    static std::string uri_unescape (const std::string& uri)
-    {
-        std::string retval;
-
-        for (unsigned i=0; i<uri.size(); ++i) {
-            if (uri[i] == '%'  &&  i<(uri.size()-2) && isxdigit(uri[i+1]) && isxdigit(uri[i+2])) {
-                char ch = hex_to_ch (uri[++i]);
-                ch <<= 4;
-                ch |= hex_to_ch (uri[++i]);
-                retval.push_back (ch);
-            }else{
-                retval.push_back (uri[i]);
-            }
-        }
-        return retval;
     }
 
 

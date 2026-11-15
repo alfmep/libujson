@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -29,127 +29,133 @@
 
 using namespace std;
 
-static constexpr const char* prog_name = "ujson-patch";
 
-struct appargs_t {
-    ujson::desc_format_t fmt;
-    bool strict;
-    bool allow_duplicates;
-    bool quiet;
-    std::string document_filename;
-    std::string patch_filename;
+namespace { // Anonymous namespace
 
-    appargs_t () {
-        fmt = ujson::fmt_pretty;
-        strict = false;
-        allow_duplicates = true;
-        quiet = false;
-    }
-};
+    static constexpr const char* prog_name = "ujson-patch";
 
+    struct appargs_t {
+        ujson::desc_format_t fmt;
+        bool strict;
+        bool allow_duplicates;
+        bool quiet;
+        std::string document_filename;
+        std::string patch_filename;
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static void print_usage_and_exit (std::ostream& out, int exit_code)
-{
-    out << endl;
-    out << "Patch a JSON document using a patch as described by RFC 6902." << endl;
-    out << endl;
-    out << "Usage: " << prog_name << " [OPTIONS] JSON_FILE [JSON_PATCH_FILE]" << endl;
-    out << endl;
-    out << "JSON_FILE:       This a JSON document to patch." <<endl;
-    out << "JSON_PATCH_FILE: JSON document containing the patch/patches, or standard input if no filename given." <<endl;
-    out << "The resulting JSON document will be printed to standard output." << endl;
-    out << "If one or more patches fails, error info is written to standard error." << endl;
-    out << endl;
-    out << "Options:" <<endl;
-    out << "  -c, --compact        Print the resulting JSON document without whitespaces." << endl;
-    out << "  -s, --strict         Parse JSON documents in strict mode." << endl;
-    out << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl;
-    out << "  -q, --quiet          No errors are written to standard error. On errors," << endl;
-    out << "                       or failed patch test operations, the application" << endl;
-    out << "                       exits with an error code. If the patch definition only" << endl;
-    out << "                       contains patch operations of type 'test', nothing is" << endl;
-    out << "                       written to standard output. If the patch definition" << endl;
-    out << "                       contains operations other than 'test', the resulting" << endl;
-    out << "                       JSON document is still printed to standard output." << endl;
-    out << "  -v, --version        Print version and exit." << endl;
-    out << "  -h, --help           Print this help message and exit." << endl;
-    out << endl;
-    out << "" << endl;
-    exit (exit_code);
-}
-
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static void parse_args (int argc, char* argv[], appargs_t& args)
-{
-    optlist_t options = {
-        {'c', "compact",       opt_t::none, 0},
-        {'r', "relaxed",       opt_t::none, 0},
-        {'s', "strict",        opt_t::none, 0},
-        {'n', "no-duplicates", opt_t::none, 0},
-        {'q', "quiet",         opt_t::none, 0},
-        {'v', "version",       opt_t::none, 0},
-        {'h', "help",          opt_t::none, 0},
+        appargs_t () {
+            fmt = ujson::fmt_pretty;
+            strict = false;
+            allow_duplicates = true;
+            quiet = false;
+        }
     };
 
-    option_parser opt (argc, argv);
-    while (int id=opt(options)) {
-        switch (id) {
-        case 'c':
-            args.fmt = ujson::fmt_none;
-            break;
-        case 'r':
-            args.strict = false;
-            break;
-        case 's':
-            args.strict = true;
-            break;
-        case 'n':
-            args.allow_duplicates = false;
-            break;
-        case 'q':
-            args.quiet = true;
-            break;
-        case 'v':
-            std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
-            exit (0);
-            break;
-        case 'h':
-            print_usage_and_exit (std::cout, 0);
-            break;
-        default:
-            cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void print_usage_and_exit (std::ostream& out, int exit_code)
+    {
+        out << endl;
+        out << "Patch a JSON document using a patch as described by RFC 6902." << endl;
+        out << endl;
+        out << "Usage: " << prog_name << " [OPTIONS] JSON_FILE [JSON_PATCH_FILE]" << endl;
+        out << endl;
+        out << "JSON_FILE:       This a JSON document to patch." <<endl;
+        out << "JSON_PATCH_FILE: JSON document containing the patch/patches, or standard input if no filename given." <<endl;
+        out << "The resulting JSON document will be printed to standard output." << endl;
+        out << "If one or more patches fails, error info is written to standard error." << endl;
+        out << endl;
+        out << "Options:" <<endl;
+        out << "  -c, --compact        Print the resulting JSON document without whitespaces." << endl;
+        out << "  -s, --strict         Parse JSON documents in strict mode." << endl;
+        out << "  -n, --no-duplicates  Don't allow objects with duplicate member names." << endl;
+        out << "  -q, --quiet          No errors are written to standard error. On errors," << endl;
+        out << "                       or failed patch test operations, the application" << endl;
+        out << "                       exits with an error code. If the patch definition only" << endl;
+        out << "                       contains patch operations of type 'test', nothing is" << endl;
+        out << "                       written to standard output. If the patch definition" << endl;
+        out << "                       contains operations other than 'test', the resulting" << endl;
+        out << "                       JSON document is still printed to standard output." << endl;
+        out << "  -v, --version        Print version and exit." << endl;
+        out << "  -h, --help           Print this help message and exit." << endl;
+        out << endl;
+        out << "" << endl;
+        exit (exit_code);
+    }
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void parse_args (int argc, char* argv[], appargs_t& args)
+    {
+        optlist_t options = {
+            {'c', "compact",       opt_t::none, 0},
+            {'r', "relaxed",       opt_t::none, 0},
+            {'s', "strict",        opt_t::none, 0},
+            {'n', "no-duplicates", opt_t::none, 0},
+            {'q', "quiet",         opt_t::none, 0},
+            {'v', "version",       opt_t::none, 0},
+            {'h', "help",          opt_t::none, 0},
+        };
+
+        option_parser opt (argc, argv);
+        while (int id=opt(options)) {
+            switch (id) {
+            case 'c':
+                args.fmt = ujson::fmt_none;
+                break;
+            case 'r':
+                args.strict = false;
+                break;
+            case 's':
+                args.strict = true;
+                break;
+            case 'n':
+                args.allow_duplicates = false;
+                break;
+            case 'q':
+                args.quiet = true;
+                break;
+            case 'v':
+                std::cout << prog_name << ' ' << UJSON_VERSION_STRING << std::endl;
+                exit (0);
+                break;
+            case 'h':
+                print_usage_and_exit (std::cout, 0);
+                break;
+            default:
+                cerr << "Unknown option: '" << opt.opt() << "'" << endl;
+                exit (1);
+                break;
+            }
+        }
+
+        auto& arguments = opt.arguments ();
+        switch (arguments.size()) {
+        case 0:
+            if (!args.quiet)
+                cerr << "Missing argument" << endl;
             exit (1);
             break;
+
+        case 1:
+            args.document_filename = arguments[0];
+            break;
+
+        case 2:
+            args.document_filename = arguments[0];
+            args.patch_filename = arguments[1];
+            break;
+
+        default:
+            if (!args.quiet)
+                cerr << "Too many arguments" << endl;
+            exit (1);
         }
     }
 
-    auto& arguments = opt.arguments ();
-    switch (arguments.size()) {
-    case 0:
-        if (!args.quiet)
-            cerr << "Missing argument" << endl;
-        exit (1);
-        break;
 
-    case 1:
-        args.document_filename = arguments[0];
-        break;
-
-    case 2:
-        args.document_filename = arguments[0];
-        args.patch_filename = arguments[1];
-        break;
-
-    default:
-        if (!args.quiet)
-            cerr << "Too many arguments" << endl;
-        exit (1);
-    }
-}
+} // Anonymous namespace
 
 
 //------------------------------------------------------------------------------

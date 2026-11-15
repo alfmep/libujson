@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2021-2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -22,35 +22,40 @@
 using namespace std;
 
 
-static constexpr const char* document = "{"
-    "    \"number\": 16,"
-    "    \"text\":   \"Hello World!\","
-    "    \"array\":  [true, \"some text\", 42],"
-    "    \"\":       \"Hidden attribute\""
-    "}";
+namespace { // Anonymous namespace
 
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static void find_item_in_document (ujson::jvalue& instance, const string& pointer)
-{
-    cout << "Find value using JSON pointer: " << (pointer.empty()?std::string("\"\""):pointer) << endl;
+    static constexpr const char* document = "{"
+        "    \"number\": 16,"
+        "    \"text\":   \"Hello World!\","
+        "    \"array\":  [true, \"some text\", 42],"
+        "    \"\":       \"Hidden attribute\""
+        "}";
 
-    try {
-        // Find the value using the JSON pointer
-        auto& value = ujson::find_jvalue (instance, pointer);
 
-        // Check if the value was found
-        if (value.valid())
-            cout << "Found value: " << value.describe() << endl;
-        else
-            cout << "Nothing found, pointer doesn't point to a value in the JSON document." << endl;
-        cout << endl;
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void find_item_in_document (ujson::jvalue& instance, const string& pointer)
+    {
+        cout << "Find value using JSON pointer: " << (pointer.empty()?std::string("\"\""):pointer) << endl;
+
+        try {
+            // Find the value using the JSON pointer
+            auto& value = ujson::find_jvalue (instance, pointer);
+
+            // Check if the value was found
+            if (value.valid())
+                cout << "Found value: " << value.describe() << endl;
+            else
+                cout << "Nothing found, pointer doesn't point to a value in the JSON document." << endl;
+            cout << endl;
+        }
+        catch (std::invalid_argument& ia) {
+            cout << "Error: " << ia.what() << endl;
+        }
     }
-    catch (std::invalid_argument& ia) {
-        cout << "Error: " << ia.what() << endl;
-    }
-}
+
+} // Anonymous namespace
 
 
 //------------------------------------------------------------------------------

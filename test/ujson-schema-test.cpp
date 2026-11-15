@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023,2024 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2024,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -38,128 +38,133 @@ using std::string;
 namespace uj = ujson;
 
 
-//------------------------------------------------------------------------------
-//  T Y P E S
-//------------------------------------------------------------------------------
-struct appargs_t {
-    std::string load_dir;
-    std::vector<std::string> args; // Arguments that are not options
-    bool full_validation;
+namespace { // Anonymous namespace
 
-    appargs_t (int argc, char* argv[]);
-    void print_usage_and_exit (std::ostream& out, int exit_code);
-};
+    //--------------------------------------------------------------------------
+    //  T Y P E S
+    //--------------------------------------------------------------------------
+    struct appargs_t {
+        std::string load_dir;
+        std::vector<std::string> args; // Arguments that are not options
+        bool full_validation;
+
+        appargs_t (int argc, char* argv[]);
+        void print_usage_and_exit (std::ostream& out, int exit_code);
+    };
 
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-void appargs_t::print_usage_and_exit (std::ostream& out, int exit_code)
-{
-    out << std::endl
-        << "Usage: " << program_invocation_short_name << " [OPTIONS]  <json-schema ...> <json-instance>" << std::endl
-        << std::endl
-        << "  -d, --dir=DIR            Load referenced schemas from this diectory." << std::endl
-        << "  -f, --full_validation    Validate all values in the instance even if some fails validation." << std::endl
-        << "  -h, --help               Print this help message." << std::endl
-        << std::endl;
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    void appargs_t::print_usage_and_exit (std::ostream& out, int exit_code)
+    {
+        out << std::endl
+            << "Usage: " << program_invocation_short_name << " [OPTIONS]  <json-schema ...> <json-instance>" << std::endl
+            << std::endl
+            << "  -d, --dir=DIR            Load referenced schemas from this diectory." << std::endl
+            << "  -f, --full_validation    Validate all values in the instance even if some fails validation." << std::endl
+            << "  -h, --help               Print this help message." << std::endl
+            << std::endl;
 
         exit (exit_code);
-}
+    }
 
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-appargs_t::appargs_t (int argc, char* argv[])
-    : full_validation (false)
-{
-    static struct option long_options[] = {
-        { "dir",             required_argument, 0, 'd'},
-        { "full-validation", no_argument,       0, 'f'},
-        { "help",            no_argument,       0, 'h'},
-        { 0, 0, 0, 0}
-    };
-    static const char* arg_format = "d:fh";
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    appargs_t::appargs_t (int argc, char* argv[])
+        : full_validation (false)
+    {
+        static struct option long_options[] = {
+            { "dir",             required_argument, 0, 'd'},
+            { "full-validation", no_argument,       0, 'f'},
+            { "help",            no_argument,       0, 'h'},
+            { 0, 0, 0, 0}
+        };
+        static const char* arg_format = "d:fh";
 
-    while (1) {
-        int c = getopt_long (argc, argv, arg_format, long_options, NULL);
-        if (c == -1)
-            break;
-        switch (c) {
-        case 'd':
-            load_dir = optarg;
-            break;
-        case 'f':
-            full_validation = true;
-            break;
-        case 'h':
-            print_usage_and_exit (std::cout, 0);
-            break;
-        default:
-            std::cerr << "Use option -h for help." << std::endl;
+        while (1) {
+            int c = getopt_long (argc, argv, arg_format, long_options, NULL);
+            if (c == -1)
+                break;
+            switch (c) {
+            case 'd':
+                load_dir = optarg;
+                break;
+            case 'f':
+                full_validation = true;
+                break;
+            case 'h':
+                print_usage_and_exit (std::cout, 0);
+                break;
+            default:
+                std::cerr << "Use option -h for help." << std::endl;
+                exit (1);
+            }
+        }
+
+        // Collect all arguments thar are not options
+        while (optind < argc)
+            args.emplace_back (argv[optind++]);
+
+        if (args.size() < 2) {
+            std::cerr << "Missing argument" << std::endl;
             exit (1);
         }
     }
 
-    // Collect all arguments thar are not options
-    while (optind < argc)
-        args.emplace_back (argv[optind++]);
 
-    if (args.size() < 2) {
-        std::cerr << "Missing argument" << std::endl;
-        exit (1);
-    }
-}
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    bool invalid_ref_cb (uj::jschema& schema,
+                         const std::string& base_uri,
+                         const std::string& ref_value,
+                         const std::string& load_dir)
+    {
+        /*
+          cerr << "Invalid ref:" << endl;
+          cerr << "    base_uri : "  << base_uri << endl;
+          cerr << "    ref_value: "  << ref_value << endl;
+          cerr << "    load_dir : "  << load_dir << endl;
+        */
+        uj::jparser parser;
 
+        std::string file_name = load_dir;
+        if (file_name[file_name.size()-1] != '/')
+            file_name.push_back ('/');
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-static bool invalid_ref_cb (uj::jschema& schema,
-                            const std::string& base_uri,
-                            const std::string& ref_value,
-                            const std::string& load_dir)
-{
-    /*
-    cerr << "Invalid ref:" << endl;
-    cerr << "    base_uri : "  << base_uri << endl;
-    cerr << "    ref_value: "  << ref_value << endl;
-    cerr << "    load_dir : "  << load_dir << endl;
-    */
-    uj::jparser parser;
+        std::string uri;
+        std::string fragment;
+        uj::schema::jvocabulary::split_uri (ref_value, uri, fragment);
 
-    std::string file_name = load_dir;
-    if (file_name[file_name.size()-1] != '/')
-        file_name.push_back ('/');
+        std::string local_file_uri = "http://localhost:1234/";
+        std::string::size_type pos;
 
-    std::string uri;
-    std::string fragment;
-    uj::schema::jvocabulary::split_uri (ref_value, uri, fragment);
-
-    std::string local_file_uri = "http://localhost:1234/";
-    std::string::size_type pos;
-
-    pos = uri.find (local_file_uri);
-    if (pos != 0) {
-        if (!base_uri.empty() && base_uri.back()=='/') {
-            uri = base_uri + uri;
-        }else{
-            std::string ignore_me;
-            uri = uj::schema::jvocabulary::resolve_id (base_uri, uri, ignore_me);
-        }
         pos = uri.find (local_file_uri);
+        if (pos != 0) {
+            if (!base_uri.empty() && base_uri.back()=='/') {
+                uri = base_uri + uri;
+            }else{
+                std::string ignore_me;
+                uri = uj::schema::jvocabulary::resolve_id (base_uri, uri, ignore_me);
+            }
+            pos = uri.find (local_file_uri);
+        }
+
+        if (pos == 0) {
+            file_name.append (uri.substr(local_file_uri.size()));
+            auto ref_schema = parser.parse_file (file_name, false);
+            if (ref_schema.invalid())
+                return false;
+
+            schema.add_referenced_schema (ref_schema, uri);
+            return true;
+        }
+
+        return false;
     }
 
-    if (pos == 0) {
-        file_name.append (uri.substr(local_file_uri.size()));
-        auto ref_schema = parser.parse_file (file_name, false);
-        if (ref_schema.invalid())
-            return false;
 
-        schema.add_referenced_schema (ref_schema, uri);
-        return true;
-    }
-
-    return false;
-}
+} // Anonymous namespace
 
 
 //------------------------------------------------------------------------------

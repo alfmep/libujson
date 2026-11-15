@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2023,2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -21,11 +21,37 @@
 #include <cstring>
 
 
-enum option_variant_t {
-    optvar_argument = 0,
-    optvar_short,
-    optvar_long
-};
+namespace { // Anonymous namespace
+
+    enum option_variant_t {
+        optvar_argument = 0,
+        optvar_short,
+        optvar_long
+    };
+
+    //--------------------------------------------------------------------------
+    // Return: optvar_argument - Not an option
+    //         optvar_short    - A short option
+    //         optvar_long     - A long option
+    //--------------------------------------------------------------------------
+    option_variant_t option_variant (char* arg)
+    {
+        if (arg[0] == '-') {
+            if (arg[1] == '-') {
+                if (arg[2] != '\0') {
+                    // '--option[=| ]value'
+                    return optvar_long;
+                }
+            }
+            else if (arg[1] != '\0') {
+                // '-?[?...][ ]value
+                return optvar_short;
+            }
+        }
+        return optvar_argument;
+    }
+
+} // Anonymous namespace
 
 
 //------------------------------------------------------------------------------
@@ -82,29 +108,6 @@ std::string option_parser::opt ()
 std::vector<std::string>& option_parser::arguments ()
 {
     return args;
-}
-
-
-//------------------------------------------------------------------------------
-// Return: optvar_argument - Not an option
-//         optvar_short    - A short option
-//         optvar_long     - A long option
-//------------------------------------------------------------------------------
-static option_variant_t option_variant (char* arg)
-{
-    if (arg[0] == '-') {
-        if (arg[1] == '-') {
-            if (arg[2] != '\0') {
-                // '--option[=| ]value'
-                return optvar_long;
-            }
-        }
-        else if (arg[1] != '\0') {
-            // '-?[?...][ ]value
-            return optvar_short;
-        }
-    }
-    return optvar_argument;
 }
 
 

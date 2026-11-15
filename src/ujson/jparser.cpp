@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017,2019-2025 Dan Arrhenius <dan@ultramarin.se>
+ * Copyright (C) 2017,2019-2026 Dan Arrhenius <dan@ultramarin.se>
  *
  * This file is part of ujson.
  *
@@ -48,12 +48,11 @@ using std::endl;
 using namespace ujson::parser;
 
 
-namespace ujson {
-
+namespace { // Anonymous namespace
 
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
-    static const std::string parser_err_to_str (jparser::err error)
+    const std::string parser_err_to_str (ujson::jparser::err error)
     {
         switch (error) {
         case ujson::jparser::err::ok:
@@ -141,6 +140,55 @@ namespace ujson {
 
 
     //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    ujson::jparser::err token_error_to_parser_error (const jtoken::error_t token_error)
+    {
+        switch (token_error) {
+        case jtoken::ok:
+            return ujson::jparser::err::ok;
+
+        case jtoken::err_string:
+            return ujson::jparser::err::invalid_string;
+
+        case jtoken::err_string_unterminated:
+            return ujson::jparser::err::unterminated_string;
+
+        case jtoken::err_string_escape:
+            return ujson::jparser::err::invalid_escape_code;
+
+        case jtoken::err_string_utf8:
+            return ujson::jparser::err::invalid_utf8;
+
+        case jtoken::err_number:
+        case jtoken::err_number_lone_minus:
+        case jtoken::err_number_no_frac:
+        case jtoken::err_number_no_exp:
+            return ujson::jparser::err::invalid_number;
+
+        case jtoken::err_invalid:
+            return ujson::jparser::err::invalid_token;
+
+        case jtoken::err_unexpected_char:
+            return ujson::jparser::err::unexpected_character;
+
+        case jtoken::err_eob:
+            return ujson::jparser::err::eob;
+        }
+
+#if (PARSE_DEBUG)
+        cerr << "Internal error here: " << __LINE__ << endl;
+#endif
+        return ujson::jparser::err::internal;
+    }
+
+} // Anonymous namespace
+
+
+
+namespace ujson {
+
+
+    //--------------------------------------------------------------------------
     class parser_t {
     public:
         parser_t () {
@@ -178,6 +226,7 @@ namespace ujson {
         }
 
         std::mutex mutex;
+        std::string error_text;
 
     private:
         unsigned max_depth;
@@ -332,6 +381,8 @@ namespace ujson {
 #endif
     };
 
+
+
 #if 0
 value:          str_value
         |       NUMBER
@@ -368,49 +419,6 @@ pair:           STRING COLON value
         |       IDENTIFIER COLON value    // Relaxed mode
                 ;
 #endif
-
-
-    //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
-    static jparser::err token_error_to_parser_error (const jtoken::error_t token_error)
-    {
-        switch (token_error) {
-        case jtoken::ok:
-            return jparser::err::ok;
-
-        case jtoken::err_string:
-            return jparser::err::invalid_string;
-
-        case jtoken::err_string_unterminated:
-            return jparser::err::unterminated_string;
-
-        case jtoken::err_string_escape:
-            return jparser::err::invalid_escape_code;
-
-        case jtoken::err_string_utf8:
-            return jparser::err::invalid_utf8;
-
-        case jtoken::err_number:
-        case jtoken::err_number_lone_minus:
-        case jtoken::err_number_no_frac:
-        case jtoken::err_number_no_exp:
-            return jparser::err::invalid_number;
-
-        case jtoken::err_invalid:
-            return jparser::err::invalid_token;
-
-        case jtoken::err_unexpected_char:
-            return jparser::err::unexpected_character;
-
-        case jtoken::err_eob:
-            return jparser::err::eob;
-        }
-
-#if (PARSE_DEBUG)
-        cerr << "Internal error here: " << __LINE__ << endl;
-#endif
-        return jparser::err::internal;
-    }
 
 
      //--------------------------------------------------------------------------
@@ -1072,19 +1080,18 @@ pair:           STRING COLON value
     const std::string& jparser::error () const
     {
         std::lock_guard<std::mutex> lock (CTX->mutex);
-        static std::string err_str;
         auto error_code = CTX->error_code ();
 
         if (error_code == jparser::err::ok) {
-            err_str = "Ok.";
+            CTX->error_text = "Ok";
         }else{
-            err_str = parser_err_to_str (error_code);
-            err_str.append (" at line ");
-            err_str.append (std::to_string(CTX->error_row()+1));
-            err_str.append (", column ");
-            err_str.append (std::to_string(CTX->error_col()));
+            CTX->error_text = parser_err_to_str (error_code);
+            CTX->error_text.append (" at line ");
+            CTX->error_text.append (std::to_string(CTX->error_row()+1));
+            CTX->error_text.append (", column ");
+            CTX->error_text.append (std::to_string(CTX->error_col()));
         }
-        return err_str;
+        return CTX->error_text;
     }
 
 
